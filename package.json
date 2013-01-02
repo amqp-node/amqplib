@@ -1,0 +1,23 @@
+{
+  "name": "amqp-client",
+  "version": "0.0.1",
+  "description": "An AMQP 0-9-1 (e.g., RabbitMQ) client.",
+  "main": "index.js",
+  "dependencies": {
+    "bitsyntax": "",
+    "buffer-more-ints": ""
+  },
+  "devDependencies": {
+    "mocha": ""
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "",
+  "keywords": [
+    "AMQP",
+    "RabbitMQ"
+  ],
+  "author": "Michael Bridgen <mikeb@squaremobius.net>",
+  "license": "BSD"
+}
