@@ -5,7 +5,8 @@
   "main": "index.js",
   "dependencies": {
     "bitsyntax": "",
-    "buffer-more-ints": ""
+    "buffer-more-ints": "",
+    "readable-stream": ""
   },
   "devDependencies": {
     "mocha": ""

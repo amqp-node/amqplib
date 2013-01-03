@@ -14,16 +14,17 @@ function println(str) { print(str); nl(); }
 var indent = '    ';
 
 println('var codec = require("./codec");');
-println('var encodeTable = codec.encodeTable, encodeArray = codec.encodeArray;');
+println('var encodeTable = codec.encodeTable;');
+println('var decodeFields = codec.decodeFields;');
 nl();
-
-print('module.exports.constants = ');
 
 var constants = {};
 for (var i = 0, len = defs.constants.length; i < len; i++) {
     var cdef = defs.constants[i];
     constants[constantName(cdef)] = cdef.value;
 }
+
+print('module.exports.constants = ');
 println(JSON.stringify(constants, undefined, 2)); nl();
 
 function constantName(def) {
@@ -44,23 +45,40 @@ for (var i=0, len = defs.domains.length; i < len; i++) {
     domains[dom[0]] = dom[1];
 }
 
+var methods = {};
 var constructors = {};
 var encoders = {};
+var decoders = {};
 for (var i = 0, len = defs.classes.length; i < len; i++) {
     var clazz = defs.classes[i];
     for (var j = 0, num = clazz.methods.length; j < num; j++) {
         var method = clazz.methods[j];
         var name = methodName(clazz, method);
+        methods[name] = methodId(clazz, method);
         constructors[name] = constructorFn(clazz, method);
         encoders[name] = encoderFn(clazz, method);
-        //decoders[name] = decoderBody(clazz, method);
+        decoders[name] = decoderFn(clazz, method);
     }
 }
 
 for (var m in constructors) {
     println(constructors[m]);
-    println('module.exports.' + m + ' = ' + m + ';'); nl();
+    println(m + '.prototype.id = ' + methods[m] + ';');
     println(m + '.prototype.encodeToFrame = ' + encoders[m]); nl();
+    println(m + '.fromBuffer = ' + decoders[m]);
+    println('module.exports.' + m + ' = ' + m + ';'); nl();
+}
+
+println('module.exports.methodFor = function(id) {');
+println(indent + 'switch (id) {');
+for (var m in constructors) {
+    println(indent + 'case ' + methods[m] + ': return ' + m + ';');
+}
+println(indent + '}');
+println('}');
+
+function methodId(clazz, method) {
+    return (clazz.id << 16) + method.id;
 }
 
 function constructorFn(clazz, method) {
@@ -70,11 +88,11 @@ function constructorFn(clazz, method) {
 }
 
 function encoderFn(clazz, method) {
-    var id = (clazz.id << 16) + method.id;
+    var id = methodId(clazz, method);
     var lines = [];
     var args = method['arguments'];
     lines.push('function(channel) {');
-    lines.push('var offset = 0, val = null, bits = 0, len;')
+    lines.push('var offset = 0, val = null, bits = 0, len;');
 
     var fixed = fixedSize(args);
     if (fixed > 0) {
@@ -164,6 +182,65 @@ function encoderFn(clazz, method) {
     else {
         lines.push('return buffer.slice(0, offset + 1);');
     }
+    return lines.join('\n' + indent) + '\n}';
+}
+
+function decoderFn(clazz, method) {
+    var name = methodName(clazz, method);
+    var lines = [];
+    var args = method['arguments'];
+    lines.push('function(buffer) {');
+    lines.push('var fields = {}, offset = 0, val, len;');
+    var bitsInARow = 0;
+    for (var i=0, num=args.length; i < num; i++) {
+        var arg = args[i];
+        var type = arg.type || domains[arg.domain];
+        switch (type) {
+        case 'octet':
+            lines.push('val = buffer[offset]; offset++;');
+            break;
+        case 'short':
+            lines.push('val = buffer.readUInt16BE(offset); offset += 2;');
+            break;
+        case 'long':
+            lines.push('val = buffer.readUInt32BE(offset); offset += 4;');
+            break;
+        case 'longlong':
+            lines.push('val = buffer.readUInt64BE(offset); offset += 8;');
+            break;
+        case 'timestamp':
+            lines.push('val = buffer.readUInt64BE(offset); offset += 8;');
+            break;
+        case 'bit':
+            var bit = 1 << bitsInARow;
+            lines.push('val = !!(buffer[offset] & ' + bit + ');');
+            if (bitsInARow === 7) {
+                lines.push('offset++;');
+                bitsInARow = 0;
+            }
+            else bitsInARow++;
+            break;
+        case 'longstr':
+            lines.push('len = buffer.readUInt32BE(offset); offset += 4;');
+            lines.push('val = buffer.toString("utf8", offset, offset + len);');
+            lines.push('offset += len;');
+            break;
+        case 'shortstr':
+            lines.push('len = buffer.readUInt8(offset); offset++;');
+            lines.push('val = buffer.toString("utf8", offset, offset + len);');
+            lines.push('offset += len;');
+            break;
+        case 'table':
+            lines.push('len = buffer.readUInt32BE(offset); offset += 4;');
+            lines.push('val = decodeFields(buffer.slice(offset, offset + len));');
+            lines.push('offset += len;');
+            break;
+        default:
+            throw new TypeError("Unexpected type in argument list: " + type);
+        }
+        lines.push('fields["' + arg.name + '"] = val;');
+    }
+    lines.push('return new ' + name + '(fields);');
     return lines.join('\n' + indent) + '\n}';
 }
 
