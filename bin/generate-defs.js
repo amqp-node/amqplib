@@ -99,7 +99,7 @@ function encoderFn(clazz, method) {
         }
         else {
             lines.push('if (!this.fields.hasOwnProperty(\'' + arg.name + '\'))');
-            lines.push(indent + 'throw new Exception("Missing value for ' + arg.name + '");');
+            lines.push(indent + 'throw new Error("Missing value for ' + arg.name + '");');
             lines.push('val = this.fields[\'' + arg.name + '\'];');
         }
 
