@@ -46,48 +46,82 @@ for (var i=0, len = defs.domains.length; i < len; i++) {
 }
 
 var methods = {};
-var constructors = {};
-var encoders = {};
-var decoders = {};
+var propertieses = {};
+
 for (var i = 0, len = defs.classes.length; i < len; i++) {
     var clazz = defs.classes[i];
     for (var j = 0, num = clazz.methods.length; j < num; j++) {
         var method = clazz.methods[j];
         var name = methodName(clazz, method);
-        methods[name] = methodId(clazz, method);
-        constructors[name] = constructorFn(clazz, method);
-        encoders[name] = encoderFn(clazz, method);
-        decoders[name] = decoderFn(clazz, method);
+        methods[name] = {
+            id: methodId(clazz, method),
+            constructor: constructorFn(name, clazz, method),
+            encoder: encoderFn(name, clazz, method),
+            decoder: decoderFn(name, clazz, method)
+        };
+    }
+    if (clazz.properties && clazz.properties.length > 0) {
+        var name = propertiesName(clazz);
+        var props = clazz.properties;
+        propertieses[name] = {
+            constructor: propsConstructorFn(name, clazz, props),
+            id: clazz.id,
+            encoder: encodePropsFn(name, clazz, props),
+            decoder: decodePropsFn(name, clazz, props),
+        };
     }
 }
 
-for (var m in constructors) {
-    println(constructors[m]);
-    println(m + '.prototype.id = ' + methods[m] + ';');
-    println(m + '.prototype.encodeToFrame = ' + encoders[m]); nl();
-    println(m + '.fromBuffer = ' + decoders[m]);
+for (var m in methods) {
+    var method = methods[m];
+    println(method.constructor);
+    println(m + '.prototype.id = ' + method.id + ';');
+    println(m + '.prototype.encodeToFrame = ' + method.encoder); nl();
+    println(m + '.fromBuffer = ' + method.decoder);
     println('module.exports.' + m + ' = ' + m + ';'); nl();
+}
+
+for (var p in propertieses) {
+    var properties = propertieses[p];
+    println(properties.constructor);
+    println(p + '.prototype.id = ' + properties.id + ';');
+    println(p + '.prototype.encodeToFrame = ' + properties.encoder); nl();
+    println(p + '.fromBuffer = ' + properties.decoder);
+    println('module.exports.' + p + ' = ' + p + ';'); nl();
 }
 
 println('module.exports.methodFor = function(id) {');
 println(indent + 'switch (id) {');
-for (var m in constructors) {
-    println(indent + 'case ' + methods[m] + ': return ' + m + ';');
+for (var m in methods) {
+    println(indent + 'case ' + methods[m].id + ': return ' + m + ';');
 }
 println(indent + '}');
 println('}');
+
+println('module.exports.propertiesFor = function(id) {');
+println(indent + 'switch (id) {');
+for (var m in propertieses) {
+    println(indent + 'case ' + propertieses[m].id + ': return ' + m + ';');
+}
+println(indent + '}');
+println('}');
+
 
 function methodId(clazz, method) {
     return (clazz.id << 16) + method.id;
 }
 
-function constructorFn(clazz, method) {
-    return 'function ' + methodName(clazz, method) + '(fields) {' +
+function propertiesName(clazz) {
+    return initial(clazz.name) + 'Properties';
+}
+
+function constructorFn(name, clazz, method) {
+    return 'function ' + name + '(fields) {' +
         ' this.fields = fields; ' +
         '}';
 }
 
-function encoderFn(clazz, method) {
+function encoderFn(name, clazz, method) {
     var id = methodId(clazz, method);
     var lines = [];
     var args = method['arguments'];
@@ -185,7 +219,7 @@ function encoderFn(clazz, method) {
     return lines.join('\n' + indent) + '\n}';
 }
 
-function decoderFn(clazz, method) {
+function decoderFn(name, clazz, method) {
     var name = methodName(clazz, method);
     var lines = [];
     var args = method['arguments'];
@@ -239,6 +273,160 @@ function decoderFn(clazz, method) {
             throw new TypeError("Unexpected type in argument list: " + type);
         }
         lines.push('fields["' + arg.name + '"] = val;');
+    }
+    lines.push('return new ' + name + '(fields);');
+    return lines.join('\n' + indent) + '\n}';
+}
+
+function propsConstructorFn(name, clazz, props) {
+    return 'function ' + name + '(fields) { this.fields = fields; }';
+}
+
+// the flags are laid out in groups of fifteen in a short (high to
+// low bits), with a continuation bit (at 0) and another group
+// following if there's more than fifteen. Presence and absence
+// are conflated with true and false, for bit fields (i.e., if the
+// flag for the field is set, it's true, otherwise false).
+// 
+// However, none of that is actually used in AMQP 0-9-1. The only
+// instance of properties -- basic properties -- has 14 fields, none
+// of them bits.
+
+function flagAt(index) {
+    return 1 << (15 - index);
+}
+
+function encodePropsFn(name, clazz, props) {
+    var lines = [];
+    lines.push('function(channel, size) {');
+    lines.push('var offset = 0; flags = 0, fields = this.fields;');
+    lines.push('var buffer = new Buffer(' + METHOD_BUFFER_SIZE + ');');
+
+    lines.push('buffer[0] = ' + constants.FRAME_HEADER + ';');
+    lines.push('buffer.writeUInt16BE(channel, 1);');
+    // content class ID and 'weight' (== 0)
+    lines.push('buffer.writeUInt32BE(' + (clazz.id << 16) + ', 7);');
+    // skip size for now, we'll write it in when we know.
+    // body size
+    lines.push('buffer.writeUInt64BE(size, 11);');
+
+    lines.push('flags = 0;');
+    // we'll write the flags later too
+    lines.push('offset = 21;');
+    
+    for (var i=0, num=props.length; i < num; i++) {
+        var prop = props[i];
+        var flag = flagAt(i);
+        lines.push('if (this.fields.hasOwnProperty("' + prop.name + '")) {');
+        lines.push(indent + 'val = fields["' + prop.name + '"];');
+        if (prop.type === 'bit') { // which none of them are ..
+            lines.push(indent + 'if (val) flags += ' + flag + ';');
+        }
+        else {
+            lines.push('flags += ' + flag + ';');
+            // %%% FIXME only slightly different to the method args encoding
+            var type = prop.type || domains[prop.domain];
+            switch (type) {
+            case 'octet':
+                lines.push('buffer.writeUInt8(val, offset); offset++;');
+                break;
+            case 'short':
+                lines.push('buffer.writeUInt16BE(val, offset); offset += 2;');
+                break;
+            case 'long':
+                lines.push('buffer.writeUInt32BE(val, offset); offset += 4;');
+                break;
+            case 'longlong':
+            case 'timestamp':
+                lines.push('buffer.writeUInt64BE(val, offset); offset += 8;');
+                break;
+            case 'bit':
+                lines.push('if (val) bits += ' + (1 << bitsInARow) + ';');
+                if (bitsInARow === 7) { // I don't think this ever happens, but whatever
+                    lines.push('buffer[offset] = bits; offset++; bits = 0;');
+                    bitsInARow = 0;
+                }
+                else bitsInARow++;
+                break;
+            case 'shortstr':
+                lines.push('len = Buffer.byteLength(val, "utf8");');
+                lines.push('buffer[offset] = len; offset++;');
+                lines.push('buffer.write(val, offset, "utf8"); offset += len;');
+                break;
+            case 'longstr':
+                lines.push('len = val.length;');
+                lines.push('buffer.writeUInt32BE(len, offset); offset++;');
+                lines.push('buffer.write(val, offset); offset += len;');
+                break;
+            case 'table':
+                lines.push('offset += encodeTable(buffer, val, offset);');
+                break;
+            default: throw "Unexpected argument type: " + type;
+            }
+        }
+        lines.push('}');
+    }
+
+    lines.push('buffer[offset] = ' + constants.FRAME_END +'; ');
+    // size does not include the frame header or frame end byte
+    lines.push('buffer.writeUInt32BE(offset - 7, 3);');
+    lines.push('buffer.writeUInt16BE(flags, 19);');
+    lines.push('return buffer.slice(0, offset + 1);');
+    return lines.join('\n' + indent) + '\n}';
+}
+
+function decodePropsFn(name, clazz, props) {
+    var lines = [];
+    lines.push('function(buffer) {');
+    lines.push('var fields = {}, flags, offset = 2, val, len;');
+
+    lines.push('flags = buffer.readUInt16BE(0);');
+
+    for (var i=0, num=props.length; i < num; i++) {
+        var prop = props[i];
+        var type = prop.type || domains[prop.domain];
+        lines.push('if (flags & ' + flagAt(i) + ') {');
+        if (type === 'bit') {
+            lines.push('fields["' + prop.name + '"] = true;');
+        }
+        else {
+            switch (type) {
+            case 'octet':
+                lines.push('val = buffer[offset]; offset++;');
+                break;
+            case 'short':
+                lines.push('val = buffer.readUInt16BE(offset); offset += 2;');
+                break;
+            case 'long':
+                lines.push('val = buffer.readUInt32BE(offset); offset += 4;');
+                break;
+            case 'longlong':
+                lines.push('val = buffer.readUInt64BE(offset); offset += 8;');
+                break;
+            case 'timestamp':
+                lines.push('val = buffer.readUInt64BE(offset); offset += 8;');
+                break;
+            case 'longstr':
+                lines.push('len = buffer.readUInt32BE(offset); offset += 4;');
+                lines.push('val = buffer.toString("utf8", offset, offset + len);');
+                lines.push('offset += len;');
+                break;
+            case 'shortstr':
+                lines.push('len = buffer.readUInt8(offset); offset++;');
+                lines.push('val = buffer.toString("utf8", offset, offset + len);');
+                lines.push('offset += len;');
+                break;
+            case 'table':
+                lines.push('len = buffer.readUInt32BE(offset); offset += 4;');
+                lines.push('val = decodeFields(buffer.slice(offset, offset + len));');
+                lines.push('offset += len;');
+                break;
+            default:
+                throw new TypeError("Unexpected type in argument list: " + type);
+            }
+            lines.push('fields["' + prop.name + '"] = val;');
+        }
+        lines.push('}');
     }
     lines.push('return new ' + name + '(fields);');
     return lines.join('\n' + indent) + '\n}';
