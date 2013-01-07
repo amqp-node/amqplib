@@ -35,6 +35,11 @@ function methodName(clazz, method) {
     return initial(clazz.name) + method.name.split('-').map(initial).join('');
 }
 
+function propertyName(dashed) {
+    var parts = dashed.split('-');
+    return parts[0] + parts.slice(1).map(initial).join('');
+}
+
 function initial(part) {
     return part.charAt(0).toUpperCase() + part.substr(1);
 }
@@ -145,14 +150,18 @@ function encoderFn(name, clazz, method) {
     for (var i = 0, len = args.length; i < len; i++) {
         var arg = args[i];
         var type = arg.type || domains[arg.domain];
+        var friendlyName = propertyName(arg.name);
+        var field = "this.fields['" + friendlyName + "']";
         if (arg['default-value']) {
             var def = JSON.stringify(arg['default-value']);
-            lines.push('val = this.fields[\'' + arg.name + '\'] || ' + def + ';');
+            lines.push('val = ' + field + ' || ' + def + ';');
         }
         else {
-            lines.push('if (!this.fields.hasOwnProperty(\'' + arg.name + '\'))');
-            lines.push(indent + 'throw new Error("Missing value for ' + arg.name + '");');
-            lines.push('val = this.fields[\'' + arg.name + '\'];');
+            lines.push('if (!this.fields.hasOwnProperty(\'' +
+                       friendlyName + '\'))');
+            lines.push(indent + 'throw new Error("Missing value for ' +
+                       friendlyName + '");');
+            lines.push('val = ' + field + ';');
         }
 
         // Flush any collected bits before doing a new field
@@ -229,6 +238,8 @@ function decoderFn(name, clazz, method) {
     for (var i=0, num=args.length; i < num; i++) {
         var arg = args[i];
         var type = arg.type || domains[arg.domain];
+        var friendlyName = propertyName(arg.name);
+        var field = "fields['" + friendlyName + "']";
         switch (type) {
         case 'octet':
             lines.push('val = buffer[offset]; offset++;');
@@ -272,7 +283,7 @@ function decoderFn(name, clazz, method) {
         default:
             throw new TypeError("Unexpected type in argument list: " + type);
         }
-        lines.push('fields["' + arg.name + '"] = val;');
+        lines.push(field + ' = val;');
     }
     lines.push('return new ' + name + '(fields);');
     return lines.join('\n' + indent) + '\n}';
@@ -317,8 +328,11 @@ function encodePropsFn(name, clazz, props) {
     for (var i=0, num=props.length; i < num; i++) {
         var prop = props[i];
         var flag = flagAt(i);
-        lines.push('if (this.fields.hasOwnProperty("' + prop.name + '")) {');
-        lines.push(indent + 'val = fields["' + prop.name + '"];');
+        var friendlyName = propertyName(prop.name);
+        var field = "this.fields['" + friendlyName + "']";
+        lines.push('if (this.fields.hasOwnProperty("' +
+                   friendlyName + '")) {');
+        lines.push(indent + 'val = ' + field + ';');
         if (prop.type === 'bit') { // which none of them are ..
             lines.push(indent + 'if (val) flags += ' + flag + ';');
         }
@@ -385,9 +399,12 @@ function decodePropsFn(name, clazz, props) {
     for (var i=0, num=props.length; i < num; i++) {
         var prop = props[i];
         var type = prop.type || domains[prop.domain];
+        var friendlyName = propertyName(prop.name);
+        var field = "fields['" + friendlyName + "']";
+
         lines.push('if (flags & ' + flagAt(i) + ') {');
         if (type === 'bit') {
-            lines.push('fields["' + prop.name + '"] = true;');
+            lines.push(field + ' = true;');
         }
         else {
             switch (type) {
@@ -424,7 +441,7 @@ function decodePropsFn(name, clazz, props) {
             default:
                 throw new TypeError("Unexpected type in argument list: " + type);
             }
-            lines.push('fields["' + prop.name + '"] = val;');
+            lines.push(field + ' = val;');
         }
         lines.push('}');
     }
