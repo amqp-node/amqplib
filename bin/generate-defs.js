@@ -4,7 +4,7 @@ var METHOD_BUFFER_SIZE = 2048;
 
 var FS = require('fs');
 
-var defs = JSON.parse(FS.readFileSync('./amqp-rabbitmq-0.9.1.json'));
+var defs = require('./amqp-rabbitmq-0.9.1.json');
 
 var out = process.stdout;
 
@@ -44,6 +44,12 @@ function initial(part) {
     return part.charAt(0).toUpperCase() + part.substr(1);
 }
 
+function argument(a) {
+  var type = a.type || domains[a.domain];
+  var friendlyName = propertyName(a.name);
+  return {type: type, name: friendlyName};
+}
+
 var domains = {};
 for (var i=0, len = defs.domains.length; i < len; i++) {
     var dom = defs.domains[i];
@@ -60,6 +66,8 @@ for (var i = 0, len = defs.classes.length; i < len; i++) {
         var name = methodName(clazz, method);
         methods[name] = {
             id: methodId(clazz, method),
+            args: method['arguments'].map(argument),
+            isReply: method.answer,
             constructor: constructorFn(name, clazz, method),
             encoder: encoderFn(name, clazz, method),
             decoder: decoderFn(name, clazz, method)
@@ -80,7 +88,10 @@ for (var i = 0, len = defs.classes.length; i < len; i++) {
 for (var m in methods) {
     var method = methods[m];
     println(method.constructor);
-    println(m + '.prototype.id = ' + method.id + ';');
+    println(m + '.args = ' + JSON.stringify(method.args, undefined, 2) + ';'); nl();
+    println(m + '.prototype.id = ' + m + '.id = ' + method.id + ';');
+    if (method.isReply)
+      println(m + '.prototype.isReply = true;'), nl();
     println(m + '.prototype.encodeToFrame = ' + method.encoder); nl();
     println(m + '.fromBuffer = ' + method.decoder);
     println('module.exports.' + m + ' = ' + m + ';'); nl();
@@ -148,29 +159,27 @@ function encoderFn(name, clazz, method) {
 
     var bitsInARow = 0;
     for (var i = 0, len = args.length; i < len; i++) {
-        var arg = args[i];
-        var type = arg.type || domains[arg.domain];
-        var friendlyName = propertyName(arg.name);
-        var field = "this.fields['" + friendlyName + "']";
+        var arg = args[i], a = argument(arg);
+        var field = "this.fields['" + a.name + "']";
         if (arg['default-value']) {
             var def = JSON.stringify(arg['default-value']);
-            lines.push('val = ' + field + ' || ' + def + ';');
+            lines.push('val = ' + field + '; val = (val === undefined) ? ' + def + ' : val;');
         }
         else {
             lines.push('if (!this.fields.hasOwnProperty(\'' +
-                       friendlyName + '\'))');
+                       a.name + '\'))');
             lines.push(indent + 'throw new Error("Missing value for ' +
-                       friendlyName + '");');
+                       a.name + '");');
             lines.push('val = ' + field + ';');
         }
 
         // Flush any collected bits before doing a new field
-        if (type != 'bit' && bitsInARow > 0) {
+        if (a.type != 'bit' && bitsInARow > 0) {
             bitsInARow = 0;
             lines.push('buffer[offset] = bits; offset++; bits = 0;');
         }
 
-        switch (type) {
+        switch (a.type) {
         case 'octet':
             lines.push('buffer.writeUInt8(val, offset); offset++;');
             break;
@@ -199,13 +208,13 @@ function encoderFn(name, clazz, method) {
             break;
         case 'longstr':
             lines.push('len = val.length;');
-            lines.push('buffer.writeUInt32BE(len, offset); offset++;');
-            lines.push('buffer.write(val, offset); offset += len;');
+            lines.push('buffer.writeUInt32BE(len, offset); offset += 4;');
+            lines.push('val.copy(buffer, offset); offset += len;');
             break;
         case 'table':
             lines.push('offset += encodeTable(buffer, val, offset);');
             break;
-        default: throw "Unexpected argument type: " + type;
+        default: throw "Unexpected argument type: " + a.type;
         }
 
     }
@@ -235,12 +244,18 @@ function decoderFn(name, clazz, method) {
     lines.push('function(buffer) {');
     lines.push('var fields = {}, offset = 0, val, len;');
     var bitsInARow = 0;
+
     for (var i=0, num=args.length; i < num; i++) {
-        var arg = args[i];
-        var type = arg.type || domains[arg.domain];
-        var friendlyName = propertyName(arg.name);
-        var field = "fields['" + friendlyName + "']";
-        switch (type) {
+        var a = argument(args[i]);
+        var field = "fields['" + a.name + "']";
+
+        // Flush any collected bits before doing a new field
+        if (a.type != 'bit' && bitsInARow > 0) {
+            bitsInARow = 0;
+            lines.push('offset++;');
+        }
+
+        switch (a.type) {
         case 'octet':
             lines.push('val = buffer[offset]; offset++;');
             break;
@@ -267,7 +282,7 @@ function decoderFn(name, clazz, method) {
             break;
         case 'longstr':
             lines.push('len = buffer.readUInt32BE(offset); offset += 4;');
-            lines.push('val = buffer.toString("utf8", offset, offset + len);');
+            lines.push('val = buffer.slice(offset, offset + len);');
             lines.push('offset += len;');
             break;
         case 'shortstr':
@@ -281,7 +296,7 @@ function decoderFn(name, clazz, method) {
             lines.push('offset += len;');
             break;
         default:
-            throw new TypeError("Unexpected type in argument list: " + type);
+            throw new TypeError("Unexpected type in argument list: " + a.type);
         }
         lines.push(field + ' = val;');
     }
@@ -326,21 +341,19 @@ function encodePropsFn(name, clazz, props) {
     lines.push('offset = 21;');
     
     for (var i=0, num=props.length; i < num; i++) {
-        var prop = props[i];
+        var p = argument(props[i]);
         var flag = flagAt(i);
-        var friendlyName = propertyName(prop.name);
-        var field = "this.fields['" + friendlyName + "']";
+        var field = "this.fields['" + p.name + "']";
         lines.push('if (this.fields.hasOwnProperty("' +
-                   friendlyName + '")) {');
+                   p.name + '")) {');
         lines.push(indent + 'val = ' + field + ';');
-        if (prop.type === 'bit') { // which none of them are ..
+        if (p.type === 'bit') { // which none of them are ..
             lines.push(indent + 'if (val) flags += ' + flag + ';');
         }
         else {
             lines.push('flags += ' + flag + ';');
             // %%% FIXME only slightly different to the method args encoding
-            var type = prop.type || domains[prop.domain];
-            switch (type) {
+            switch (p.type) {
             case 'octet':
                 lines.push('buffer.writeUInt8(val, offset); offset++;');
                 break;
@@ -369,13 +382,13 @@ function encodePropsFn(name, clazz, props) {
                 break;
             case 'longstr':
                 lines.push('len = val.length;');
-                lines.push('buffer.writeUInt32BE(len, offset); offset++;');
-                lines.push('buffer.write(val, offset); offset += len;');
+                lines.push('buffer.writeUInt32BE(len, offset); offset += 4;');
+                lines.push('val.copy(buffer, offset); offset += len;');
                 break;
             case 'table':
                 lines.push('offset += encodeTable(buffer, val, offset);');
                 break;
-            default: throw "Unexpected argument type: " + type;
+            default: throw "Unexpected argument type: " + p.type;
             }
         }
         lines.push('}');
@@ -397,17 +410,15 @@ function decodePropsFn(name, clazz, props) {
     lines.push('flags = buffer.readUInt16BE(0);');
 
     for (var i=0, num=props.length; i < num; i++) {
-        var prop = props[i];
-        var type = prop.type || domains[prop.domain];
-        var friendlyName = propertyName(prop.name);
-        var field = "fields['" + friendlyName + "']";
+        var p = argument(props[i]);
+        var field = "fields['" + p.name + "']";
 
         lines.push('if (flags & ' + flagAt(i) + ') {');
-        if (type === 'bit') {
+        if (p.type === 'bit') {
             lines.push(field + ' = true;');
         }
         else {
-            switch (type) {
+            switch (p.type) {
             case 'octet':
                 lines.push('val = buffer[offset]; offset++;');
                 break;
@@ -425,7 +436,7 @@ function decodePropsFn(name, clazz, props) {
                 break;
             case 'longstr':
                 lines.push('len = buffer.readUInt32BE(offset); offset += 4;');
-                lines.push('val = buffer.toString("utf8", offset, offset + len);');
+                lines.push('val = buffer.slice(offset, offset + len);');
                 lines.push('offset += len;');
                 break;
             case 'shortstr':
@@ -439,7 +450,7 @@ function decodePropsFn(name, clazz, props) {
                 lines.push('offset += len;');
                 break;
             default:
-                throw new TypeError("Unexpected type in argument list: " + type);
+                throw new TypeError("Unexpected type in argument list: " + p.type);
             }
             lines.push(field + ' = val;');
         }
@@ -450,7 +461,7 @@ function decodePropsFn(name, clazz, props) {
 }
 
 function fixedSize(args) {
-    var size = 8; // header and frame end marker
+    var size = 12; // header, size, and frame end marker
     var bitsInARow = 0;
     for (var i = 0, len = args.length; i < len; i++) {
         if (args[i].type != 'bit') bitsInARow = 0;

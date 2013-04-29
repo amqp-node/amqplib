@@ -6,13 +6,15 @@
   "dependencies": {
     "bitsyntax": "",
     "buffer-more-ints": "",
-    "readable-stream": ""
+    "readable-stream": "",
+    "when": ""
   },
   "devDependencies": {
-    "mocha": ""
+    "mocha": "",
+    "claire": ""
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "make test"
   },
   "repository": "",
   "keywords": [

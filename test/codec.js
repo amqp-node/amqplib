@@ -1,5 +1,8 @@
 var codec = require('../lib/codec');
+var defs = require('../lib/defs');
 var assert = require('assert');
+
+var suite = module.exports;
 
 // These just test known encodings; to generate the answers I used
 // RabbitMQ's binary generator module.
@@ -55,7 +58,7 @@ var testCases = [
 
 testCases.forEach(function(tc) {
     var name = tc[0], val = tc[1], expect = tc[2];
-    module.exports[name] = function() {
+    suite[name] = function() {
         var buffer = new Buffer(1000);
         var size = codec.encodeTable(buffer, val, 0);
         var result = buffer.slice(4, size);
@@ -66,3 +69,209 @@ testCases.forEach(function(tc) {
 function bufferToArray(b) {
     return Array.prototype.slice.call(b);
 }
+
+// Whole frames
+
+var C = require('claire');
+
+var forAll = C.forAll;
+var arb = C.data;
+var transform = C.transform;
+var repeat = C.repeat;
+var label = C.label;
+var sequence = C.sequence;
+var asGenerator = C.asGenerator;
+var sized = C.sized;
+var recursive = C.recursive;
+
+// These aren't exported in claire/index. so I could have to reproduce
+// them I guess.
+function choose(a, b) {
+  return Math.random() * (b - a) + a;
+}
+
+function chooseInt(a, b) {
+  return Math.floor(choose(a, b));
+}
+
+function rangeInt(name, a, b) {
+  return label(name,
+               asGenerator(function(_) { return chooseInt(a, b); }));
+}
+
+function toFloat32(i) {
+  var b = new Buffer(4);
+  b.writeFloatBE(i, 0);
+  return b.readFloatBE(0);
+}
+
+function floatChooser(maxExp) {
+  return function() {
+    var n = Number.NaN;
+    while (isNaN(n)) {
+      var mantissa = Math.random() * 2 - 1;
+      var exponent = chooseInt(0, maxExp);
+      n = Math.pow(mantissa, exponent);
+  }
+    return n;
+  }
+}
+
+// FIXME null, byte array, others?
+
+var Octet = rangeInt('octet', 0, 255);
+var ShortStr = label('shortstr',
+                     transform(function(s) {
+                       return s.substr(0, 255);
+                     }, arb.Str));
+
+var LongStr = label('longstr',
+                    transform(
+                      function(bytes) { return new Buffer(bytes); },
+                      repeat(Octet)));
+
+var UShort = rangeInt('short-uint', 0, 0xffff);
+var ULong = rangeInt('long-uint', 0, 0xffffffff);
+var ULongLong = rangeInt('longlong-uint', 0, 0xffffffffffffffff);
+var Short = rangeInt('short-int', -0x8000, 0x7fff);
+var Long = rangeInt('long-int', -0x80000000, 0x7fffffff);
+var LongLong = rangeInt('longlong-int', -0x8000000000000000, 0x7fffffffffffffff);
+var Bit = label('bit', arb.Bool);
+var Double = label('double', asGenerator(floatChooser(308)));
+var Float = label('float', transform(toFloat32, floatChooser(38)));
+var Timestamp = label('timestamp', transform(
+  function(n) {
+    return {'!': 'timestamp', value: n};
+  }, ULongLong));
+var Decimal = label('decimal', transform(
+  function(args) {
+    return {'!': 'decimal', value: {places: args[1], digits: args[0]}};
+  }, sequence(arb.UInt, Octet)));
+
+// TODO these two are mutally recursive
+var FieldArray = label('field-array', arb.Array(
+  LongStr, ShortStr, Octet,
+  UShort, ULong, ULongLong,
+  Short, Long, LongLong,
+  Bit, Float, Double
+));
+
+var FieldTable = label('table', sized(function() { return 5; },
+                                      arb.Object(
+                                        LongStr, ShortStr, Octet,
+                                        UShort, ULong, ULongLong,
+                                        Short, Long, LongLong,
+                                        Bit, Float, Double
+                                      )));
+
+// Internal tests of our properties
+domainProps = [
+  [Octet, function(n) { return n >= 0 && n < 256; }],
+  [ShortStr, function(s) { return typeof s === 'string' && s.length < 256; }],
+  [LongStr, function(s) { return Buffer.isBuffer(s); }],
+  [UShort, function(n) { return n >= 0 && n <= 0xffff; }],
+  [ULong, function(n) { return n >= 0 && n <= 0xffffffff; }],
+  [ULongLong, function(n) {
+    return n >= 0 && n <= 0xffffffffffffffff; }],
+  [Short, function(n) { return n >= -0x8000 && n <= 0x8000; }],
+  [Long, function(n) { return n >= -0x80000000 && n < 0x80000000; }],
+  [LongLong, function(n) { return n >= -0x8000000000000000 && n < 0x8000000000000000; }],
+  [Bit, function(b) { return typeof b === 'boolean'; }],
+  [Double, function(f) { return !isNaN(f) && isFinite(f); }],
+  [Float, function(f) { return !isNaN(f) && isFinite(f) && (Math.log(Math.abs(f)) * Math.LOG10E) < 309; }],
+  [Decimal, function(d) {
+    return d['!'] === 'decimal' &&
+      d.value['places'] <= 255 &&
+      d.value['digits'] <= 0xffffffff;
+  }],
+  [Timestamp, function(t) { return t['!'] === 'timestamp'; }],
+  [FieldTable, function(t) { return typeof t === 'object'; }],
+  [FieldArray, function(a) { return Array.isArray(a); }]
+];
+
+domainProps.forEach(function(p) {
+    suite['test' + p[0] + 'Domain'] = forAll(p[0]).satisfy(p[1]).asTest({times: 1000});
+});
+
+function roundtrip_table(t) {
+  var buf = new Buffer(4096);
+  var size = codec.encodeTable(buf, t, 0);
+  var decoded = codec.decodeFields(buf.slice(4, size));
+  try {
+    assert.deepEqual(t, decoded);
+  }
+  catch (e) { return false; }
+  return true;
+}
+
+function roundtrips(T) {
+  return forAll(T).satisfy(function(v) { return roundtrip_table({value: v}); });
+}
+
+// The spec is horribly inconsistent, and names various types
+// different things in different places. It's chaos.
+
+ARG_TYPES = {
+  'octet': Octet,
+  'shortstr': ShortStr,
+  'longstr': LongStr,
+  'short': UShort,
+  'long': ULong,
+  'longlong': ULongLong,
+  'bit': Bit,
+  'table': FieldTable,
+  'timestamp': Timestamp
+};
+
+[
+  Octet,
+  ShortStr,
+  LongStr,
+  UShort,
+  ULong,
+  ULongLong,
+  UShort,
+  Short,
+  Long,
+  Bit,
+  Decimal,
+  Timestamp,
+  Double,
+  Float,
+  FieldArray,
+  FieldTable
+].forEach(function(T) {
+  suite['test' + T.toString() + 'Roundtrips'] = roundtrips(T).asTest();
+});
+
+function args(Method) {
+  var types = Method.args.map(function(a) { return ARG_TYPES[a.type];});
+  return sequence.apply(null, types);
+}
+
+function roundtripMethod(Method) {
+
+  function zipObject(vals, names) {
+    var obj = {};
+    vals.forEach(function(v, i) { obj[names[i]] = v; });
+    return obj;
+  }
+
+  var domain = args(Method);
+  var names = Method.args.map(function(a) { return a.name; });
+  return forAll(domain).satisfy(function(vals) {
+    var m = new Method(zipObject(vals, names));
+    var buf = m.encodeToFrame(0);
+    // FIXME depends on framing, ugh
+    var m1 = Method.fromBuffer(buf.slice(11, buf.length));
+    assert.deepEqual(m1.fields, m.fields);
+    return true;
+  }).asTest();
+}
+
+for (var k in defs) {
+  var Method = defs[k];
+  if (Method.id) {
+    suite['test' + Method.name + 'Roundtrip'] = roundtripMethod(Method);
+  }
+};
