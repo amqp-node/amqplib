@@ -148,21 +148,24 @@ var Decimal = label('decimal', transform(
     return {'!': 'decimal', value: {places: args[1], digits: args[0]}};
   }, sequence(arb.UInt, Octet)));
 
-// TODO these two are mutally recursive
-var FieldArray = label('field-array', arb.Array(
-  LongStr, ShortStr, Octet,
-  UShort, ULong, ULongLong,
-  Short, Long, LongLong,
-  Bit, Float, Double
-));
+// TODO rrr these two are mutally recursive
+var FieldArray = label('field-array', recursive(function() {
+  return arb.Array(
+    LongStr, ShortStr, Octet,
+    UShort, ULong, ULongLong,
+    Short, Long, LongLong,
+    Bit, Float, Double, FieldTable)
+}));
 
-var FieldTable = label('table', sized(function() { return 5; },
-                                      arb.Object(
-                                        LongStr, ShortStr, Octet,
-                                        UShort, ULong, ULongLong,
-                                        Short, Long, LongLong,
-                                        Bit, Float, Double
-                                      )));
+
+var FieldTable = label('table', recursive(function() {
+  return sized(function() { return 5; },
+               arb.Object(
+                 LongStr, ShortStr, Octet,
+                 UShort, ULong, ULongLong,
+                 Short, Long, LongLong,
+                 Bit, Float, Double, FieldArray))
+}));
 
 // Internal tests of our properties
 domainProps = [
@@ -190,13 +193,13 @@ domainProps = [
 ];
 
 domainProps.forEach(function(p) {
-    suite['test' + p[0] + 'Domain'] = forAll(p[0]).satisfy(p[1]).asTest({times: 1000});
+    suite['test' + p[0] + 'Domain'] = forAll(p[0]).satisfy(p[1]).asTest({times: 500});
 });
 
 function roundtrip_table(t) {
   var buf = new Buffer(4096);
   var size = codec.encodeTable(buf, t, 0);
-  var decoded = codec.decodeFields(buf.slice(4, size));
+  var decoded = codec.decodeFields(buf.slice(4, size)); // ignore the length-prefix
   try {
     assert.deepEqual(t, decoded);
   }
@@ -207,21 +210,6 @@ function roundtrip_table(t) {
 function roundtrips(T) {
   return forAll(T).satisfy(function(v) { return roundtrip_table({value: v}); });
 }
-
-// The spec is horribly inconsistent, and names various types
-// different things in different places. It's chaos.
-
-ARG_TYPES = {
-  'octet': Octet,
-  'shortstr': ShortStr,
-  'longstr': LongStr,
-  'short': UShort,
-  'long': ULong,
-  'longlong': ULongLong,
-  'bit': Bit,
-  'table': FieldTable,
-  'timestamp': Timestamp
-};
 
 [
   Octet,
@@ -243,6 +231,23 @@ ARG_TYPES = {
 ].forEach(function(T) {
   suite['test' + T.toString() + 'Roundtrips'] = roundtrips(T).asTest();
 });
+
+
+// The spec is horribly inconsistent, and names various types
+// different things in different places. It's chaos I tell you.
+
+// These are the domains used in method arguments
+ARG_TYPES = {
+  'octet': Octet,
+  'shortstr': ShortStr,
+  'longstr': LongStr,
+  'short': UShort,
+  'long': ULong,
+  'longlong': ULongLong,
+  'bit': Bit,
+  'table': FieldTable,
+  'timestamp': Timestamp
+};
 
 function args(Method) {
   var types = Method.args.map(function(a) { return ARG_TYPES[a.type];});
