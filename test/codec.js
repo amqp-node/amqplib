@@ -236,6 +236,10 @@ function roundtrips(T) {
 // The spec is horribly inconsistent, and names various types
 // different things in different places. It's chaos I tell you.
 
+// For methods and properties (as opposed to field table values) it's
+// easier just to accept and produce numbers for timestamps.
+var ArgTimestamp = label('timestamp', ULongLong);
+
 // These are the domains used in method arguments
 ARG_TYPES = {
   'octet': Octet,
@@ -246,37 +250,56 @@ ARG_TYPES = {
   'longlong': ULongLong,
   'bit': Bit,
   'table': FieldTable,
-  'timestamp': Timestamp
+  'timestamp': ArgTimestamp
 };
 
-function args(Method) {
-  var types = Method.args.map(function(a) { return ARG_TYPES[a.type];});
-  return sequence.apply(null, types);
+
+function argtype(thing) {
+  return ARG_TYPES[thing.type];
+}
+
+function zipObject(vals, names) {
+  var obj = {};
+  vals.forEach(function(v, i) { obj[names[i]] = v; });
+  return obj;
 }
 
 function roundtripMethod(Method) {
-
-  function zipObject(vals, names) {
-    var obj = {};
-    vals.forEach(function(v, i) { obj[names[i]] = v; });
-    return obj;
-  }
-
-  var domain = args(Method);
+  var domain = sequence.apply(null, Method.args.map(argtype));
   var names = Method.args.map(function(a) { return a.name; });
   return forAll(domain).satisfy(function(vals) {
-    var m = new Method(zipObject(vals, names));
-    var buf = m.encodeToFrame(0);
+    var fs = zipObject(vals, names);
+    var buf = defs.encoder(Method.id)(0, fs);
     // FIXME depends on framing, ugh
-    var m1 = Method.fromBuffer(buf.slice(11, buf.length));
-    assert.deepEqual(m1.fields, m.fields);
+    var fs1 = defs.decoder(Method.id)(buf.slice(11, buf.length));
+    assert.deepEqual(fs, fs1);
+    return true;
+  }).asTest();
+}
+
+function roundtripProperties(Properties) {
+  var types = Properties.args.map(argtype);
+  types.unshift(ULongLong); // size
+  var domain = sequence.apply(null, types); 
+  var names = Properties.args.map(function(a) { return a.name; });
+
+  return forAll(domain).satisfy(function(vals) {
+    var fs = zipObject(vals.slice(1), names);
+    var buf = defs.encoder(Properties.id)(0, vals[0], fs);
+    // FIXME depends on framing, ugh
+    var fs1 = defs.decoder(Properties.id)(buf.slice(19, buf.length));
+    assert.deepEqual(fs, fs1);
     return true;
   }).asTest();
 }
 
 for (var k in defs) {
-  var Method = defs[k];
-  if (Method.id) {
-    suite['test' + Method.name + 'Roundtrip'] = roundtripMethod(Method);
+  if (k.substr(0, 10) === 'methodInfo') {
+    var Info = defs[k];
+    suite['test' + Info.name + 'Roundtrip'] = roundtripMethod(Info);
+  }
+  else if (k.substr(0, 14) === 'propertiesInfo') {
+    var Info = defs[k];
+    suite['test' + Info.name + 'Roundtrip'] = roundtripProperties(Info);
   }
 };

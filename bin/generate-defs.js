@@ -47,7 +47,7 @@ function initial(part) {
 function argument(a) {
   var type = a.type || domains[a.domain];
   var friendlyName = propertyName(a.name);
-  return {type: type, name: friendlyName};
+  return {type: type, name: friendlyName, default: a['default-value']};
 }
 
 var domains = {};
@@ -64,64 +64,76 @@ for (var i = 0, len = defs.classes.length; i < len; i++) {
     for (var j = 0, num = clazz.methods.length; j < num; j++) {
         var method = clazz.methods[j];
         var name = methodName(clazz, method);
+        var info = 'methodInfo' + name;
+
         methods[name] = {
             id: methodId(clazz, method),
+            name: name,
+            clazz: clazz.name,
             args: method['arguments'].map(argument),
             isReply: method.answer,
-            constructor: constructorFn(name, clazz, method),
-            encoder: encoderFn(name, clazz, method),
-            decoder: decoderFn(name, clazz, method)
+            encoder: 'encode' + name,
+            decoder: 'decode' + name,
+            info: info
         };
     }
     if (clazz.properties && clazz.properties.length > 0) {
         var name = propertiesName(clazz);
         var props = clazz.properties;
         propertieses[name] = {
-            constructor: propsConstructorFn(name, clazz, props),
             id: clazz.id,
-            encoder: encodePropsFn(name, clazz, props),
-            decoder: decodePropsFn(name, clazz, props),
+            name: name,
+            encoder: 'encode' + name,
+            decoder: 'decode' + name,
+            info: 'propertiesInfo' + name,
+            args: props.map(argument),
         };
     }
 }
 
+println('module.exports.decoder = function(id) {');
+println(indent + 'switch (id) {');
+for (var m in methods) {
+  var method = methods[m];
+  println(indent + 'case ' + method.id + ': return ' + method.decoder + ';');
+}
+for (var p in propertieses) {
+  var props = propertieses[p];
+  println(indent + 'case ' + props.id + ': return ' + props.decoder + ';');
+}
+println(indent + '}');
+println('}'); nl();
+
+println('module.exports.encoder = function(id) {');
+println(indent + 'switch (id) {');
+for (var m in methods) {
+  var method = methods[m];
+  println(indent + 'case ' + method.id + ': return ' + method.encoder + ';');
+}
+for (var p in propertieses) {
+  var props = propertieses[p];
+  println(indent + 'case ' + props.id + ': return ' + props.encoder + ';');
+}
+println(indent + '}');
+println('}');
+
+nl(); nl();
+
 for (var m in methods) {
     var method = methods[m];
-    println(method.constructor);
-    println(m + '.args = ' + JSON.stringify(method.args, undefined, 2) + ';'); nl();
-    println(m + '.prototype.id = ' + m + '.id = ' + method.id + ';');
-    if (method.isReply)
-      println(m + '.prototype.isReply = true;'), nl();
-    println(m + '.prototype.encodeToFrame = ' + method.encoder); nl();
-    println(m + '.fromBuffer = ' + method.decoder);
-    println('module.exports.' + m + ' = ' + m + ';'); nl();
+    println('module.exports.' + m + ' = ' + method.id + ';'); nl();
+    println(decoderFn(method)); nl();
+    println(encoderFn(method)); nl();
+    println(infoObj(method)); nl();
 }
 
 for (var p in propertieses) {
     var properties = propertieses[p];
-    println(properties.constructor);
-    println(p + '.prototype.id = ' + properties.id + ';');
-    println(p + '.prototype.encodeToFrame = ' + properties.encoder); nl();
-    println(p + '.fromBuffer = ' + properties.decoder);
-    println('module.exports.' + p + ' = ' + p + ';'); nl();
+    println('module.exports.' + p + ' = ' + properties.id + ';');
+    println(encodePropsFn(properties)); nl();
+    println(decodePropsFn(properties)); nl();
+    println(infoObj(properties)); nl();
 }
-
-println('module.exports.methodFor = function(id) {');
-println(indent + 'switch (id) {');
-for (var m in methods) {
-    println(indent + 'case ' + methods[m].id + ': return ' + m + ';');
-}
-println(indent + '}');
-println('}');
-
-println('module.exports.propertiesFor = function(id) {');
-println(indent + 'switch (id) {');
-for (var m in propertieses) {
-    println(indent + 'case ' + propertieses[m].id + ': return ' + m + ';');
-}
-println(indent + '}');
-println('}');
-
 
 function methodId(clazz, method) {
     return (clazz.id << 16) + method.id;
@@ -131,17 +143,10 @@ function propertiesName(clazz) {
     return initial(clazz.name) + 'Properties';
 }
 
-function constructorFn(name, clazz, method) {
-    return 'function ' + name + '(fields) {' +
-        ' this.fields = fields; ' +
-        '}';
-}
-
-function encoderFn(name, clazz, method) {
-    var id = methodId(clazz, method);
+function encoderFn(method) {
     var lines = [];
-    var args = method['arguments'];
-    lines.push('function(channel) {');
+    var args = method['args'];
+    lines.push('function ' + method.encoder + '(channel, fields) {');
     lines.push('var offset = 0, val = null, bits = 0, len;');
 
     var fixed = fixedSize(args);
@@ -154,19 +159,19 @@ function encoderFn(name, clazz, method) {
     lines.push('buffer[0] = ' + constants.FRAME_METHOD + ';');
     lines.push('buffer.writeUInt16BE(channel, 1);');
     // skip size for now, we'll write it in when we know
-    lines.push('buffer.writeUInt32BE(' + id + ', 7);');
+    lines.push('buffer.writeUInt32BE(' + method.id + ', 7);');
     lines.push('offset = 11;');
 
     var bitsInARow = 0;
     for (var i = 0, len = args.length; i < len; i++) {
-        var arg = args[i], a = argument(arg);
-        var field = "this.fields['" + a.name + "']";
-        if (arg['default-value']) {
-            var def = JSON.stringify(arg['default-value']);
+        var a = args[i];
+        var field = "fields['" + a.name + "']";
+        if (a.default) {
+            var def = JSON.stringify(a.default);
             lines.push('val = ' + field + '; val = (val === undefined) ? ' + def + ' : val;');
         }
         else {
-            lines.push('if (!this.fields.hasOwnProperty(\'' +
+            lines.push('if (!fields.hasOwnProperty(\'' +
                        a.name + '\'))');
             lines.push(indent + 'throw new Error("Missing value for ' +
                        a.name + '");');
@@ -237,16 +242,15 @@ function encoderFn(name, clazz, method) {
     return lines.join('\n' + indent) + '\n}';
 }
 
-function decoderFn(name, clazz, method) {
-    var name = methodName(clazz, method);
+function decoderFn(method) {
     var lines = [];
-    var args = method['arguments'];
-    lines.push('function(buffer) {');
+    var args = method.args;
+    lines.push('function ' + method.decoder + '(buffer) {');
     lines.push('var fields = {}, offset = 0, val, len;');
     var bitsInARow = 0;
 
     for (var i=0, num=args.length; i < num; i++) {
-        var a = argument(args[i]);
+        var a = args[i];
         var field = "fields['" + a.name + "']";
 
         // Flush any collected bits before doing a new field
@@ -266,8 +270,6 @@ function decoderFn(name, clazz, method) {
             lines.push('val = buffer.readUInt32BE(offset); offset += 4;');
             break;
         case 'longlong':
-            lines.push('val = buffer.readUInt64BE(offset); offset += 8;');
-            break;
         case 'timestamp':
             lines.push('val = buffer.readUInt64BE(offset); offset += 8;');
             break;
@@ -300,15 +302,18 @@ function decoderFn(name, clazz, method) {
         }
         lines.push(field + ' = val;');
     }
-    lines.push('return new ' + name + '(fields);');
+    lines.push('return fields;');
     return lines.join('\n' + indent) + '\n}';
 }
 
-function propsConstructorFn(name, clazz, props) {
-    return 'function ' + name + '(fields) { this.fields = fields; }';
+function infoObj(thing) {
+  var info = JSON.stringify({id: thing.id,
+                             name: thing.name,
+                             args: thing.args}, undefined, 2);
+  return 'module.exports.' + thing.info + ' = ' + info;
 }
 
-// the flags are laid out in groups of fifteen in a short (high to
+// The flags are laid out in groups of fifteen in a short (high to
 // low bits), with a continuation bit (at 0) and another group
 // following if there's more than fifteen. Presence and absence
 // are conflated with true and false, for bit fields (i.e., if the
@@ -322,16 +327,16 @@ function flagAt(index) {
     return 1 << (15 - index);
 }
 
-function encodePropsFn(name, clazz, props) {
+function encodePropsFn(props) {
     var lines = [];
-    lines.push('function(channel, size) {');
-    lines.push('var offset = 0; flags = 0, fields = this.fields;');
+    lines.push('function ' + props.encoder + '(channel, size, fields) {');
+    lines.push('var offset = 0, flags = 0, val, len;');
     lines.push('var buffer = new Buffer(' + METHOD_BUFFER_SIZE + ');');
 
     lines.push('buffer[0] = ' + constants.FRAME_HEADER + ';');
     lines.push('buffer.writeUInt16BE(channel, 1);');
     // content class ID and 'weight' (== 0)
-    lines.push('buffer.writeUInt32BE(' + (clazz.id << 16) + ', 7);');
+    lines.push('buffer.writeUInt32BE(' + props.id + ', 7);');
     // skip size for now, we'll write it in when we know.
     // body size
     lines.push('buffer.writeUInt64BE(size, 11);');
@@ -340,11 +345,11 @@ function encodePropsFn(name, clazz, props) {
     // we'll write the flags later too
     lines.push('offset = 21;');
     
-    for (var i=0, num=props.length; i < num; i++) {
-        var p = argument(props[i]);
+    for (var i=0, num=props.args.length; i < num; i++) {
+        var p = argument(props.args[i]);
         var flag = flagAt(i);
-        var field = "this.fields['" + p.name + "']";
-        lines.push('if (this.fields.hasOwnProperty("' +
+        var field = "fields['" + p.name + "']";
+        lines.push('if (fields.hasOwnProperty("' +
                    p.name + '")) {');
         lines.push(indent + 'val = ' + field + ';');
         if (p.type === 'bit') { // which none of them are ..
@@ -402,15 +407,15 @@ function encodePropsFn(name, clazz, props) {
     return lines.join('\n' + indent) + '\n}';
 }
 
-function decodePropsFn(name, clazz, props) {
+function decodePropsFn(props) {
     var lines = [];
-    lines.push('function(buffer) {');
+    lines.push('function ' + props.decoder + '(buffer) {');
     lines.push('var fields = {}, flags, offset = 2, val, len;');
 
     lines.push('flags = buffer.readUInt16BE(0);');
 
-    for (var i=0, num=props.length; i < num; i++) {
-        var p = argument(props[i]);
+    for (var i=0, num=props.args.length; i < num; i++) {
+        var p = argument(props.args[i]);
         var field = "fields['" + p.name + "']";
 
         lines.push('if (flags & ' + flagAt(i) + ') {');
@@ -429,8 +434,6 @@ function decodePropsFn(name, clazz, props) {
                 lines.push('val = buffer.readUInt32BE(offset); offset += 4;');
                 break;
             case 'longlong':
-                lines.push('val = buffer.readUInt64BE(offset); offset += 8;');
-                break;
             case 'timestamp':
                 lines.push('val = buffer.readUInt64BE(offset); offset += 8;');
                 break;
@@ -456,7 +459,7 @@ function decodePropsFn(name, clazz, props) {
         }
         lines.push('}');
     }
-    lines.push('return new ' + name + '(fields);');
+    lines.push('return fields;');
     return lines.join('\n' + indent) + '\n}';
 }
 
