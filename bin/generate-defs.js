@@ -171,8 +171,7 @@ function encoderFn(method) {
             lines.push('val = ' + field + '; val = (val === undefined) ? ' + def + ' : val;');
         }
         else {
-            lines.push('if (!fields.hasOwnProperty(\'' +
-                       a.name + '\'))');
+            lines.push('if (' + field + ' === undefined)');
             lines.push(indent + 'throw new Error("Missing value for ' +
                        a.name + '");');
             lines.push('val = ' + field + ';');
@@ -336,7 +335,7 @@ function encodePropsFn(props) {
     lines.push('buffer[0] = ' + constants.FRAME_HEADER + ';');
     lines.push('buffer.writeUInt16BE(channel, 1);');
     // content class ID and 'weight' (== 0)
-    lines.push('buffer.writeUInt32BE(' + props.id + ', 7);');
+    lines.push('buffer.writeUInt32BE(' + (props.id << 16) + ', 7);');
     // skip size for now, we'll write it in when we know.
     // body size
     lines.push('buffer.writeUInt64BE(size, 11);');
@@ -349,8 +348,7 @@ function encodePropsFn(props) {
         var p = argument(props.args[i]);
         var flag = flagAt(i);
         var field = "fields['" + p.name + "']";
-        lines.push('if (fields.hasOwnProperty("' +
-                   p.name + '")) {');
+        lines.push('if (' + field + ' !== undefined) {');
         lines.push(indent + 'val = ' + field + ';');
         if (p.type === 'bit') { // which none of them are ..
             lines.push(indent + 'if (val) flags += ' + flag + ';');
