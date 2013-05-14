@@ -4,7 +4,7 @@
   "description": "An AMQP 0-9-1 (e.g., RabbitMQ) client.",
   "main": "index.js",
   "dependencies": {
-    "bitsyntax": "",
+    "bitsyntax": "0.0.2",
     "buffer-more-ints": "",
     "readable-stream": "",
     "when": ""
