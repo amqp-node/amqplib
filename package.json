@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "An AMQP 0-9-1 (e.g., RabbitMQ) client.",
   "main": "index.js",
+  "engines": {
+      "node": "0.8 || 0.10"
+  },
   "dependencies": {
     "bitsyntax": "0.0.2",
     "buffer-more-ints": "",
