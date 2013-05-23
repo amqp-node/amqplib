@@ -52,20 +52,47 @@ var label = claire.label;
 var Trace = label('frame trace',
                   repeat(choice.apply(choice, amqp.methods)));
 
-test("Parse trace of methods",
-     forAll(Trace).satisfy(function(t) {
-       var input = inputs();
-       var frames = new Frames(input);
-       var i = 0;
-       frames.accept = function(f) {
-         assert.deepEqual(f, t[i]);
-         i++;
-       };
-       frames.run();
-       
-       t.forEach(function(f) {
-         f.channel = 0;
-         input.write(defs.encoder(f.id)(0, f.fields));
-       });
-       return true;
-     }).asTest());
+suite("Parsing", function() {
+
+  function testPartitioning(partition) {
+    return forAll(Trace).satisfy(function(t) {
+      var bufs = [];
+      var input = inputs();
+      var frames = new Frames(input);
+      var i = 0;
+      frames.accept = function(f) {
+        assert.deepEqual(f, t[i]);
+        i++;
+      };
+      
+      t.forEach(function(f) {
+        f.channel = 0;
+        bufs.push(defs.encoder(f.id)(0, f.fields));
+      });
+
+      partition(bufs).forEach(input.write.bind(input));
+      frames.run();
+      return i === t.length;
+    }).asTest()
+  };
+
+  test("Parse trace of methods",
+       testPartitioning(function(bufs) { return bufs; }));
+
+  test("Parse concat'd methods",
+       testPartitioning(function(bufs) {
+         return [Buffer.concat(bufs)];
+       }));
+
+  test("Parse partitioned methods",
+       testPartitioning(function(bufs) {
+         var full = Buffer.concat(bufs);
+         var onethird = Math.floor(full.length / 3);
+         var twothirds = 2 * onethird;
+         return [
+           full.slice(0, onethird),
+           full.slice(onethird, twothirds),
+           full.slice(twothirds)
+         ];
+       }));
+});
