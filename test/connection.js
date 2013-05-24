@@ -49,6 +49,21 @@ function runServer(socket, prepare) {
   return frames;
 }
 
+// Produce a callback that will complete the test successfully
+function succeed(done) {
+  return function() { done(); }
+}
+
+// Produce a callback that will fail the test, given either an error
+// (to be used as a failure continuation) or any other value (to be
+// used as a success continuation when failure is expected)
+function fail(done) {
+  return function(err) {
+    if (err instanceof Error) done(err);
+    else done(new Error("Expected to fail, instead got " + err.toString()));
+  }
+}
+
 var OPEN_OPTS = {
   // start-ok
   'clientProperties': {},
@@ -67,12 +82,37 @@ var OPEN_OPTS = {
   'insist': 0
 };
 
-suite("Connection open", function() {
+function happy_open(send, await) {
+  // kick it off
+  send(defs.ConnectionStart,
+       {versionMajor: 0,
+        versionMinor: 9,
+        serverProperties: {},
+        mechanisms: new Buffer('PLAIN'),
+        locales: new Buffer('en_US')});
+  return await()
+    .then(function(f) {
+      assert.equal(defs.ConnectionStartOk, f.id);
+      send(defs.ConnectionTune,
+           {channelMax: 0,
+            heartbeat: 0,
+            frameMax: 0});
+      return await();
+    })
+    .then(function(f) {
+      assert.equal(defs.ConnectionTuneOk, f.id);
+      return await();
+    })
+    .then(function(f) {
+      assert.equal(defs.ConnectionOpen, f.id);
+      send(defs.ConnectionOpenOk,
+           {knownHosts: ''});
+    });
+}
 
-function openTest(client, server) {
+function connectionTest(client, server) {
   return function(done) {
     var pair = socketPair();
-
     var c = new Connection(pair.client);
     client(c, done);
 
@@ -84,41 +124,22 @@ function openTest(client, server) {
     var s = runServer(pair.server, function(send, await) {
       server(send, await, done);
     });
-  // nothing to check about the server...
   };
 }
 
-test("Connection open happy", openTest(
+suite("Connection open", function() {
+
+test("happy", connectionTest(
   function(c, done) {
-    c.open(OPEN_OPTS).then(function(_ok) { done(); }, done);
+    c.open(OPEN_OPTS).then(succeed(done), fail(done));
   },
   function(send, await, done) {
-    // kick it off
-    send(defs.ConnectionStart,
-         {versionMajor: 0,
-          versionMinor: 9,
-          serverProperties: {},
-          mechanisms: new Buffer('PLAIN'),
-          locales: new Buffer('en_US')});
-    await()
-      .then(function(_f) {
-        send(defs.ConnectionTune,
-             {channelMax: 0,
-              heartbeat: 0,
-              frameMax: 0});
-        return await();
-      })
-      .then(function(_f) {
-        send(defs.ConnectionOpenOk,
-             {knownHosts: ''});
-      }, done);
+    happy_open(send, await).then(null, fail(done));
   }));
 
-test("Connection open: wrong first frame", openTest(
+test("wrong first frame", connectionTest(
   function(c, done) {
-    c.open(OPEN_OPTS).then(function() {
-      done(new Error("Not expected to succeed opening"));
-    }, function(err) { done(); });
+    c.open(OPEN_OPTS).then(fail(done), succeed(done));
   },
   function(send, await, done) {
     // bad server! bad!
@@ -126,6 +147,28 @@ test("Connection open: wrong first frame", openTest(
          {channelMax: 0,
           heartbeat: 0,
           frameMax: 0});
+  }));
+
+});
+
+suite("Connection close", function() {
+
+test("happy", connectionTest(
+  function(c, done) {
+    c.open(OPEN_OPTS).then(function(_ok) {
+      c.close().then(succeed(done), fail(done));
+    });
+  },
+  function(send, await, done) {
+    happy_open(send, await)
+      .then(function() {
+        return await();
+      })
+      .then(function(close) {
+        assert.equal(defs.ConnectionClose, close.id);
+        send(defs.ConnectionCloseOk, {});
+      })
+      .then(null, fail(done));
   }));
 
 });
