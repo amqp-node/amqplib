@@ -31,7 +31,7 @@ function socketPair() {
 }
 
 
-function runServer(socket, prepare) {
+function runServer(socket, run) {
   var frames = new Frames(socket);
 
   function send(id, fields) {
@@ -45,7 +45,7 @@ function runServer(socket, prepare) {
     return d.promise;
   }
 
-  prepare(send, await);
+  run(send, await);
   return frames;
 }
 
@@ -161,9 +161,7 @@ test("happy", connectionTest(
   },
   function(send, await, done) {
     happy_open(send, await)
-      .then(function() {
-        return await();
-      })
+      .then(await)
       .then(function(close) {
         assert.equal(defs.ConnectionClose, close.id);
         send(defs.ConnectionCloseOk, {});
@@ -171,4 +169,51 @@ test("happy", connectionTest(
       .then(null, fail(done));
   }));
 
+test("interleaved close frames", connectionTest(
+  function(c, done) {
+    c.open(OPEN_OPTS).then(function(_ok) {
+      c.close().then(succeed(done), fail(done));
+    });
+  },
+  function(send, await, done) {
+    happy_open(send, await)
+      .then(await)
+      .then(function(f) {
+        assert.equal(defs.ConnectionClose, f.id);
+        send(defs.ConnectionClose, {
+          replyText: "Ha!",
+          replyCode: defs.constants.REPLY_SUCCESS,
+          methodId: 0, classId: 0
+        });
+        return await();
+      })
+      .then(function(f) {
+        assert.equal(defs.ConnectionCloseOk, f.id);
+        send(defs.ConnectionCloseOk, {});
+      })
+      .then(null, fail(done));
+  }));
+
+test("server-initiated close", connectionTest(
+  function(c, done) {
+    c.on('error', succeed(done));
+    c.on('close', fail(done));
+    c.open(OPEN_OPTS).then(function() {
+    });
+  },
+  function(send, await, done) {
+    happy_open(send, await)
+      .then(function(f) {
+        send(defs.ConnectionClose, {
+          replyText: "Begone",
+          replyCode: defs.constants.INTERNAL_ERROR,
+          methodId: 0, classId: 0
+        });
+      })
+      .then(await)
+      .then(function(f) {
+        assert.equal(defs.ConnectionCloseOk, f.id);
+      })
+      .then(null, fail(done));
+  }));
 });
