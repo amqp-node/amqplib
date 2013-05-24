@@ -31,7 +31,8 @@ function socketPair() {
 }
 
 
-function runServer(frames, machine) {
+function runServer(socket, prepare) {
+  var frames = new Frames(socket);
 
   function send(id, fields) {
     frames.sendMethod(0, id, fields);
@@ -44,7 +45,8 @@ function runServer(frames, machine) {
     return d.promise;
   }
 
-  return machine(send, await);
+  prepare(send, await);
+  return frames;
 }
 
 var OPEN_OPTS = {
@@ -65,19 +67,33 @@ var OPEN_OPTS = {
   'insist': 0
 };
 
-test("Connection open happy", function(done) {
-  var pair = socketPair();
-  var server = pair.server;
+suite("Connection open", function() {
 
-  var c = new Connection(pair.client);
-  c.open(OPEN_OPTS).then(function(_ok) { done(); }, assert.fail);
+function openTest(client, server) {
+  return function(done) {
+    var pair = socketPair();
 
-  var protocolHeader = server.read(8);
-  assert.deepEqual(new Buffer("AMQP" + String.fromCharCode(0,0,9,1)),
-                   protocolHeader);
+    var c = new Connection(pair.client);
+    client(c, done);
 
-  var frames = new Frames(server);
-  runServer(frames, function(send, await) {
+    // NB only not a race here because the writes are synchronous
+    var protocolHeader = pair.server.read(8);
+    assert.deepEqual(new Buffer("AMQP" + String.fromCharCode(0,0,9,1)),
+                     protocolHeader);
+
+    var s = runServer(pair.server, function(send, await) {
+      server(send, await, done);
+    });
+  // nothing to check about the server...
+  };
+}
+
+test("Connection open happy", openTest(
+  function(c, done) {
+    c.open(OPEN_OPTS).then(function(_ok) { done(); }, done);
+  },
+  function(send, await, done) {
+    // kick it off
     send(defs.ConnectionStart,
          {versionMajor: 0,
           versionMinor: 9,
@@ -95,6 +111,21 @@ test("Connection open happy", function(done) {
       .then(function(_f) {
         send(defs.ConnectionOpenOk,
              {knownHosts: ''});
-      }, assert.fail);
-  });
+      }, done);
+  }));
+
+test("Connection open: wrong first frame", openTest(
+  function(c, done) {
+    c.open(OPEN_OPTS).then(function() {
+      done(new Error("Not expected to succeed opening"));
+    }, function(err) { done(); });
+  },
+  function(send, await, done) {
+    // bad server! bad!
+    send(defs.ConnectionTune,
+         {channelMax: 0,
+          heartbeat: 0,
+          frameMax: 0});
+  }));
+
 });
