@@ -73,7 +73,7 @@ suite("Parsing", function() {
       partition(bufs).forEach(input.write.bind(input));
       frames.run();
       return i === t.length;
-    }).asTest()
+    }).asTest({times: 20})
   };
 
   test("Parse trace of methods",
