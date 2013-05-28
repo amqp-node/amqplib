@@ -80,4 +80,28 @@ test('ThenThrowThenThen', function() {
   assert(called);
 });
 
+test('RejectThenThen', function() {
+  var called = false;
+  var d = defer();
+  d.reject('foo');
+  d.promise
+    .then(assert.fail)
+    .then(assert.fail, function(e) {
+      if (e === 'foo') called = true;
+    });
+  assert(called);
+});
+
+test('ResolveThenThen', function() {
+  var called = false;
+  var d = defer();
+  d.resolve('foo');
+  d.promise
+    .then(null, assert.fail)
+    .then(function(f) {
+      if (f === 'foo') called = true;
+    }, assert.fail);
+  assert(called);
+});
+
 });
