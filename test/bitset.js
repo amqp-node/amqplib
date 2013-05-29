@@ -15,48 +15,52 @@ var EmptyBitSet = label('bitset', transform(
   },
   choice(arb.Nothing, PosInt)));
 
-module.exports.testBitSet = forAll(EmptyBitSet, PosInt)
-  .satisfy(function(b, bit) {
-    b.set(bit);
-    return b.get(bit);
-  }).asTest();
+suite('BitSet', function() {
 
-module.exports.testClearBit = forAll(EmptyBitSet, PosInt)
-  .satisfy(function(b, bit) {
-    b.set(bit);
-    b.clear(bit);
-    return !b.get(bit);
-  }).asTest();
+test('get bit', forAll(EmptyBitSet, PosInt)
+     .satisfy(function(b, bit) {
+       b.set(bit);
+       return b.get(bit);
+     }).asTest());
+  
+test('clear bit', forAll(EmptyBitSet, PosInt)
+     .satisfy(function(b, bit) {
+       b.set(bit);
+       b.clear(bit);
+       return !b.get(bit);
+     }).asTest());
 
-module.exports.nextSetOfEmpty = forAll(EmptyBitSet)
-  .satisfy(function(b) {
-    return b.nextSetBit(0) === -1;
-  }).asTest();
+test('next set of empty', forAll(EmptyBitSet)
+     .satisfy(function(b) {
+       return b.nextSetBit(0) === -1;
+     }).asTest());
 
-module.exports.nextSetOfOneBit = forAll(EmptyBitSet, PosInt)
-  .satisfy(function(b, bit) {
-    b.set(bit);
-    return b.nextSetBit(0) === bit;
-  }).asTest();
+test('next set of one bit', forAll(EmptyBitSet, PosInt)
+     .satisfy(function(b, bit) {
+       b.set(bit);
+       return b.nextSetBit(0) === bit;
+     }).asTest());
 
-module.exports.nextSetSameBit = forAll(EmptyBitSet, PosInt)
-  .satisfy(function(b, bit) {
-    b.set(bit);
-    return b.nextSetBit(bit) === bit;
-  }).asTest();
+test('next set same bit', forAll(EmptyBitSet, PosInt)
+     .satisfy(function(b, bit) {
+       b.set(bit);
+       return b.nextSetBit(bit) === bit;
+     }).asTest());
 
-module.exports.nextSetFollowingBit = forAll(EmptyBitSet, PosInt)
-  .satisfy(function(b, bit) {
-    b.set(bit);
-    return b.nextSetBit(bit+1) === -1;
-  }).asTest();
+test('next set following bit', forAll(EmptyBitSet, PosInt)
+     .satisfy(function(b, bit) {
+       b.set(bit);
+       return b.nextSetBit(bit+1) === -1;
+     }).asTest());
 
-module.exports.nextClearOfEmpty = forAll(EmptyBitSet, PosInt)
-  .satisfy(function(b, bit) { return b.nextClearBit(bit) === bit; })
-  .asTest();
+test('next clear of empty', forAll(EmptyBitSet, PosInt)
+     .satisfy(function(b, bit) { return b.nextClearBit(bit) === bit; })
+     .asTest());
 
-module.exports.nextClearOfOneSet = forAll(EmptyBitSet, PosInt)
-  .satisfy(function(b, bit) {
-    b.set(bit);
-    return b.nextClearBit(bit) === bit + 1;
-  }).asTest();
+test('next clear of one set', forAll(EmptyBitSet, PosInt)
+     .satisfy(function(b, bit) {
+       b.set(bit);
+       return b.nextClearBit(bit) === bit + 1;
+     }).asTest());
+
+});
