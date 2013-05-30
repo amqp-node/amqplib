@@ -73,9 +73,28 @@ function fail(done) {
   }
 }
 
+// Create a function that will call done once it's been called itself
+// `count` times. If it's called with an error value, it will
+// immediately call done with that error value.
+function latch(count, done) {
+  var awaiting = count;
+  return function(err) {
+    if (err instanceof Error) {
+      done(err);
+    }
+    else {
+      awaiting--;
+      if (awaiting === 0) {
+        done();
+      }
+    }
+  };
+}
+
 module.exports = {
   socketPair: socketPair,
   runServer: runServer,
   succeed: succeed,
-  fail: fail
+  fail: fail,
+  latch: latch
 };
