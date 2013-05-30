@@ -36,7 +36,7 @@ function channel_handshake(send, await) {
     });
 }
 
-suite("channel", function() {
+suite("channel open and close", function() {
 
 test("open", channelTest(
   function(c, done) {
@@ -88,3 +88,40 @@ test("server close", function(done0) {
 });
 
 }); //suite
+
+suite("channel machinery", function() {
+
+test("RPC", channelTest(
+  function(conn, done) {
+    var ch = new Channel(conn);
+    ch.open().then(function() {
+      var rpcLatch = latch(3, done);
+      var whee = succeed(rpcLatch);
+      var boom = fail(rpcLatch);
+      var fields = {
+        prefetchCount: 10,
+        prefetchSize: 0,
+        global: false
+      };
+
+      ch.rpc(defs.BasicQos, fields, defs.BasicQosOk).then(whee, boom);
+      ch.rpc(defs.BasicQos, fields, defs.BasicQosOk).then(whee, boom);
+      ch.rpc(defs.BasicQos, fields, defs.BasicQosOk).then(whee, boom);
+    }).then(null, fail(done));
+  },
+  function(send, await, done) {
+    function sendOk(f) {
+      send(defs.BasicQosOk, {}, f.channel);
+    }
+
+    channel_handshake(send, await)
+      .then(await(defs.BasicQos))
+      .then(sendOk)
+      .then(await(defs.BasicQos))
+      .then(sendOk)
+      .then(await(defs.BasicQos))
+      .then(sendOk)
+      .then(null, fail(done));
+  }));
+
+});
