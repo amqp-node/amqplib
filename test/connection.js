@@ -1,68 +1,8 @@
 var assert = require('assert');
-var defer = require('when').defer;
 var defs = require('../lib/defs');
 var Connection = require('../lib/connection').Connection;
-var Frames = require('../lib/frame');
-var PassThrough =
-  require('stream').PassThrough ||
-  require('readable-stream/passthrough');
-
-// Assume Frames works fine, now test Connection.
-
-// Set up a socket pair {client, server}, such that writes to the
-// client are readable from the server, and writes to the server are
-// readable at the client.
-//
-//          +---+      +---+
-//          | C |      | S |
-// --write->| l |----->| e |--read-->
-//          | i |      | r |
-// <--read--| e |<-----| v |<-write--
-//          | n |      | e |
-//          | t |      | r |
-//          +---+      +---+
-
-function socketPair() {
-  var server = new PassThrough();
-  var client = new PassThrough();
-  server.write = client.push.bind(client);
-  client.write = server.push.bind(server);
-  return {client: client, server: server};
-}
-
-
-function runServer(socket, run) {
-  var frames = new Frames(socket);
-
-  function send(id, fields) {
-    frames.sendMethod(0, id, fields);
-  }
-
-  function await() {
-    var d = defer();
-    frames.accept = d.resolve.bind(d);
-    frames.step();
-    return d.promise;
-  }
-
-  run(send, await);
-  return frames;
-}
-
-// Produce a callback that will complete the test successfully
-function succeed(done) {
-  return function() { done(); }
-}
-
-// Produce a callback that will fail the test, given either an error
-// (to be used as a failure continuation) or any other value (to be
-// used as a success continuation when failure is expected)
-function fail(done) {
-  return function(err) {
-    if (err instanceof Error) done(err);
-    else done(new Error("Expected to fail, instead got " + err.toString()));
-  }
-}
+var mock = require('./mocknet');
+var succeed = mock.succeed, fail = mock.fail;
 
 var OPEN_OPTS = {
   // start-ok
@@ -81,6 +21,7 @@ var OPEN_OPTS = {
   'capabilities': '',
   'insist': 0
 };
+module.exports.OPEN_OPTS = OPEN_OPTS;
 
 function happy_open(send, await) {
   // kick it off
@@ -90,29 +31,25 @@ function happy_open(send, await) {
         serverProperties: {},
         mechanisms: new Buffer('PLAIN'),
         locales: new Buffer('en_US')});
-  return await()
+  return await(defs.ConnectionStartOk)()
     .then(function(f) {
-      assert.equal(defs.ConnectionStartOk, f.id);
       send(defs.ConnectionTune,
            {channelMax: 0,
             heartbeat: 0,
             frameMax: 0});
-      return await();
     })
+    .then(await(defs.ConnectionTuneOk))
+    .then(await(defs.ConnectionOpen))
     .then(function(f) {
-      assert.equal(defs.ConnectionTuneOk, f.id);
-      return await();
-    })
-    .then(function(f) {
-      assert.equal(defs.ConnectionOpen, f.id);
       send(defs.ConnectionOpenOk,
            {knownHosts: ''});
     });
 }
+module.exports.open_handshake = happy_open;
 
 function connectionTest(client, server) {
   return function(done) {
-    var pair = socketPair();
+    var pair = mock.socketPair();
     var c = new Connection(pair.client);
     client(c, done);
 
@@ -121,7 +58,7 @@ function connectionTest(client, server) {
     assert.deepEqual(new Buffer("AMQP" + String.fromCharCode(0,0,9,1)),
                      protocolHeader);
 
-    var s = runServer(pair.server, function(send, await) {
+    var s = mock.runServer(pair.server, function(send, await) {
       server(send, await, done);
     });
   };
@@ -161,9 +98,8 @@ test("happy", connectionTest(
   },
   function(send, await, done) {
     happy_open(send, await)
-      .then(await)
+      .then(await(defs.ConnectionClose))
       .then(function(close) {
-        assert.equal(defs.ConnectionClose, close.id);
         send(defs.ConnectionCloseOk, {});
       })
       .then(null, fail(done));
@@ -177,18 +113,16 @@ test("interleaved close frames", connectionTest(
   },
   function(send, await, done) {
     happy_open(send, await)
-      .then(await)
+      .then(await(defs.ConnectionClose))
       .then(function(f) {
-        assert.equal(defs.ConnectionClose, f.id);
         send(defs.ConnectionClose, {
           replyText: "Ha!",
           replyCode: defs.constants.REPLY_SUCCESS,
           methodId: 0, classId: 0
         });
-        return await();
       })
+      .then(await(defs.ConnectionCloseOk))
       .then(function(f) {
-        assert.equal(defs.ConnectionCloseOk, f.id);
         send(defs.ConnectionCloseOk, {});
       })
       .then(null, fail(done));
@@ -210,10 +144,7 @@ test("server-initiated close", connectionTest(
           methodId: 0, classId: 0
         });
       })
-      .then(await)
-      .then(function(f) {
-        assert.equal(defs.ConnectionCloseOk, f.id);
-      })
+      .then(await(defs.ConnectionCloseOk))
       .then(null, fail(done));
   }));
 });
