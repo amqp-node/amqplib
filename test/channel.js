@@ -124,4 +124,48 @@ test("RPC", channelTest(
       .then(null, fail(done));
   }));
 
+test("Content", channelTest(
+  function(conn, done) {
+    var ch = new Channel(conn);
+    ch.open()
+      .then(function() {
+        ch.sendMessage({
+          exchange: 'foo', routingKey: 'bar',
+          mandatory: false, immediate: false, ticket: 0
+        }, {}, new Buffer('foobar'));
+      })
+      .then(null, fail(done));
+  },
+  function(send, await, done) {
+    channel_handshake(send, await)
+      .then(await(defs.BasicPublish))
+      .then(await(defs.BasicProperties))
+      .then(await(undefined)) // content frame
+      .then(function(f) {
+        assert.equal('foobar', f.content.toString());
+      }).then(succeed(done), fail(done));
+  }));
+
+test("delivery", channelTest(
+  function(conn, done) {
+    var ch = new Channel(conn);
+    ch.open();
+    ch.on('delivery', function(m) {
+      assert.equal('barfoo', m.content.toString());
+      done();
+    });
+  },
+  function(send, await, done) {
+    channel_handshake(send, await)
+      .then(function(ch) {
+        send(defs.BasicDeliver, {
+          consumerTag: 'fake',
+          deliveryTag: 1,
+          redelivered: false,
+          exchange: 'foo',
+          routingKey: 'bar'
+        }, ch, new Buffer('barfoo'));
+      })
+      .then(null, fail(done));
+  }));
 });

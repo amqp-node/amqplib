@@ -3,6 +3,7 @@ var PassThrough =
   require('stream').PassThrough ||
   require('readable-stream/passthrough');
 var defer = require('when').defer;
+var defs = require('../lib/defs');
 
 // Assume Frames works fine, now test Connection.
 
@@ -30,9 +31,17 @@ function socketPair() {
 function runServer(socket, run) {
   var frames = new Frames(socket);
 
-  function send(id, fields, channel) {
+  function send(id, fields, channel, content) {
     channel = channel || 0;
-    frames.sendMethod(channel, id, fields);
+    if (id === defs.BasicDeliver ||
+        id === defs.BasicGetOk
+        && content) {
+      frames.sendMethod(channel, defs.BasicDeliver, fields);
+      frames.sendContent(channel, defs.BasicProperties, fields, content);
+    }
+    else {
+      frames.sendMethod(channel, id, fields);
+    }
   }
 
   function await(method) {
