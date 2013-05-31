@@ -47,6 +47,18 @@ test("open", channelTest(
     channel_handshake(send, await).then(null, fail(done));
   }));
 
+test("bad server", channelTest(
+  function(c, done) {
+    var ch = new Channel(c);
+    ch.open().then(fail(done), succeed(done));
+  },
+  function(send, await, done) {
+    await(defs.ChannelOpen)()
+      .then(function(open) {
+        send(defs.ChannelCloseOk, {}, open.channel);
+      }).then(null, fail(done));
+  }));
+
 test("open, close", channelTest(
   function(conn, done) {
     var ch = new Channel(conn);
@@ -124,7 +136,35 @@ test("RPC", channelTest(
       .then(null, fail(done));
   }));
 
-test("Content", channelTest(
+test("Bad RPC", channelTest(
+  function(c, done) {
+
+    var ch = new Channel(c);
+
+    // We want to see the RPC rejected and the channel closed (with an
+    // error)
+    var errLatch = latch(2, done);
+    ch.on('error', succeed(errLatch));
+
+    ch.open()
+      .then(function() {
+        ch.rpc(defs.BasicRecover, {requeue: true}, defs.BasicRecoverOk)
+          .then(fail(done), succeed(errLatch));
+      }, fail(done));
+  },
+  function(send, await, done) {
+    channel_handshake(send, await)
+      .then(await())
+      .then(function(f) {
+        send(defs.BasicGetEmpty, {clusterId: ''}, f.channel);
+      }) // oh wait! that was wrong! expect a channel close
+      .then(await(defs.ChannelClose))
+      .then(function(close) {
+        send(defs.ChannelCloseOk, {}, close.channel);
+      }).then(null, fail(done));
+  }));
+
+test("publish", channelTest(
   function(conn, done) {
     var ch = new Channel(conn);
     ch.open()
@@ -164,9 +204,40 @@ test("delivery", channelTest(
           redelivered: false,
           exchange: 'foo',
           routingKey: 'bar'
-        }, ch, new Buffer('barfoo'));
+        }, ch);
+        send(false, {}, ch, new Buffer('barfoo'));
       })
       .then(null, fail(done));
+  }));
+
+test("bad delivery", channelTest(
+  function(conn, done) {
+    var ch = new Channel(conn);
+    ch.open();
+    ch.on('error', succeed(done));
+  },
+  function(send, await, done) {
+    channel_handshake(send, await)
+      .then(function(ch) {
+        send(defs.BasicDeliver, {
+          consumerTag: 'fake',
+          deliveryTag: 1,
+          redelivered: false,
+          exchange: 'foo',
+          routingKey: 'bar'
+        }, ch);
+        send(defs.BasicDeliver, {
+          consumerTag: 'fake',
+          deliveryTag: 1,
+          redelivered: false,
+          exchange: 'foo',
+          routingKey: 'bar'
+        }, ch);
+      })
+      .then(await(defs.ChannelClose))
+      .then(function(close) {
+        send(defs.ChannelCloseOk, {}, close.channel);
+      }).then(null, fail(done));
   }));
 
 test("return", channelTest(
@@ -186,7 +257,8 @@ test("return", channelTest(
           replyText: 'derp',
           exchange: 'foo',
           routingKey: 'bar'
-        }, ch, new Buffer('barfoo'));
+        }, ch);
+        send(null, {}, ch, new Buffer('barfoo'));
       })
       .then(null, fail(done));
   }));
