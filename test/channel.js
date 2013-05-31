@@ -6,7 +6,7 @@ var Connection = require('../lib/connection').Connection;
 var mock = require('./mocknet');
 var succeed = mock.succeed, fail = mock.fail, latch = mock.latch;
 var defs = require('../lib/defs');
-var conn_handshake = require('./connection').open_handshake;
+var conn_handshake = require('./connection').connection_handshake;
 var OPEN_OPTS = require('./connection').OPEN_OPTS;
 
 function channelTest(client, server) {
@@ -17,7 +17,7 @@ function channelTest(client, server) {
       client(c, done);
     }, fail(done));
 
-    pair.server.read(8); // throw away the protocol header
+    pair.server.read(8); // discard the protocol header
     var s = mock.runServer(pair.server, function(send, await) {
       conn_handshake(send, await)
         .then(function() {
@@ -35,6 +35,17 @@ function channel_handshake(send, await) {
       return open.channel;
     });
 }
+
+// fields for deliver and publish and get-ok
+var DELIVER_FIELDS = {
+  consumerTag: 'fake',
+  deliveryTag: 1,
+  redelivered: false,
+  exchange: 'foo',
+  routingKey: 'bar',
+  replyCode: defs.constants.NO_ROUTE,
+  replyText: 'derp',
+};
 
 suite("channel open and close", function() {
 
@@ -198,13 +209,7 @@ test("delivery", channelTest(
   function(send, await, done) {
     channel_handshake(send, await)
       .then(function(ch) {
-        send(defs.BasicDeliver, {
-          consumerTag: 'fake',
-          deliveryTag: 1,
-          redelivered: false,
-          exchange: 'foo',
-          routingKey: 'bar'
-        }, ch);
+        send(defs.BasicDeliver, DELIVER_FIELDS, ch);
         send(false, {}, ch, new Buffer('barfoo'));
       })
       .then(null, fail(done));
@@ -219,21 +224,9 @@ test("bad delivery", channelTest(
   function(send, await, done) {
     channel_handshake(send, await)
       .then(function(ch) {
-        send(defs.BasicDeliver, {
-          consumerTag: 'fake',
-          deliveryTag: 1,
-          redelivered: false,
-          exchange: 'foo',
-          routingKey: 'bar'
-        }, ch);
+        send(defs.BasicDeliver, DELIVER_FIELDS, ch);
         // now send another deliver without having sent the content
-        send(defs.BasicDeliver, {
-          consumerTag: 'fake',
-          deliveryTag: 1,
-          redelivered: false,
-          exchange: 'foo',
-          routingKey: 'bar'
-        }, ch);
+        send(defs.BasicDeliver, DELIVER_FIELDS, ch);
       })
       .then(await(defs.ChannelClose))
       .then(function(close) {
@@ -253,12 +246,7 @@ test("return", channelTest(
   function(send, await, done) {
     channel_handshake(send, await)
       .then(function(ch) {
-        send(defs.BasicReturn, {
-          replyCode: defs.constants.NO_ROUTE,
-          replyText: 'derp',
-          exchange: 'foo',
-          routingKey: 'bar'
-        }, ch);
+        send(defs.BasicReturn, DELIVER_FIELDS, ch);
         send(null, {}, ch, new Buffer('barfoo'));
       })
       .then(null, fail(done));
@@ -287,5 +275,28 @@ function confirmTest(variety, Method) {
 
 confirmTest("ack", defs.BasicAck);
 confirmTest("nack", defs.BasicNack);
+
+test("interleaved RPC/delivery", channelTest(
+  function(conn, done) {
+    var ch = new Channel(conn);
+    var both = latch(2, done);
+    ch.on('delivery', succeed(both));
+
+    ch.open().then(function() {
+      ch.rpc(defs.BasicQos,
+             { global: false, prefetchSize: 0, prefetchCount: 7},
+             defs.BasicQosOk)
+        .then(succeed(both), fail(both));
+    }, fail(both));
+  },
+  function(send, await, done) {
+    channel_handshake(send, await)
+      .then(await(defs.BasicQos))
+      .then(function(qos) {
+        send(defs.BasicDeliver, DELIVER_FIELDS, qos.channel);
+        send(defs.BasicQosOk, {}, qos.channel);
+        send(false, {}, qos.channel, new Buffer('boofar'));
+      }).then(null, fail(done));
+  }));
 
 });

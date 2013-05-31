@@ -45,7 +45,7 @@ function happy_open(send, await) {
            {knownHosts: ''});
     });
 }
-module.exports.open_handshake = happy_open;
+module.exports.connection_handshake = happy_open;
 
 function connectionTest(client, server) {
   return function(done) {
@@ -79,11 +79,53 @@ test("wrong first frame", connectionTest(
     c.open(OPEN_OPTS).then(fail(done), succeed(done));
   },
   function(send, await, done) {
-    // bad server! bad!
+    // bad server! bad! whatever were you thinking?
     send(defs.ConnectionTune,
          {channelMax: 0,
           heartbeat: 0,
           frameMax: 0});
+  }));
+
+});
+
+suite("Connection running", function() {
+
+test("wrong frame on channel 0", connectionTest(
+  function(c, done) {
+    c.on('error', succeed(done));
+    c.open(OPEN_OPTS);
+  },
+  function(send, await, done) {
+    happy_open(send, await)
+      .then(function() {
+        // there's actually nothing that would plausibly be sent to a
+        // just opened connection, so this is violating more than one
+        // rule. Nonetheless.
+        send(defs.ChannelOpenOk, {channelId: new Buffer('')}, 0);
+      })
+      .then(await(defs.ConnectionClose))
+      .then(function(close) {
+        send(defs.ConnectionCloseOk, {}, 0);
+      }).then(null, fail(done));
+  }));
+
+test("unopened channel",  connectionTest(
+  function(c, done) {
+    c.on('error', succeed(done));
+    c.open(OPEN_OPTS);
+  },
+  function(send, await, done) {
+    happy_open(send, await)
+      .then(function() {
+        // there's actually nothing that would plausibly be sent to a
+        // just opened connection, so this is violating more than one
+        // rule. Nonetheless.
+        send(defs.ChannelOpenOk, {channelId: new Buffer('')}, 3);
+      })
+      .then(await(defs.ConnectionClose))
+      .then(function(close) {
+        send(defs.ConnectionCloseOk, {}, 0);
+      }).then(null, fail(done));
   }));
 
 });

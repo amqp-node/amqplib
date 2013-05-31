@@ -84,13 +84,16 @@ function fail(done) {
 // immediately call done with that error value.
 function latch(count, done) {
   var awaiting = count;
+  var alive = true;
   return function(err) {
-    if (err instanceof Error) {
+    if (err instanceof Error && alive) {
+      alive = false;
       done(err);
     }
     else {
       awaiting--;
-      if (awaiting === 0) {
+      if (awaiting === 0 && alive) {
+        alive = false;
         done();
       }
     }
