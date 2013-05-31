@@ -168,4 +168,51 @@ test("delivery", channelTest(
       })
       .then(null, fail(done));
   }));
+
+test("return", channelTest(
+  function(conn, done) {
+    var ch = new Channel(conn);
+    ch.open();
+    ch.on('return', function(m) {
+      assert.equal('barfoo', m.content.toString());
+      done();
+    });
+  },
+  function(send, await, done) {
+    channel_handshake(send, await)
+      .then(function(ch) {
+        send(defs.BasicReturn, {
+          replyCode: defs.constants.NO_ROUTE,
+          replyText: 'derp',
+          exchange: 'foo',
+          routingKey: 'bar'
+        }, ch, new Buffer('barfoo'));
+      })
+      .then(null, fail(done));
+  }));
+
+function confirmTest(variety, Method) {
+  return test('confirm ' + variety, channelTest(
+    function(conn, done) {
+      var ch = new Channel(conn);
+      ch.on(variety, function(f) {
+        assert.equal(1, f.fields.deliveryTag);
+        done();
+      });
+      ch.open();
+    },
+    function(send, await, done) {
+      channel_handshake(send, await)
+        .then(function(ch) {
+          send(Method, {
+            deliveryTag: 1,
+            multiple: false
+          }, ch);
+        }).then(null, fail(done));
+    }));
+}
+
+confirmTest("ack", defs.BasicAck);
+confirmTest("nack", defs.BasicNack);
+
 });

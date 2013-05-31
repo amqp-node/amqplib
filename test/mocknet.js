@@ -34,9 +34,10 @@ function runServer(socket, run) {
   function send(id, fields, channel, content) {
     channel = channel || 0;
     if (id === defs.BasicDeliver ||
-        id === defs.BasicGetOk
+        id === defs.BasicGetOk ||
+        id === defs.BasicReturn
         && content) {
-      frames.sendMethod(channel, defs.BasicDeliver, fields);
+      frames.sendMethod(channel, id, fields);
       frames.sendContent(channel, defs.BasicProperties, fields, content);
     }
     else {
