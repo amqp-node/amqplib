@@ -226,6 +226,7 @@ test("bad delivery", channelTest(
           exchange: 'foo',
           routingKey: 'bar'
         }, ch);
+        // now send another deliver without having sent the content
         send(defs.BasicDeliver, {
           consumerTag: 'fake',
           deliveryTag: 1,
