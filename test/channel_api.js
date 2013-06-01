@@ -30,7 +30,7 @@ var QUEUE_OPTS = {durable: false};
 var EX_OPTS = {durable: false};
 
 // Run a test with `name`, given a function that takes an open
-// channel, and returns a promise that is resolved on test success and
+// channel, and returns a promise that is resolved on test success or
 // rejected on test failure.
 function chtest(name, chfun) {
   test(name, function(done) {
@@ -89,27 +89,6 @@ chtest("delete exchange", function(ch) {
     });
 });
 
-// bind, publish, get
-chtest("route message", function(ch) {
-  var ex = 'test.route-message';
-  var q = 'test.route-message-q';
-  var msg = randomString();
-
-  ch.assertExchange(ex, 'fanout', EX_OPTS);
-  ch.assertQueue(q, QUEUE_OPTS);
-  ch.purgeQueue(q);
-  return ch.bindQueue(q, ex, '', {})
-    .then(function() {
-      ch.publish({exchange: ex, routingKey: ''}, new Buffer(msg));
-    })
-    .then(function() {
-      return ch.get(q, {noAck: true})
-        .then(function(m) {
-          assert(m);
-          assert.equal(msg, m.content.toString());
-        });
-    });
-});
 
 // Wait for the queue to meet the condition; useful for waiting for
 // messages to arrive, for example.
@@ -133,9 +112,43 @@ function waitForQueue(q, condition) {
   return done.promise;
 }
 
-function hasMessages(qok) {
-  return qok.fields.messageCount > 0;
+// return a promise that resolves when the queue has at least `num`
+// messages. If num is not supplied, waits for the queue to have any
+// messages at all.
+function waitForMessages(q, num) {
+  var cond;
+  if (num === undefined) {
+    cond = function(qok) { return qok.fields.messageCount > 0; };
+  }
+  else {
+    cond = function(qok) { return qok.fields.messageCount >= num; };
+  }
+  return waitForQueue(q, cond);
 }
+
+
+// bind, publish, get
+chtest("route message", function(ch) {
+  var ex = 'test.route-message';
+  var q = 'test.route-message-q';
+  var msg = randomString();
+
+  ch.assertExchange(ex, 'fanout', EX_OPTS);
+  ch.assertQueue(q, QUEUE_OPTS);
+  ch.purgeQueue(q);
+  return ch.bindQueue(q, ex, '', {})
+    .then(function() {
+      ch.publish({exchange: ex, routingKey: ''}, new Buffer(msg));
+      return waitForMessages(q, 1);
+    })
+    .then(function() {
+      return ch.get(q, {noAck: true})
+        .then(function(m) {
+          assert(m);
+          assert.equal(msg, m.content.toString());
+        });
+    });
+});
 
 // publish to default exchange, purge, get-empty
 chtest("purge queue", function(ch) {
@@ -143,7 +156,7 @@ chtest("purge queue", function(ch) {
   return ch.assertQueue(q, {durable: false})
     .then(function() {
       ch.publish({exchange: '', routingKey: q}, new Buffer('foobar'));
-      return waitForQueue(q, hasMessages);
+      return waitForMessages(q);
     })
     .then(function(qok) {
       assert(qok.fields.messageCount > 0);
@@ -168,7 +181,7 @@ chtest("unbind queue", function(ch) {
   return ch.bindQueue(q, ex, '', {})
     .then(function() {
       ch.publish({exchange: ex, routingKey: ''}, new Buffer('foobar'));
-      return waitForQueue(q, hasMessages);
+      return waitForMessages(q);
     })
     .then(function() { // message got through!
       return ch.get(q, {noAck:true})
@@ -184,7 +197,7 @@ chtest("unbind queue", function(ch) {
       ch.publish({exchange: ex, routingKey: ''}, new Buffer(viabinding));
       // direct to the queue
       ch.publish({exchange: '', routingKey: q}, new Buffer(direct));
-      return waitForQueue(q, hasMessages);
+      return waitForMessages(q);
     })
   .then(function() {
     return ch.get(q)
@@ -245,7 +258,7 @@ chtest("cancel consumer", function(ch) {
     }, console.warn);
 
     // but check a message did arrive in the queue
-    return waitForQueue(q, hasMessages)
+    return waitForMessages(q)
       .then(function() {
         ch.get(q, {noAck:true})
           .then(function(m) {
@@ -260,3 +273,60 @@ chtest("cancel consumer", function(ch) {
   });
 });
 
+// ack, by default, removes a single message from the queue
+chtest("ack", function(ch) {
+  var q = 'test.ack';
+  var msg1 = randomString(), msg2 = randomString();
+
+  ch.assertQueue(q, QUEUE_OPTS);
+  return ch.purgeQueue(q)
+    .then(function() {
+      ch.publish({exchange: '', routingKey: q}, new Buffer(msg1));
+      ch.publish({exchange: '', routingKey: q}, new Buffer(msg2));
+      return waitForMessages(q, 2);
+    })
+    .then(function() {
+      return ch.get(q, {noAck: false})
+    })
+    .then(function(m) {
+      assert.equal(msg1, m.content.toString());
+      ch.ack(m);
+      // %%% is there a race here? may depend on
+      // rabbitmq-sepcific semantics
+      return ch.get(q);
+    })
+    .then(function(m) {
+      assert(m);
+      assert.equal(msg2, m.content.toString());
+    });
+});
+
+// Nack, by default, puts a message back on the queue (where in the
+// queue is up to the server)
+chtest("nack", function(ch) {
+  var q = 'test.nack';
+  var msg1 = randomString();
+
+  ch.assertQueue(q, QUEUE_OPTS);
+  return ch.purgeQueue(q)
+    .then(function() {
+      ch.publish({exchange: '', routingKey: q}, new Buffer(msg1));
+      return waitForMessages(q, 1);
+    })
+    .then(function() {
+      return ch.get(q, {noAck: false})
+    })
+    .then(function(m) {
+      assert.equal(msg1, m.content.toString());
+      ch.nack(m);
+      return waitForMessages(q, 1);
+    })
+    .then(function(qok) {
+      assert.equal(1, qok.fields.messageCount);
+      return ch.get(q);
+    })
+    .then(function(m) {
+      assert(m);
+      assert.equal(msg1, m.content.toString());
+    });
+});
