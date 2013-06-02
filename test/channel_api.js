@@ -3,7 +3,8 @@ var crypto = require('crypto');
 var api = require('../lib/channel_api');
 var mock = require('./mocknet');
 var succeed = mock.succeed, fail = mock.fail;
-var defer = require('when').defer;
+var when = require('when');
+var defer = when.defer;
 
 // Expect this promise to fail, and flip the results accordingly.
 function expectFail(promise) {
@@ -12,18 +13,36 @@ function expectFail(promise) {
   return rev.promise;
 }
 
+// Often, even interdependent operations don't need to be explicitly
+// chained together with `.then`, since the channel implicitly
+// serialises RPCs. Synchronising on the last operation is sufficient,
+// provided all the operations are successful. This procedure removes
+// some of the `then` noise, while still failing if any of its
+// arguments fail.
+function doAll(/* promise... */) {
+  return when.all(arguments)
+    .then(function(results) {
+      return results[results.length - 1];
+    });
+}
+
+// I'll rely on operations being rejected, rather than the channel
+// close error, to detect failure.
 function ignore() {}
+function ignoreErrors(ch) {
+  ch.on('error', ignore); return ch;
+}
 
 function randomString() {
   var hash = crypto.createHash('sha1');
   hash.update(crypto.randomBytes(64));
-  return hash.digest('hex');
+  return hash.digest('base64');
 }
 
 test("connect local", function(done) {
   api.connect().then(function(c) {
-    return c.close();
-  }).then(succeed(done), fail(done));
+    return c.close()
+    ;}).then(succeed(done), fail(done));
 });
 
 var QUEUE_OPTS = {durable: false};
@@ -34,22 +53,17 @@ var EX_OPTS = {durable: false};
 // rejected on test failure.
 function chtest(name, chfun) {
   test(name, function(done) {
-    var c;
-    api.connect().then(function(c1) {
-      c = c1;
-      return c.createChannel().then(function(ch) {
-        return chfun(ch);
-      });
-    }).then(succeed(done), fail(done))
-      .then(function() { // do regardless
-        c.close();
-      });
+    api.connect().then(function(c) {
+      c.on('error', console.warn);
+      c.createChannel().then(ignoreErrors).then(chfun)
+        .then(succeed(done), fail(done))
+      // close the connection regardless of what happens with the test
+        .then(function() {c.close();});
+    });
   });
 }
 
-chtest("create channel", function(ch) {
-  return true;
-});
+chtest("create channel", ignore); // i.e., just don't bork
 
 chtest("assert and check queue", function(ch) {
   return ch.assertQueue('test.check-queue', QUEUE_OPTS)
@@ -66,66 +80,57 @@ chtest("assert and check exchange", function(ch) {
 });
 
 chtest("delete queue", function(ch) {
-  ch.assertQueue('test.delete-queue', QUEUE_OPTS);
-  return ch.checkQueue('test.delete-queue')
+  var q = 'test.delete-queue';
+  return doAll(
+    ch.assertQueue(q, QUEUE_OPTS),
+    ch.checkQueue(q))
     .then(function() {
-      return ch.deleteQueue('test.delete-queue');
-    })
+      return ch.deleteQueue(q);})
     .then(function() {
-      ch.on('error', ignore);
-      return expectFail(ch.checkQueue('test.delete-queue'));
-    });
+      return expectFail(ch.checkQueue(q));});
 });
 
 chtest("delete exchange", function(ch) {
-  ch.assertExchange('test.delete-exchange', 'fanout', EX_OPTS);
-  return ch.checkExchange('test.delete-exchange')
+  var ex = 'test.delete-exchange';
+  return doAll(
+    ch.assertExchange(ex, 'fanout', EX_OPTS),
+    ch.checkExchange(ex))
     .then(function() {
-      return ch.deleteExchange('test.delete-exchange');
-    })
+      return ch.deleteExchange(ex);})
     .then(function() {
-      ch.on('error', ignore);
-      return expectFail(ch.checkExchange('test.delete-exchange'));
-    });
+      return expectFail(ch.checkExchange(ex));});
 });
-
 
 // Wait for the queue to meet the condition; useful for waiting for
 // messages to arrive, for example.
 function waitForQueue(q, condition) {
-  var done = defer(),  conn;
+  var ready = defer();
   api.connect().then(function(c) {
-    conn = c;
-    return c.createChannel();
-  }).then(function(ch) {
-    function check() {
-      ch.checkQueue(q).then(function(qok) {
-        if (condition(qok)) {
-          conn.close();
-          done.resolve(qok);
+    return c.createChannel()
+      .then(function(ch) {
+        function check() {
+          ch.checkQueue(q).then(function(qok) {
+            if (condition(qok)) {
+              c.close();
+              ready.resolve(qok);
+            }
+            else setImmediate(check);
+          });
         }
-        else setImmediate(check);
+        check();
       });
-    }
-    check();
   });
-  return done.promise;
+  return ready.promise;
 }
 
-// return a promise that resolves when the queue has at least `num`
-// messages. If num is not supplied, waits for the queue to have any
-// messages at all.
+// Return a promise that resolves when the queue has at least `num`
+// messages. If num is not supplied its assumed to be 1.
 function waitForMessages(q, num) {
-  var cond;
-  if (num === undefined) {
-    cond = function(qok) { return qok.fields.messageCount > 0; };
-  }
-  else {
-    cond = function(qok) { return qok.fields.messageCount >= num; };
-  }
-  return waitForQueue(q, cond);
+  var min = (num === undefined) ? 1 : num;
+  return waitForQueue(q, function(qok) {
+    return qok.fields.messageCount >= min;
+  });
 }
-
 
 // bind, publish, get
 chtest("route message", function(ch) {
@@ -133,20 +138,19 @@ chtest("route message", function(ch) {
   var q = 'test.route-message-q';
   var msg = randomString();
 
-  ch.assertExchange(ex, 'fanout', EX_OPTS);
-  ch.assertQueue(q, QUEUE_OPTS);
-  ch.purgeQueue(q);
-  return ch.bindQueue(q, ex, '', {})
+  return doAll(
+    ch.assertExchange(ex, 'fanout', EX_OPTS),
+    ch.assertQueue(q, QUEUE_OPTS),
+    ch.purgeQueue(q),
+    ch.bindQueue(q, ex, '', {}))
     .then(function() {
       ch.publish({exchange: ex, routingKey: ''}, new Buffer(msg));
-      return waitForMessages(q, 1);
-    })
+      return waitForMessages(q);})
     .then(function() {
-      return ch.get(q, {noAck: true})
-        .then(function(m) {
-          assert(m);
-          assert.equal(msg, m.content.toString());
-        });
+      return ch.get(q, {noAck: true});})
+    .then(function(m) {
+      assert(m);
+      assert.equal(msg, m.content.toString());
     });
 });
 
@@ -156,15 +160,12 @@ chtest("purge queue", function(ch) {
   return ch.assertQueue(q, {durable: false})
     .then(function() {
       ch.publish({exchange: '', routingKey: q}, new Buffer('foobar'));
-      return waitForMessages(q);
-    })
-    .then(function(qok) {
-      assert(qok.fields.messageCount > 0);
+      return waitForMessages(q);})
+    .then(function() {
       ch.purgeQueue(q);
-      return ch.get(q, {noAck: true})
-        .then(function(m) {
-          assert(!m); // get-empty
-        });
+      return ch.get(q, {noAck: true});})
+    .then(function(m) {
+      assert(!m); // get-empty
     });
 });
 
@@ -175,37 +176,31 @@ chtest("unbind queue", function(ch) {
   var viabinding = randomString();
   var direct = randomString();
 
-  ch.assertExchange(ex, 'fanout', EX_OPTS);
-  ch.assertQueue(q, QUEUE_OPTS);
-  ch.purgeQueue(q);
-  return ch.bindQueue(q, ex, '', {})
+  return doAll(
+    ch.assertExchange(ex, 'fanout', EX_OPTS),
+    ch.assertQueue(q, QUEUE_OPTS),
+    ch.purgeQueue(q),
+    ch.bindQueue(q, ex, '', {}))
     .then(function() {
-      ch.publish({exchange: ex, routingKey: ''}, new Buffer('foobar'));
-      return waitForMessages(q);
-    })
+      ch.publish({exchange: ex, routingKey: ''},
+                 new Buffer('foobar'));
+      return waitForMessages(q);})
     .then(function() { // message got through!
       return ch.get(q, {noAck:true})
-        .then(function(m) {
-          assert(m);
-        });
-    })
+        .then(function(m) {assert(m);});})
     .then(function() {
-      return ch.unbindQueue(q, ex, '', {});
-    })
+      return ch.unbindQueue(q, ex, '', {});})
     .then(function() {
       // via the no-longer-existing binding
       ch.publish({exchange: ex, routingKey: ''}, new Buffer(viabinding));
       // direct to the queue
       ch.publish({exchange: '', routingKey: q}, new Buffer(direct));
-      return waitForMessages(q);
-    })
-  .then(function() {
-    return ch.get(q)
-      .then(function(m) {
-        // the direct to queue message got through, the via-binding
-        // message (sent first) did not
-        assert.equal(direct, m.content.toString());
-      });
+      return waitForMessages(q);})
+    .then(function() {return ch.get(q)})
+    .then(function(m) {
+      // the direct to queue message got through, the via-binding
+      // message (sent first) did not
+      assert.equal(direct, m.content.toString());
     });
 });
 
@@ -215,59 +210,64 @@ chtest("consume via exchange-exchange binding", function(ch) {
   var ex1 = 'test.ex-ex-binding1', ex2 = 'test.ex-ex-binding2';
   var q = 'test.ex-ex-binding-q';
   var rk = 'test.routing.key', msg = randomString();
-  ch.assertExchange(ex1, 'direct', EX_OPTS);
-  ch.assertExchange(ex2, 'fanout', {durable: false, internal: true});
-  ch.assertQueue(q, QUEUE_OPTS);
-  ch.purgeQueue(q);
-  ch.bindExchange(ex2, ex1, rk, {});
-  return ch.bindQueue(q, ex2, '', {})
+  return doAll(
+    ch.assertExchange(ex1, 'direct', EX_OPTS),
+    ch.assertExchange(ex2, 'fanout',
+                      {durable: false, internal: true}),
+    ch.assertQueue(q, QUEUE_OPTS),
+    ch.purgeQueue(q),
+    ch.bindExchange(ex2, ex1, rk, {}),
+    ch.bindQueue(q, ex2, '', {}))
     .then(function() {
       var arrived = defer();
       function delivery(m) {
         if (m.content.toString() === msg) arrived.resolve();
         else arrived.reject(new Error("Wrong message"));
       }
-      ch.consume(q, delivery, {noAck: true}).then(function() {
-        ch.publish({exchange: ex1, routingKey: rk}, new Buffer(msg));
-      });
+      ch.consume(q, delivery, {noAck: true})
+        .then(function() {
+          ch.publish({exchange: ex1, routingKey: rk},
+                     new Buffer(msg));
+        });
       return arrived.promise;
     });
 });
 
-// This is convoluted. Sorry.
+// This is a bit convoluted. Sorry.
 chtest("cancel consumer", function(ch) {
   var q = 'test.consumer-cancel';
-  var arrived = defer();
+  var recv1 = defer();
   var ctag;
 
-  ch.assertQueue(q, QUEUE_OPTS);
-  ch.purgeQueue(q);
-  // My callback is 'resolve the promise in `arrived`'
-  ch.consume(q, function() { arrived.resolve(); }, {noAck:true})
-    .then(function(ok) {
-      ctag = ok.fields.consumerTag;
-      ch.publish({exchange: '', routingKey: q}, new Buffer('foo'));
-    });
+  doAll(
+    ch.assertQueue(q, QUEUE_OPTS),
+    ch.purgeQueue(q),
+    // My callback is 'resolve the promise in `arrived`'
+    ch.consume(q, function() { recv1.resolve(); }, {noAck:true})
+      .then(function(ok) {
+        ctag = ok.fields.consumerTag;
+        ch.publish({exchange: '', routingKey: q}, new Buffer('foo'));
+      }));
   // A message should arrive because of the consume
-  return arrived.promise.then(function() {
+  return recv1.promise.then(function() {
     // replace the promise resolved by the consume callback
-    arrived = defer();
+    recv1 = defer();
     
-    ch.cancel(ctag).then(function() {
-      ch.publish({exchange: '', routingKey: q}, new Buffer('bar'));
-    }, console.warn);
-
-    // but check a message did arrive in the queue
-    return waitForMessages(q)
+    return doAll(
+      ch.cancel(ctag).then(function() {
+        ch.publish({exchange: '', routingKey: q}, new Buffer('bar'));
+      }),
+      // but check a message did arrive in the queue
+      waitForMessages(q))
       .then(function() {
         ch.get(q, {noAck:true})
           .then(function(m) {
-            // I'm going to reject it, because I flip succeed/fail just
-            // below
+            // I'm going to reject it, because I flip succeed/fail
+            // just below
             if (m.content.toString() === 'bar')
-              arrived.reject();
+              recv1.reject();
           });
-        return expectFail(arrived.promise);
+        return expectFail(recv1.promise);
         // i.e., fail on delivery, succeed on get-ok
       });
   });
@@ -278,8 +278,9 @@ chtest("ack", function(ch) {
   var q = 'test.ack';
   var msg1 = randomString(), msg2 = randomString();
 
-  ch.assertQueue(q, QUEUE_OPTS);
-  return ch.purgeQueue(q)
+  return doAll(
+    ch.assertQueue(q, QUEUE_OPTS),
+    ch.purgeQueue(q))
     .then(function() {
       ch.publish({exchange: '', routingKey: q}, new Buffer(msg1));
       ch.publish({exchange: '', routingKey: q}, new Buffer(msg2));
@@ -307,24 +308,19 @@ chtest("nack", function(ch) {
   var q = 'test.nack';
   var msg1 = randomString();
 
-  ch.assertQueue(q, QUEUE_OPTS);
-  return ch.purgeQueue(q)
+  return doAll(
+    ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
     .then(function() {
       ch.publish({exchange: '', routingKey: q}, new Buffer(msg1));
-      return waitForMessages(q, 1);
-    })
+      return waitForMessages(q);})
     .then(function() {
-      return ch.get(q, {noAck: false})
-    })
+      return ch.get(q, {noAck: false})})
     .then(function(m) {
       assert.equal(msg1, m.content.toString());
       ch.nack(m);
-      return waitForMessages(q, 1);
-    })
-    .then(function(qok) {
-      assert.equal(1, qok.fields.messageCount);
-      return ch.get(q);
-    })
+      return waitForMessages(q);})
+    .then(function() {
+      return ch.get(q);})
     .then(function(m) {
       assert(m);
       assert.equal(msg1, m.content.toString());
