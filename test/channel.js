@@ -1,6 +1,7 @@
 // Test the channel model API
 
 var assert = require('assert');
+var defer = require('when').defer;
 var Channel = require('../lib/channel').Channel;
 var Connection = require('../lib/connection').Connection;
 var mock = require('./mocknet');
@@ -175,6 +176,34 @@ test("Bad RPC", channelTest(
       .then(function() {
         send(defs.ChannelCloseOk, {}, ch);
       });
+  }));
+
+test("RPC on closed channel", channelTest(
+  function(ch, done) {
+    ch.open();
+    var close = defer(), fail1 = defer(), fail2 = defer();
+    ch.on('error', close.resolve);
+    ch.rpc(defs.BasicRecover, {requeue:true}, defs.BasicRecoverOk)
+      .then(fail1.reject, fail1.resolve);
+    ch.rpc(defs.BasicRecover, {requeue:true}, defs.BasicRecoverOk)
+      .then(fail2.reject, fail2.resolve);
+
+    close.promise
+      .then(function(){ return fail1.promise; })
+      .then(function() { return fail2.promise; })
+      .then(succeed(done), fail(done));
+  },
+  function(send, await, done, ch) {
+    await(defs.BasicRecover)()
+      .then(function() {
+        send(defs.ChannelClose, {
+          replyText: 'Nuh-uh!',
+          replyCode: defs.constants.CHANNEL_ERROR,
+          methodId: 0, classId: 0
+        }, ch);
+        return await(defs.ChannelCloseOk);
+      })
+      .then(null, fail(done));
   }));
 
 test("publish", channelTest(
