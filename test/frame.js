@@ -67,7 +67,7 @@ suite("Parsing", function() {
       
       t.forEach(function(f) {
         f.channel = 0;
-        bufs.push(defs.encoder(f.id)(0, f.fields));
+        bufs.push(defs.encodeMethod(f.id, 0, f.fields));
       });
 
       partition(bufs).forEach(input.write.bind(input));

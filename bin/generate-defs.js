@@ -91,28 +91,37 @@ for (var i = 0, len = defs.classes.length; i < len; i++) {
     }
 }
 
-println('module.exports.decoder = function(id) {');
+println('module.exports.decode = function(id, buf) {');
 println(indent + 'switch (id) {');
 for (var m in methods) {
   var method = methods[m];
-  println(indent + 'case ' + method.id + ': return ' + method.decoder + ';');
+  println(indent + 'case ' + method.id +
+          ': return ' + method.decoder + '(buf);');
 }
 for (var p in propertieses) {
   var props = propertieses[p];
-  println(indent + 'case ' + props.id + ': return ' + props.decoder + ';');
+  println(indent + 'case ' + props.id +
+          ': return ' + props.decoder + '(buf);');
 }
 println(indent + '}');
 println('}'); nl();
 
-println('module.exports.encoder = function(id) {');
+println('module.exports.encodeMethod = function(id, channel, fields) {');
 println(indent + 'switch (id) {');
 for (var m in methods) {
   var method = methods[m];
-  println(indent + 'case ' + method.id + ': return ' + method.encoder + ';');
+  println(indent + 'case ' + method.id +
+          ': return ' + method.encoder + '(channel, fields);');
 }
+println(indent + '}');
+println('}');
+
+println('module.exports.encodeProperties = function(id, channel, size, fields) {');
+println(indent + 'switch (id) {');
 for (var p in propertieses) {
   var props = propertieses[p];
-  println(indent + 'case ' + props.id + ': return ' + props.encoder + ';');
+  println(indent + 'case ' + props.id +
+          ': return ' + props.encoder + '(channel, size, fields);');
 }
 println(indent + '}');
 println('}');

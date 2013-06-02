@@ -118,9 +118,9 @@ suite("Roundtrip values", function() {
 
 function roundtripMethod(Method) {
   return forAll(Method).satisfy(function(method) {
-    var buf = defs.encoder(method.id)(0, method.fields);
+    var buf = defs.encodeMethod(method.id, 0, method.fields);
     // FIXME depends on framing, ugh
-    var fs1 = defs.decoder(method.id)(buf.slice(11, buf.length));
+    var fs1 = defs.decode(method.id, buf.slice(11, buf.length));
     assert.deepEqual(method.fields, fs1);
     return true;
   });
@@ -128,10 +128,10 @@ function roundtripMethod(Method) {
 
 function roundtripProperties(Properties) {
   return forAll(Properties).satisfy(function(properties) {
-    var buf = defs.encoder(properties.id)(0, properties.size,
-                                          properties.fields);
+    var buf = defs.encodeProperties(properties.id, 0, properties.size,
+                                    properties.fields);
     // FIXME depends on framing, ugh
-    var fs1 = defs.decoder(properties.id)(buf.slice(19, buf.length));
+    var fs1 = defs.decode(properties.id, buf.slice(19, buf.length));
     assert.equal(properties.size, buf.readUInt64BE(11));
     assert.deepEqual(properties.fields, fs1);
     return true;
