@@ -4,6 +4,8 @@ var Connection = require('../lib/connection').Connection;
 var mock = require('./mocknet');
 var succeed = mock.succeed, fail = mock.fail;
 
+var LOG_ERRORS = process.env.LOG_ERRORS;
+
 var OPEN_OPTS = {
   // start-ok
   'clientProperties': {},
@@ -51,6 +53,7 @@ function connectionTest(client, server) {
   return function(done) {
     var pair = mock.socketPair();
     var c = new Connection(pair.client);
+    if (LOG_ERRORS) c.on('error', console.warn);
     client(c, done);
 
     // NB only not a race here because the writes are synchronous

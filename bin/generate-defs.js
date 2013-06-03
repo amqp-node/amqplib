@@ -126,6 +126,21 @@ for (var p in propertieses) {
 println(indent + '}');
 println('}');
 
+println('module.exports.info = function(id) {');
+println(indent + 'switch(id) {');
+for (var m in methods) {
+  var method = methods[m];
+  println(indent + 'case ' + method.id +
+          ': return ' + method.info + ';');
+}
+for (var p in propertieses) {
+  var properties = propertieses[p];
+  println(indent + 'case ' + properties.id +
+          ': return ' + properties.info + '();');
+}
+println(indent + '}');
+println('}');
+
 nl(); nl();
 
 for (var m in methods) {
@@ -318,7 +333,8 @@ function infoObj(thing) {
   var info = JSON.stringify({id: thing.id,
                              name: thing.name,
                              args: thing.args}, undefined, 2);
-  return 'module.exports.' + thing.info + ' = ' + info;
+  return 'module.exports.' + thing.info + ' = ' +
+    thing.info + ' = ' + info;
 }
 
 // The flags are laid out in groups of fifteen in a short (high to

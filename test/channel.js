@@ -10,10 +10,13 @@ var defs = require('../lib/defs');
 var conn_handshake = require('./connection').connection_handshake;
 var OPEN_OPTS = require('./connection').OPEN_OPTS;
 
+var LOG_ERRORS = process.env.LOG_ERRORS;
+
 function baseChannelTest(client, server) {
   return function(done) {
     var pair = mock.socketPair();
     var c = new Connection(pair.client);
+    if (LOG_ERRORS) c.on('error', console.warn);
     c.open(OPEN_OPTS).then(function() {
       client(c, done);
     }, fail(done));
@@ -32,6 +35,7 @@ function channelTest(client, server) {
   return baseChannelTest(
     function(conn, done) {
       var ch = new Channel(conn);
+      if (LOG_ERRORS) ch.on('error', console.warn);
       client(ch, done);
     },
     function(send, await, done) {
