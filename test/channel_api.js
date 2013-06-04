@@ -29,8 +29,11 @@ function doAll(/* promise... */) {
 // I'll rely on operations being rejected, rather than the channel
 // close error, to detect failure.
 function ignore() {}
-function ignoreErrors(ch) {
-  ch.on('error', ignore); return ch;
+function ignoreErrors(c) {
+  c.on('error', ignore); return c;
+}
+function logErrors(c) {
+  c.on('error', console.warn); return c;
 }
 
 function randomString() {
@@ -44,8 +47,7 @@ function randomString() {
 // rejected on test failure.
 function chtest(name, chfun) {
   test(name, function(done) {
-    api.connect().then(function(c) {
-      c.on('error', console.warn);
+    api.connect().then(logErrors).then(function(c) {
       c.createChannel().then(ignoreErrors).then(chfun)
         .then(succeed(done), fail(done))
       // close the connection regardless of what happens with the test
@@ -85,6 +87,21 @@ chtest("assert and check exchange", function(ch) {
     });
 });
 
+chtest("fail on checking a queue that's not there", function(ch) {
+  return expectFail(ch.checkQueue('test.random-' + randomString()));
+});
+
+chtest("fail on checking an exchange that's not there", function(ch) {
+  return expectFail(ch.checkExchange('test.random-' + randomString()));
+});
+
+chtest("channel break on publishing to non-exchange", function(ch) {
+  var bork = defer();
+  ch.on('error', bork.resolve.bind(bork));
+  ch.publish(randomString(), '', new Buffer('foobar'));
+  return bork.promise;
+});
+
 chtest("delete queue", function(ch) {
   var q = 'test.delete-queue';
   return doAll(
@@ -94,6 +111,10 @@ chtest("delete queue", function(ch) {
       return ch.deleteQueue(q);})
     .then(function() {
       return expectFail(ch.checkQueue(q));});
+});
+
+chtest("fail to delete no queue", function(ch) {
+  return expectFail(ch.deleteQueue('test.random-' + randomString()));
 });
 
 chtest("delete exchange", function(ch) {
