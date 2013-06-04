@@ -144,7 +144,7 @@ chtest("route message", function(ch) {
     ch.purgeQueue(q),
     ch.bindQueue(q, ex, '', {}))
     .then(function() {
-      ch.publish({exchange: ex, routingKey: ''}, new Buffer(msg));
+      ch.publish(ex, '', new Buffer(msg));
       return waitForMessages(q);})
     .then(function() {
       return ch.get(q, {noAck: true});})
@@ -154,12 +154,12 @@ chtest("route message", function(ch) {
     });
 });
 
-// publish to default exchange, purge, get-empty
+// send to queue, purge, get-empty
 chtest("purge queue", function(ch) {
   var q = 'test.purge-queue';
   return ch.assertQueue(q, {durable: false})
     .then(function() {
-      ch.publish({exchange: '', routingKey: q}, new Buffer('foobar'));
+      ch.sendToQueue(q, new Buffer('foobar'));
       return waitForMessages(q);})
     .then(function() {
       ch.purgeQueue(q);
@@ -182,8 +182,7 @@ chtest("unbind queue", function(ch) {
     ch.purgeQueue(q),
     ch.bindQueue(q, ex, '', {}))
     .then(function() {
-      ch.publish({exchange: ex, routingKey: ''},
-                 new Buffer('foobar'));
+      ch.publish(ex, '', new Buffer('foobar'));
       return waitForMessages(q);})
     .then(function() { // message got through!
       return ch.get(q, {noAck:true})
@@ -192,9 +191,9 @@ chtest("unbind queue", function(ch) {
       return ch.unbindQueue(q, ex, '', {});})
     .then(function() {
       // via the no-longer-existing binding
-      ch.publish({exchange: ex, routingKey: ''}, new Buffer(viabinding));
+      ch.publish(ex, '', new Buffer(viabinding));
       // direct to the queue
-      ch.publish({exchange: '', routingKey: q}, new Buffer(direct));
+      ch.sendToQueue(q, new Buffer(direct));
       return waitForMessages(q);})
     .then(function() {return ch.get(q)})
     .then(function(m) {
@@ -226,8 +225,7 @@ chtest("consume via exchange-exchange binding", function(ch) {
       }
       ch.consume(q, delivery, {noAck: true})
         .then(function() {
-          ch.publish({exchange: ex1, routingKey: rk},
-                     new Buffer(msg));
+          ch.publish(ex1, rk, new Buffer(msg));
         });
       return arrived.promise;
     });
@@ -246,7 +244,7 @@ chtest("cancel consumer", function(ch) {
     ch.consume(q, function() { recv1.resolve(); }, {noAck:true})
       .then(function(ok) {
         ctag = ok.fields.consumerTag;
-        ch.publish({exchange: '', routingKey: q}, new Buffer('foo'));
+        ch.sendToQueue(q, new Buffer('foo'));
       }));
   // A message should arrive because of the consume
   return recv1.promise.then(function() {
@@ -255,7 +253,7 @@ chtest("cancel consumer", function(ch) {
     
     return doAll(
       ch.cancel(ctag).then(function() {
-        ch.publish({exchange: '', routingKey: q}, new Buffer('bar'));
+        ch.sendToQueue(q, new Buffer('bar'));
       }),
       // but check a message did arrive in the queue
       waitForMessages(q))
@@ -282,8 +280,8 @@ chtest("ack", function(ch) {
     ch.assertQueue(q, QUEUE_OPTS),
     ch.purgeQueue(q))
     .then(function() {
-      ch.publish({exchange: '', routingKey: q}, new Buffer(msg1));
-      ch.publish({exchange: '', routingKey: q}, new Buffer(msg2));
+      ch.sendToQueue(q, new Buffer(msg1));
+      ch.sendToQueue(q, new Buffer(msg2));
       return waitForMessages(q, 2);
     })
     .then(function() {
@@ -311,7 +309,7 @@ chtest("nack", function(ch) {
   return doAll(
     ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
     .then(function() {
-      ch.publish({exchange: '', routingKey: q}, new Buffer(msg1));
+      ch.sendToQueue(q, new Buffer(msg1));
       return waitForMessages(q);})
     .then(function() {
       return ch.get(q, {noAck: false})})
