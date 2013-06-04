@@ -39,15 +39,6 @@ function randomString() {
   return hash.digest('base64');
 }
 
-test("connect local", function(done) {
-  api.connect().then(function(c) {
-    return c.close()
-    ;}).then(succeed(done), fail(done));
-});
-
-var QUEUE_OPTS = {durable: false};
-var EX_OPTS = {durable: false};
-
 // Run a test with `name`, given a function that takes an open
 // channel, and returns a promise that is resolved on test success or
 // rejected on test failure.
@@ -63,7 +54,22 @@ function chtest(name, chfun) {
   });
 }
 
+suite("connect", function() {
+
+test("local", function(done) {
+  api.connect().then(function(c) {
+    return c.close()
+    ;}).then(succeed(done), fail(done));
+});
+
 chtest("create channel", ignore); // i.e., just don't bork
+
+});
+
+var QUEUE_OPTS = {durable: false};
+var EX_OPTS = {durable: false};
+
+suite("assert, check, delete", function() {
 
 chtest("assert and check queue", function(ch) {
   return ch.assertQueue('test.check-queue', QUEUE_OPTS)
@@ -101,6 +107,8 @@ chtest("delete exchange", function(ch) {
       return expectFail(ch.checkExchange(ex));});
 });
 
+});
+
 // Wait for the queue to meet the condition; useful for waiting for
 // messages to arrive, for example.
 function waitForQueue(q, condition) {
@@ -131,6 +139,8 @@ function waitForMessages(q, num) {
     return qok.fields.messageCount >= min;
   });
 }
+
+suite("binding, consuming", function() {
 
 // bind, publish, get
 chtest("route message", function(ch) {
@@ -323,4 +333,6 @@ chtest("nack", function(ch) {
       assert(m);
       assert.equal(msg1, m.content.toString());
     });
+});
+
 });
