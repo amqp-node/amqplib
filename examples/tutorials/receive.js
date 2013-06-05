@@ -3,6 +3,7 @@
 var api = require('amqplib');
 
 api.connect('amqp://localhost').then(function(c) {
+  process.on('SIGINT', c.close.bind(c));
   return c.createChannel().then(function(ch) {
     
     var ok = ch.assertQueue('hello');
