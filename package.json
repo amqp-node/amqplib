@@ -1,8 +1,7 @@
 {
-  "name": "amqp-client",
+  "name": "amqplib",
   "version": "0.0.1",
-  "description": "An AMQP 0-9-1 (e.g., RabbitMQ) client.",
-  "main": "index.js",
+  "description": "An AMQP 0-9-1 (e.g., RabbitMQ) library and client.",
   "engines": {
       "node": "0.8 || 0.10"
   },
@@ -21,9 +20,9 @@
   },
   "repository": "",
   "keywords": [
-    "AMQP",
+    "AMQP", "AMQP 0-9-1",
     "RabbitMQ"
   ],
   "author": "Michael Bridgen <mikeb@squaremobius.net>",
-  "license": "BSD"
+  "license": "MPL 2.0"
 }
