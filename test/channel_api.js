@@ -89,6 +89,18 @@ chtest("assert and check exchange", function(ch) {
     });
 });
 
+chtest("fail on reasserting queue with different options",
+       function(ch) {
+         var q = 'test.reassert-queue';
+         return ch.assertQueue(
+           q, {durable: false, autoDelete: true})
+           .then(function() {
+             return expectFail(
+               ch.assertQueue(q, {durable: false,
+                                  autoDelete: false}));
+           });
+       });
+
 chtest("fail on checking a queue that's not there", function(ch) {
   return expectFail(ch.checkQueue('test.random-' + randomString()));
 });
@@ -96,6 +108,16 @@ chtest("fail on checking a queue that's not there", function(ch) {
 chtest("fail on checking an exchange that's not there", function(ch) {
   return expectFail(ch.checkExchange('test.random-' + randomString()));
 });
+
+chtest("fail on reasserting exchange with different type",
+       function(ch) {
+         var ex = 'test.reassert-ex';
+         return ch.assertExchange(ex, 'fanout', EX_OPTS)
+           .then(function() {
+             return expectFail(
+               ch.assertExchange(ex, 'direct', EX_OPTS));
+           });
+       });
 
 chtest("channel break on publishing to non-exchange", function(ch) {
   var bork = defer();
