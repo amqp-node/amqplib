@@ -275,7 +275,7 @@ function confirmTest(variety, Method) {
   return test('confirm ' + variety, channelTest(
     function(ch, done) {
       ch.on(variety, function(f) {
-        assert.equal(1, f.fields.deliveryTag);
+        assert.equal(1, f.deliveryTag);
         done();
       });
       ch.open();

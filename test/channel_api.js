@@ -181,7 +181,7 @@ function waitForQueue(q, condition) {
 function waitForMessages(q, num) {
   var min = (num === undefined) ? 1 : num;
   return waitForQueue(q, function(qok) {
-    return qok.fields.messageCount >= min;
+    return qok.messageCount >= min;
   });
 }
 
@@ -298,7 +298,7 @@ chtest("cancel consumer", function(ch) {
     // My callback is 'resolve the promise in `arrived`'
     ch.consume(q, function() { recv1.resolve(); }, {noAck:true})
       .then(function(ok) {
-        ctag = ok.fields.consumerTag;
+        ctag = ok.consumerTag;
         ch.sendToQueue(q, new Buffer('foo'));
       }));
   // A message should arrive because of the consume
@@ -407,7 +407,7 @@ confirmtest('multiple confirms', function(ch) {
     .then(function() {
       var multipleRainbows = false;
       ch.on('ack', function(a) {
-        if (a.fields.multiple) multipleRainbows = true;
+        if (a.multiple) multipleRainbows = true;
       });
 
       function prod(num) {
