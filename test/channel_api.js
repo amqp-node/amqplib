@@ -45,16 +45,18 @@ function randomString() {
 // Run a test with `name`, given a function that takes an open
 // channel, and returns a promise that is resolved on test success or
 // rejected on test failure.
-function chtest(name, chfun) {
+function channel_test(chmethod, name, chfun) {
   test(name, function(done) {
     api.connect().then(logErrors).then(function(c) {
-      c.createChannel().then(ignoreErrors).then(chfun)
+      c[chmethod]().then(ignoreErrors).then(chfun)
         .then(succeed(done), fail(done))
       // close the connection regardless of what happens with the test
         .then(function() {c.close();});
     });
   });
 }
+
+var chtest = channel_test.bind(null, 'createChannel');
 
 suite("connect", function() {
 
@@ -353,6 +355,56 @@ chtest("nack", function(ch) {
     .then(function(m) {
       assert(m);
       assert.equal(msg1, m.content.toString());
+    });
+});
+
+});
+
+confirmtest = channel_test.bind(null, 'createConfirmChannel');
+
+suite("confirms", function() {
+
+confirmtest('message is confirmed', function(ch) {
+  var q = 'test.confirm-message';
+  return doAll(
+    ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
+    .then(function() {
+      return ch.sendToQueue(q, new Buffer('bleep'));
+    });
+});
+
+// Usually one can provoke the server into confirming more than one
+// message in an ack by simply sending a few messages in quick
+// succession; a bit unscientific I know. Luckily we can eavesdrop on
+// the acknowledgements coming through to see if we really did get a
+// multi-ack.
+confirmtest('multiple confirms', function(ch) {
+  var q = 'test.multiple-confirms';
+  return doAll(
+    ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
+    .then(function() {
+      var multipleRainbows = false;
+      ch.on('ack', function(a) {
+        if (a.fields.multiple) multipleRainbows = true;
+      });
+
+      function prod(num) {
+        var cs = [];
+        for (var i=0; i < num; i++)
+          cs.push(ch.sendToQueue(q, new Buffer('bleep')));
+        return when.all(cs).then(function() {
+          if (multipleRainbows) return true;
+          else if (num > 500) throw new Error(
+            "Couldn't provoke the server" +
+              "into multi-acking with " + num +
+              " messages; giving up");
+          else {
+            //console.warn("Failed with " + num + "; trying " + num * 2);
+            return prod(num * 2);
+          }
+        });
+      }
+      return prod(5);
     });
 });
 
