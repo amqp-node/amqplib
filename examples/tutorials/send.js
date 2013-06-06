@@ -2,14 +2,15 @@
 
 var api = require('amqplib');
 
-api.connect('amqp://localhost').then(function(c) {
-  c.createChannel().then(function(ch) {
+api.connect('amqp://localhost').then(function(conn) {
+  return conn.createChannel().then(function(ch) {
+    var msg = 'Hello World!';
 
-    var ok = ch.assertQueue('hello');
+    var ok = ch.assertQueue('hello', {durable: false});
     
-    return ok.then(function() {
-      ch.sendToQueue('hello', new Buffer('Hello World!'));
-      console.log("[x] Sent 'Hello World!'");
-    });
-  }).then(function() { c.close(); });
+    return ok.then(function(_qok) {
+      ch.sendToQueue('hello', new Buffer(msg));
+      console.log("[x] Sent '%s'", msg);
+    }).then(function() { conn.close(); });
+  });
 }).then(null, console.warn);
