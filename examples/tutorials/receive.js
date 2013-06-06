@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-var api = require('amqplib');
+var amqp = require('amqplib');
 
-api.connect('amqp://localhost').then(function(conn) {
+amqp.connect('amqp://localhost').then(function(conn) {
   process.on('SIGINT', function() { conn.close(); });
   return conn.createChannel().then(function(ch) {
     
