@@ -1,7 +1,7 @@
 var assert = require('assert');
 
 var Frames = require('../lib/frame');
-var Heartbeat = Frames.Heartbeat;
+var HEARTBEAT = Frames.HEARTBEAT;
 var Stream = require('stream');
 var PassThrough = Stream.PassThrough ||
     require('readable-stream/passthrough');
@@ -11,7 +11,7 @@ var defs = require('../lib/defs');
 // We'll need to supply a stream which we manipulate ourselves
 
 function inputs() {
-    return new PassThrough();
+  return new PassThrough();
 }
 
 var HB = new Buffer([defs.constants.FRAME_HEARTBEAT,
@@ -25,7 +25,7 @@ suite("Explicit parsing", function() {
     var input = inputs();
     var frames = new Frames(input);
     input.write(HB);
-    assert(frames.recvFrame() instanceof Heartbeat);
+    assert(frames.recvFrame() === HEARTBEAT);
     assert(!frames.recvFrame());
   });
 
@@ -35,7 +35,7 @@ suite("Explicit parsing", function() {
     input.write(HB.slice(0, 3));
     assert(!frames.recvFrame());
     input.write(HB.slice(3));
-    assert(frames.recvFrame() instanceof Heartbeat);
+    assert(frames.recvFrame() === HEARTBEAT);
     assert(!frames.recvFrame());
   });
 });

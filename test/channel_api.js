@@ -6,6 +6,12 @@ var succeed = mock.succeed, fail = mock.fail;
 var when = require('when');
 var defer = when.defer;
 
+URL = process.env.URL || 'amqp://localhost';
+
+function connect() {
+  return api.connect(URL);
+}
+
 // Expect this promise to fail, and flip the results accordingly.
 function expectFail(promise) {
   var rev = defer();
@@ -47,7 +53,7 @@ function randomString() {
 // rejected on test failure.
 function channel_test(chmethod, name, chfun) {
   test(name, function(done) {
-    api.connect().then(logErrors).then(function(c) {
+    connect(URL).then(logErrors).then(function(c) {
       c[chmethod]().then(ignoreErrors).then(chfun)
         .then(succeed(done), fail(done))
       // close the connection regardless of what happens with the test
@@ -60,8 +66,8 @@ var chtest = channel_test.bind(null, 'createChannel');
 
 suite("connect", function() {
 
-test("local", function(done) {
-  api.connect().then(function(c) {
+test("at all", function(done) {
+  connect(URL).then(function(c) {
     return c.close()
     ;}).then(succeed(done), fail(done));
 });
@@ -158,7 +164,7 @@ chtest("delete exchange", function(ch) {
 // messages to arrive, for example.
 function waitForQueue(q, condition) {
   var ready = defer();
-  api.connect().then(function(c) {
+  connect(URL).then(function(c) {
     return c.createChannel()
       .then(function(ch) {
         function check() {
