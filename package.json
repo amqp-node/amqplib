@@ -8,7 +8,7 @@
   "dependencies": {
     "bitsyntax": "0.0.2",
     "buffer-more-ints": "",
-    "readable-stream": "",
+    "readable-stream": ">=1.0.2",
     "when": ""
   },
   "devDependencies": {
