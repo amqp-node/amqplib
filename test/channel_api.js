@@ -386,6 +386,32 @@ chtest("nack", function(ch) {
     });
 });
 
+chtest("prefetch", function(ch) {
+  var q = 'test.prefetch';
+  return doAll(
+    ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q),
+    ch.prefetch(1))
+    .then(function() {
+      ch.sendToQueue(q, new Buffer('foobar'));
+      ch.sendToQueue(q, new Buffer('foobar'));
+      return waitForMessages(q, 2);
+    })
+    .then(function() {
+      var first = defer();
+      return doAll(
+        ch.consume(q, function(m) {
+          first.resolve(m);
+        }, {noAck: false}),
+        first.promise.then(function(m) {
+          first = defer();
+          ch.ack(m);
+          return first.promise.then(function(m) {
+            ch.ack(m);
+          })
+        }));
+    });
+});
+
 });
 
 confirmtest = channel_test.bind(null, 'createConfirmChannel');
