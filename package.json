@@ -17,7 +17,8 @@
     "claire": ""
   },
   "scripts": {
-    "test": "make test"
+    "test": "make test",
+    "prepublish": "make"
   },
   "repository": "",
   "keywords": [
