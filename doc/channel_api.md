@@ -104,8 +104,9 @@ en_US).
 ## `ChannelModel(connection)`
 
 This constructor represents a connection in the channel API. It takes
-as an argument a `connection.Connection`; in general though it is better to use
-`connect()`, which will open the connection for you.
+as an argument a `connection.Connection`; though it is better to use
+`connect()`, which will open the connection for you. It is exported as
+a potential extension point.
 
 ### `ChannelModel#close`
 
@@ -173,7 +174,8 @@ multiplexed over connections, and represent something like a session,
 in that most operations (and thereby most errors) are scoped to
 channels.
 
-The constructor is not exported from the module; obtain an open
+The constructor is exported from the module as an extension
+point. When using the client library in an application, obtain an open
 `Channel` by opening a connection (`connect()` above) and calling
 `#createChannel`.
 
@@ -652,19 +654,27 @@ requeued.
 ## `ChannelModel#createConfirmChannel()`
 
 Create a channel which uses confirmations (a [RabbitMQ
-extension][rabbitmq-confirms]). On the resulting channel, each
-published message is 'acked' or (in exceptional circumstances)
-'nacked' by the server, thereby indicating that it's been dealt
-with. A confirm channel has the same methods as a regular channel,
-except that `#publish` and `#sendToQueue` return a promise that will
-be resolved when the message is acked, or rejected should it be
-nacked.
+extension][rabbitmq-confirms]). As with `#createChannel`, the return
+value is a promise that will be resolved with an open channel.
+
+On the resulting channel, each published message is 'acked' or (in
+exceptional circumstances) 'nacked' by the server, thereby indicating
+that it's been dealt with. A confirm channel has the same methods as a
+regular channel, except that `#publish` and `#sendToQueue` return a
+promise that will be resolved when the message is acked, or rejected
+should it be nacked.
 
 There are, broadly speaking, two uses for confirms. The first is to be
 able to act on the information that a message has been accepted, for
 example by responding to an upstream request. The second is to rate
 limit a publisher by limiting the number of unconfirmed messages it's
 allowed.
+
+## `ConfirmChannel(connection)`
+
+This constructor is a channel that uses confirms. It is exported as an
+extension point. To obtain such a channel, use `connect` to get a
+connection, then call `#createConfirmChannel`.
 
 [amqpurl]: http://www.rabbitmq.com/uri-spec.html
 [rabbitmq-tutes]: http://www.rabbitmq.com/getstarted.html
