@@ -41,6 +41,17 @@ string with dots, e.g., '...' to `new_task`. Each dot makes the worker
  * [new_task.js](new_task.js)
  * [worker.js](worker.js)
 
+## [Tutorial three: Publish/Subscribe][tute-three]
+
+Using RabbitMQ as a broadcast mechanism. `emit_log` sends a "log"
+message to a fanout exchange, and all `receive_logs` processes receive
+log messages.
+
+ * [emit_log.js](emit_log.js)
+ * [receive_logs.js](receive_logs.js)
+
+
 [rabbitmq-tutes]: http://github.com/rabbitmq/rabbitmq-tutorials
 [tute-one]: http://www.rabbitmq.com/tutorials/tutorial-one-python.html
 [tute-two]: http://www.rabbitmq.com/tutorials/tutorial-two-python.html
+[tute-three]: http://www.rabbitmq.com/tutorials/tutorial-three-python.html
