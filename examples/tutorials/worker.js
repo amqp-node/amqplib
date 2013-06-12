@@ -10,6 +10,7 @@ amqp.connect('amqp://localhost').then(function(conn) {
     ok = ok.then(function() { ch.prefetch(1); });
     ok = ok.then(function() {
       ch.consume('task_queue', doWork, {noAck: false});
+      console.log("[*] Waiting for messages. To exit press CTRL+C");
     });
     return ok;
 
@@ -17,7 +18,7 @@ amqp.connect('amqp://localhost').then(function(conn) {
       var body = msg.content.toString();
       console.log("[x] Received '%s'", body);
       var secs = body.split('.').length - 1;
-      console.log("[x] Waiting %d", secs);
+      console.log("[x] Task takes %d seconds", secs);
       setTimeout(function() {
         console.log("[x] Done");
         ch.ack(msg);

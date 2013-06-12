@@ -15,7 +15,7 @@ amqp.connect('amqp://localhost').then(function(conn) {
     });
     
     return ok.then(function(_consumeOk) {
-      console.log('[*] Waiting for messages. Press CTRL-C to exit');
+      console.log('[*] Waiting for messages. To exit press CTRL+C');
     });
   });
 }).then(null, console.warn);
