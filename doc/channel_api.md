@@ -18,11 +18,11 @@ ends up being a fairly natural way to use AMQP. The downside is that
 it doesn't give any guidance on *useful* ways to use AMQP; that is, it
 does little beyond giving access to the various AMQP methods.
 
-Most operations in AMQP are RPCs, sychronous at the channel layer of
+Most operations in AMQP are RPCs, synchronous at the channel layer of
 the protocol but asynchronous from the library's point of view;
 accordingly, most methods return promises yielding the server's reply
 (often containing useful information such as generated
-identifiers). RPCs are queued in the channel if it is already waiting
+identifiers). RPCs are queued by the channel if it is already waiting
 for a reply.
 
 Failed operations will
@@ -78,10 +78,9 @@ given) is interpreted as the virtual host named `/`, which is present
 in RabbitMQ out of the box. Per the URI specification, _just a
 trailing slash_ as in `'amqp://localhost/'` would indicate the virtual
 host with an empty name, which does not exist unless it's been
-explicitly created (and the admin tools probably won't let you do
-that). When specifying another virtual host, remember that its name
-must be escaped; so e.g., the virtual host named `/foo` is `'%2Ffoo'`;
-in a full URI, `'amqp://localhost/%2Ffoo'`.
+explicitly created. When specifying another virtual host, remember
+that its name must be escaped; so e.g., the virtual host named `/foo`
+is `'%2Ffoo'`; in a full URI, `'amqp://localhost/%2Ffoo'`.
 
 Further connection tuning parameters may be given in the query part of
 the URL, e.g., as in `'amqp://localhost?frameMax=0x1000'`. These are:
@@ -97,6 +96,8 @@ the URL, e.g., as in `'amqp://localhost?frameMax=0x1000'`. These are:
 
  * `heartbeat`: the period of the connection heartbeat, in
    seconds. Defaults to `0`, meaning no heartbeat. OMG no heartbeat!
+   (**NB** heartbeating isn't implemented yet, so best to let it
+   default)
 
  * `locale`: the desired locale for error messages, I
    suppose. RabbitMQ only ever uses `en_US`; which, happily, is the
@@ -253,7 +254,7 @@ them options; they will overwrite anything you supply in `arguments`.
  * `expires` (0 < n < 2^32): the queue will be destroyed after n
   milliseconds of disuse, where use means having consumers, being
   declared (asserted or checked, in this API), or being polled with a
-  `get`.
+  `#get`.
 
  * `deadLetterExchange` (string): an exchange to which messages
   discarded from the queue will be resent. Use `deadLetterRoutingKey`
@@ -281,9 +282,9 @@ recent consumer count, and a recent message count; e.g.,
 ### `Channel#checkQueue(queue)`
 
 Check whether a queue exists. This will bork the channel if the named
-queue *doesn't* exist; if it does exist, hooray! There's no options as
-with `#assertQueue()`, just the queue name. The reply from the server
-is the same as for `#assertQueue()`.
+queue *doesn't* exist; if it does exist, you go through to the next
+round!  There's no options as with `#assertQueue()`, just the queue
+name. The reply from the server is the same as for `#assertQueue()`.
 
 ### `Channel#deleteQueue(queue)`
 
