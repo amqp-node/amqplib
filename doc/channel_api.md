@@ -8,7 +8,7 @@ title: Channel API reference
 This is the "main" module in the library:
 
 ```javascript
-var ampq = require('amqplib');
+var amqp = require('amqplib');
 ```
 
 The client API is based closely on the protocol model. The _modus
