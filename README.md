@@ -1,5 +1,7 @@
 # AMQP 0-9-1 library and client for Node.JS
 
+[![Build Status](https://travis-ci.org/squaremo/amqp.node.png)](https://travis-ci.org/squaremo/amqp.node)
+
  * [GitHub pages][gh-pages]
  * [API reference][gh-pages-apiref]
  * [Examples from RabbitMQ tutorials][tutes]
