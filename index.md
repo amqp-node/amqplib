@@ -36,7 +36,7 @@ server, and don't return a promise.
 In general I have made arguments that are mandatory in the protocol
 into method arguments in the API, and coalesced optional arguments,
 properties, and RabbitMQ extensions into a single `options` argument
-which can be ommitted altogether.
+which can be omitted altogether.
 
 The [reference](doc/channel_api.html) has full details.
 
