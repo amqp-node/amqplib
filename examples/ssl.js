@@ -51,7 +51,7 @@ var opts = {
 //
 var opts1 = {  ca: [fs.readFileSync('../etc/testca/cacert.pem')] };
 
-var open = amqp.connect('amqps://localhost', opts1);
+var open = amqp.connect('amqps://localhost', opts);
 
 open.then(function(conn) {
   process.on('SIGINT', conn.close.bind(conn));
