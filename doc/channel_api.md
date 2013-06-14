@@ -63,15 +63,15 @@ in `options` are ignored, so it is often possible to coalesce the
 options for a number of operations into a single object, should that
 be convenient.
 
-## `connect([url])`
+## `connect([url], [socketOptions])`
 
 Connect to an AMQP 0-9-1 server, optionally given an AMQP URL (see
-[AMQP URI syntax][amqpurl]). The protocol part (`amqp:` or `amqps:`)
-is mandatory; defaults for elided parts are as given in
-`'amqp://guest:guest@localhost:5672'`. If the URL is omitted entirely,
-it will default to `'amqp://localhost'`, which given the defaults for
-missing parts, will connect to a RabbitMQ installation with factory
-settings, on localhost.
+[AMQP URI syntax][amqpurl]) and socket options. The protocol part
+(`amqp:` or `amqps:`) is mandatory; defaults for elided parts are as
+given in `'amqp://guest:guest@localhost:5672'`. If the URL is omitted
+entirely, it will default to `'amqp://localhost'`, which given the
+defaults for missing parts, will connect to a RabbitMQ installation
+with factory settings, on localhost.
 
 For convenience, an _absent_ path segment (e.g., as in the URLs just
 given) is interpreted as the virtual host named `/`, which is present
@@ -82,8 +82,8 @@ explicitly created. When specifying another virtual host, remember
 that its name must be escaped; so e.g., the virtual host named `/foo`
 is `'%2Ffoo'`; in a full URI, `'amqp://localhost/%2Ffoo'`.
 
-Further connection tuning parameters may be given in the query part of
-the URL, e.g., as in `'amqp://localhost?frameMax=0x1000'`. These are:
+Further AMQP tuning parameters may be given in the query part of the
+URL, e.g., as in `'amqp://localhost?frameMax=0x1000'`. These are:
 
  * `frameMax`, the size in bytes of the maximum frame allowed over the
    connection. `0` means no limit (but since frames have a size field
@@ -102,6 +102,11 @@ the URL, e.g., as in `'amqp://localhost?frameMax=0x1000'`. These are:
  * `locale`: the desired locale for error messages, I
    suppose. RabbitMQ only ever uses `en_US`; which, happily, is the
    default.
+
+The socket options will be passed to the socket library (`net` or
+`tls`). They must be fields set on the object supplied; i.e., not on a
+prototype. This is useful for supplying certificates and so on for an
+SSL connection; see the [SSL guide][ssl-doc].
 
 Returns a promise which will either be resolved with an open
 `ChannelModel` or rejected with a sympathetically-worded error (in
@@ -686,3 +691,4 @@ connection, then call `#createConfirmChannel`.
 [rabbitmq-tutes]: http://www.rabbitmq.com/getstarted.html
 [rabbitmq-confirms]: http://www.rabbitmq.com/confirms.html
 [rabbitmq-docs]: http://www.rabbitmq.com/documentation.html
+[ssl-doc]: ./ssl.html
