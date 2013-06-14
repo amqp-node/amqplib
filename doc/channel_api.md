@@ -691,4 +691,4 @@ connection, then call `#createConfirmChannel`.
 [rabbitmq-tutes]: http://www.rabbitmq.com/getstarted.html
 [rabbitmq-confirms]: http://www.rabbitmq.com/confirms.html
 [rabbitmq-docs]: http://www.rabbitmq.com/documentation.html
-[ssl-doc]: ./ssl.html
+[ssl-doc]: doc/ssl.html
