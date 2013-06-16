@@ -31,6 +31,7 @@ Failed operations will
  * invalidate the channel object
  * reject any RPCs waiting to be sent
  * cause the channel object to emit `'error'`
+ * cause the channel object to emit `'close'`
 
 Promises returned from methods are amenable to composition using, for
 example, when.js's functions:
@@ -148,7 +149,7 @@ signal to close the connection:
 ```javascript
 var open = amqp.connect();
 open.then(function(conn) {
-  process.on('SIGINT', conn.close.bind(conn));
+  process.once('SIGINT', conn.close.bind(conn));
   return doStuffWithConnection(conn);
 }).then(null, console.warn);
 ```
@@ -156,21 +157,24 @@ open.then(function(conn) {
 **NB** it's no good using `process.on('exit', ...)`, since `close()` needs
 to do I/O.
 
-### `ChannelModel#on('close', callback)`
+### `ChannelModel#on('close', function() {...})`
 
 Emitted once the closing handshake initiated by `#close()` has
-completed. Only one of `'close`' or `'error'` will ever be emitted by
-a connection; either indicates that the connection is defunct.
+completed, or if the underlying stream (e.g., socket) has closed.
 
-### `ChannelModel#on('error', callback)`
+### `ChannelModel#on('error', function (err) {...})`
 
-Emitted if the server closes the connection for any reason; such
-reasons include:
+Emitted if the connection closes for any reason other than `#close`
+being called; such reasons include:
 
  * a protocol transgression the server detected (likely a bug in this
    library)
  * a server error
+ * a network error
+ * the server thinks the client is dead due to a missed heartbeat
  * a human closed the connection with an admin tool
+
+`'close'` will also be emitted, after `'error'`.
 
 ### `ChannelModel#createChannel()`
 
@@ -203,16 +207,15 @@ channels, and thereby other things such as exclusive locks on queues,
 so it is occasionally worth being deliberate about opening and closing
 channels.
 
-### `Channel#on('close', callback)`
+### `Channel#on('close', function() {...})`
 
-A channel will emit `'close'` once the closing handshake initiated by
-`#close()` has completed. Only one of `'close'` or `'error'` will ever
-be emitted by a channel.
+A channel will emit `'close'` once the closing handshake (possibly
+initiated by `#close()`) has completed.
 
 Closing a connection implicitly closes all the channels it is
 multiplexing; in this case the channels will each emit `'close'`.
 
-### `Channel#on('error', callback)`
+### `Channel#on('error', function(err) {...})`
 
 A channel will emit `'error'` if the server closes the channel for any
 reason. Such reasons include
