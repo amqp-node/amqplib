@@ -2,7 +2,7 @@ var assert = require('assert');
 var defs = require('../lib/defs');
 var Connection = require('../lib/connection').Connection;
 var mock = require('./mocknet');
-var succeed = mock.succeed, fail = mock.fail;
+var succeed = mock.succeed, fail = mock.fail, latch = mock.latch;
 
 var LOG_ERRORS = process.env.LOG_ERRORS;
 
@@ -62,7 +62,7 @@ function connectionTest(client, server) {
                      protocolHeader);
 
     var s = mock.runServer(pair.server, function(send, await) {
-      server(send, await, done);
+      server(send, await, done, pair.server);
     });
   };
 }
@@ -131,12 +131,28 @@ test("unopened channel",  connectionTest(
       }).then(null, fail(done));
   }));
 
+test("Unexpected socket close", connectionTest(
+  function(c, done) {
+    var errorAndClosed = latch(2, done);
+    c.on('error', succeed(errorAndClosed));
+    c.on('close', succeed(errorAndClosed));
+    c.open(OPEN_OPTS);
+  },
+  function(send, await, done, socket) {
+    happy_open(send, await)
+      .then(function() {
+        socket.end();
+      })
+  }));
+
 });
 
 suite("Connection close", function() {
 
 test("happy", connectionTest(
-  function(c, done) {
+  function(c, done0) {
+    var done = latch(2, done0);
+    c.on('close', done);
     c.open(OPEN_OPTS).then(function(_ok) {
       c.close().then(succeed(done), fail(done));
     });
@@ -151,7 +167,9 @@ test("happy", connectionTest(
   }));
 
 test("interleaved close frames", connectionTest(
-  function(c, done) {
+  function(c, done0) {
+    var done = latch(2, done0);
+    c.on('close', done);
     c.open(OPEN_OPTS).then(function(_ok) {
       c.close().then(succeed(done), fail(done));
     });
@@ -174,11 +192,11 @@ test("interleaved close frames", connectionTest(
   }));
 
 test("server-initiated close", connectionTest(
-  function(c, done) {
+  function(c, done0) {
+    var done = latch(2, done0);
+    c.on('close', succeed(done));
     c.on('error', succeed(done));
-    c.on('close', fail(done));
-    c.open(OPEN_OPTS).then(function() {
-    });
+    c.open(OPEN_OPTS);
   },
   function(send, await, done) {
     happy_open(send, await)

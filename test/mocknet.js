@@ -19,12 +19,22 @@ var defs = require('../lib/defs');
 //          | n |      | e |
 //          | t |      | r |
 //          +---+      +---+
+//
+// I also need to make sure that end called on either socket affects
+// the other.
 
 function socketPair() {
   var server = new PassThrough();
   var client = new PassThrough();
   server.write = client.push.bind(client);
   client.write = server.push.bind(server);
+  function end(chunk, encoding) {
+    if (chunk) this.push(chunk, encoding);
+    this.push(null);
+  }
+  server.end = end.bind(client);
+  client.end = end.bind(server);
+
   return {client: client, server: server};
 }
 
