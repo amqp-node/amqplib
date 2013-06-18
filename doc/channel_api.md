@@ -97,8 +97,6 @@ URL, e.g., as in `'amqp://localhost?frameMax=0x1000'`. These are:
 
  * `heartbeat`: the period of the connection heartbeat, in
    seconds. Defaults to `0`, meaning no heartbeat. OMG no heartbeat!
-   (**NB** heartbeating isn't implemented yet, so best to let it
-   default)
 
  * `locale`: the desired locale for error messages, I
    suppose. RabbitMQ only ever uses `en_US`; which, happily, is the
