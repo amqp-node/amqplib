@@ -2,6 +2,7 @@ var assert = require('assert');
 var defs = require('../lib/defs');
 var Connection = require('../lib/connection').Connection;
 var HEARTBEAT = require('../lib/frame').HEARTBEAT;
+var HB_BUF = require('../lib/frame').HEARTBEAT_BUF;
 var mock = require('./mocknet');
 var succeed = mock.succeed, fail = mock.fail, latch = mock.latch;
 
@@ -215,27 +216,51 @@ test("server-initiated close", connectionTest(
 
 suite("heartbeats", function() {
 
-require('../lib/heartbeat').UNITS_TO_MS = 100;
+var heartbeat = require('../lib/heartbeat');
 
-test("sends heartbeat after open", connectionTest(
+setup(function() {
+  heartbeat.UNITS_TO_MS = 20;
+});
+
+teardown(function() {
+  heartbeat.UNITS_TO_MS = 1000;
+});
+
+test("send heartbeat after open", connectionTest(
   function(c, done) {
     var opts = Object.create(OPEN_OPTS);
     opts.heartbeat = 1;
+    // Don't leave the error waiting to happen for the next test, this
+    // confuses mocha awfully
+    c.on('error', function() {});
     c.open(opts);
   },
   function(send, await, done, socket) {
     var timer;
     happy_open(send, await)
       .then(function() {
-        // %% don't need to do this, the client should send before it
-        // %% times out
-        socket.write(new Buffer([8, 0, 0, 0, 0, 0, 0, 206]));
+        timer = setInterval(function() {
+          socket.write(HB_BUF);
+        }, heartbeat.UNITS_TO_MS);
       })
       .then(await())
       .then(function(hb) {
         if (hb === HEARTBEAT) done();
         else done("Next frame after silence not a heartbeat");
-      }).then(function() { clearInterval(timer); });
+        clearInterval(timer);
+      });
+  }));
+
+test("detect lack of heartbeats", connectionTest(
+  function(c, done) {
+    var opts = Object.create(OPEN_OPTS);
+    opts.heartbeat = 1;
+    c.on('error', succeed(done));
+    c.open(opts);
+  },
+  function(send, await, done, socket) {
+    happy_open(send, await);
+    // conspicuously not sending anything ...
   }));
 
 });
