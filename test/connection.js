@@ -1,6 +1,7 @@
 var assert = require('assert');
 var defs = require('../lib/defs');
 var Connection = require('../lib/connection').Connection;
+var HEARTBEAT = require('../lib/frame').HEARTBEAT;
 var mock = require('./mocknet');
 var succeed = mock.succeed, fail = mock.fail, latch = mock.latch;
 
@@ -210,4 +211,31 @@ test("server-initiated close", connectionTest(
       .then(await(defs.ConnectionCloseOk))
       .then(null, fail(done));
   }));
+});
+
+suite("heartbeats", function() {
+
+require('../lib/heartbeat').UNITS_TO_MS = 100;
+
+test("sends heartbeat after open", connectionTest(
+  function(c, done) {
+    var opts = Object.create(OPEN_OPTS);
+    opts.heartbeat = 1;
+    c.open(opts);
+  },
+  function(send, await, done, socket) {
+    var timer;
+    happy_open(send, await)
+      .then(function() {
+        // %% don't need to do this, the client should send before it
+        // %% times out
+        socket.write(new Buffer([8, 0, 0, 0, 0, 0, 0, 206]));
+      })
+      .then(await())
+      .then(function(hb) {
+        if (hb === HEARTBEAT) done();
+        else done("Next frame after silence not a heartbeat");
+      }).then(function() { clearInterval(timer); });
+  }));
+
 });
