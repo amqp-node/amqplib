@@ -52,7 +52,7 @@ log messages.
 
 ## [Tutorial four: Routing][tute-four]
 
-Uses RabbitMQ as a routing ('somecast') mechanism. `emit_log_direct`
+Using RabbitMQ as a routing ('somecast') mechanism. `emit_log_direct`
 sends a log message with a severity, and all `receive_logs_direct`
 processes receive log messages for the severities on which they are
 listening.
@@ -60,8 +60,17 @@ listening.
  * [emit_log_direct.js](emit_log.js)
  * [receive_logs_direct.js](receive_logs_direct.js)
 
+## [Tutorial five: Topics][tute-five]
+
+Extends the previous tutorial to routing with wildcarded patterns.
+
+ * [emit_log_topic.js](emit_log_topic.js)
+ * [receive_logs_topic.js](receive_logs_topic.js)
+
+
 [rabbitmq-tutes]: http://github.com/rabbitmq/rabbitmq-tutorials
 [tute-one]: http://www.rabbitmq.com/tutorials/tutorial-one-python.html
 [tute-two]: http://www.rabbitmq.com/tutorials/tutorial-two-python.html
 [tute-three]: http://www.rabbitmq.com/tutorials/tutorial-three-python.html
 [tute-four]: http://www.rabbitmq.com/tutorials/tutorial-four-python.html
+[tute-five]: http://www.rabbitmq.com/tutorials/tutorial-five-python.html
