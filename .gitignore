@@ -2,3 +2,5 @@
 lib/defs.js
 scratch
 node_modules/
+bin/amqp-rabbitmq-0.9.1.json
+etc/

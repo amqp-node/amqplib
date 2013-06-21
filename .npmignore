@@ -1,2 +1,8 @@
 *~
 scratch
+# do not ignore lib/defs.js, we need that
+# node_modules is ignored anyway
+.travis.yml
+bin/amqp-rabbitmq-0.9.1.json
+bin/generate-defs.js
+etc/
