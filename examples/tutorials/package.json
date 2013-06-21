@@ -5,7 +5,8 @@
   "main": "send.js",
   "dependencies": {
     "amqplib": "",
-    "when": ""
+    "when": "",
+    "node-uuid": ""
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

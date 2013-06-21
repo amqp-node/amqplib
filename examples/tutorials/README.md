@@ -67,6 +67,17 @@ Extends the previous tutorial to routing with wildcarded patterns.
  * [emit_log_topic.js](emit_log_topic.js)
  * [receive_logs_topic.js](receive_logs_topic.js)
 
+## [Tutorial six: RPC][tute-six]
+
+Using RabbitMQ as an RPC intermediary, queueing requests for servers
+and routing replies back to clients.
+
+ * [rpc_server.js](rpc_server.js)
+ * [rpc_client.js](rpc_client.js)
+
+I depart slightly from the original tutorial code, which I think has
+some needless object-orientation (in the Python code; you don't get a
+choice about needless object-orientation in Java).
 
 [rabbitmq-tutes]: http://github.com/rabbitmq/rabbitmq-tutorials
 [tute-one]: http://www.rabbitmq.com/tutorials/tutorial-one-python.html
@@ -74,3 +85,4 @@ Extends the previous tutorial to routing with wildcarded patterns.
 [tute-three]: http://www.rabbitmq.com/tutorials/tutorial-three-python.html
 [tute-four]: http://www.rabbitmq.com/tutorials/tutorial-four-python.html
 [tute-five]: http://www.rabbitmq.com/tutorials/tutorial-five-python.html
+[tute-six]: http://www.rabbitmq.com/tutorials/tutorial-six-python.html
