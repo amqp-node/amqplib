@@ -11,11 +11,14 @@ client for Node.JS v0.8 and v0.10.
 
 Project status:
 
- - [x] Expected to work
- - [x] A fair few tests
- - [ ] Measured test coverage
- - [ ] Comprehensive documentation
- - [ ] Known to be used in production
+ - Expected to work
+ - A fair few tests
+ - Ports of the [RabbitMQ tutorials][rabbitmq-tutes] as examples
+
+Not yet:
+ - Measured test coverage
+ - Comprehensive documentation
+ - Known to be used in production
 
 ## Client API example
 
@@ -73,3 +76,4 @@ really only useful for checking the kind and formatting of the errors.
 [gh-pages-apiref]: http://squaremo.github.com/amqp.node/doc/channel_api.html
 [nave]: https://github.com/isaacs/nave
 [tutes]: https://github.com/squaremo/amqp.node/tree/master/examples/tutorials
+[rabbitmq-tutes]: http://www.rabbitmq.com/getstarted.html
