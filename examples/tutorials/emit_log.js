@@ -1,18 +1,19 @@
 #!/usr/bin/env node
 
 var amqp = require('amqplib');
+var when = require('when');
 
 amqp.connect('amqp://localhost').then(function(conn) {
-  return conn.createChannel().then(function(ch) {
-    var ok = ch.assertExchange('logs', 'fanout', {durable: false})
+  return when(conn.createChannel().then(function(ch) {
+    var ex = 'logs';
+    var ok = ch.assertExchange(ex, 'fanout', {durable: false})
 
     var message = process.argv.slice(2).join(' ') ||
       'info: Hello World!';
 
-    ok = ok.then(function() {
-      ch.publish('logs', '', new Buffer(message));
+    return ok.then(function() {
+      ch.publish(ex, '', new Buffer(message));
       console.log(" [x] Sent '%s'", message);
     });
-    return ok.then(function() { conn.close(); });
-  });
+  })).ensure(function() { conn.close(); });
 }).then(null, console.warn);

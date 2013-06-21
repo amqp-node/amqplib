@@ -30,14 +30,16 @@ amqp.connect('amqp://localhost').then(function(conn) {
     });
 
     ok = ok.then(function(queue) {
-      return ch.consume(queue, function(msg) {
-        console.log(" [x] %s:'%s'",
-                    msg.fields.routingKey,
-                    msg.content.toString());
-      }, {noAck: true});
+      return ch.consume(queue, logMessage, {noAck: true});
     });
     return ok.then(function() {
       console.log(' [*] Waiting for logs. To exit press CTRL+C.');
     });
+
+    function logMessage(msg) {
+      console.log(" [x] %s:'%s'",
+                  msg.fields.routingKey,
+                  msg.content.toString());
+    }
   });
 }).then(null, console.warn);
