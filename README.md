@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/squaremo/amqp.node.png)](https://travis-ci.org/squaremo/amqp.node)
 
+    npm install amqplib
+
  * [GitHub pages][gh-pages]
  * [API reference][gh-pages-apiref]
  * [Examples from RabbitMQ tutorials][tutes]
@@ -16,6 +18,7 @@ Project status:
  - Ports of the [RabbitMQ tutorials][rabbitmq-tutes] as examples
 
 Not yet:
+
  - Measured test coverage
  - Comprehensive documentation
  - Known to be used in production

@@ -10,6 +10,10 @@ in a clone of the amqplib repository, from the tutorials directory:
 
     npm install ../..
 
+or to use the latest released version,
+
+    npm install amqplib
+
 Then just run each file as a script, e.g., in bash
 
     ./send.js
