@@ -11,7 +11,7 @@ amqp.connect('amqp://localhost').then(function(conn) {
 
     ok = ok.then(function() {
       ch.publish('logs', '', new Buffer(message));
-      console.log(' [x] Sent %s', message);
+      console.log(" [x] Sent '%s'", message);
     });
     return ok.then(function() { conn.close(); });
   });

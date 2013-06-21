@@ -11,7 +11,7 @@ amqp.connect('amqp://localhost').then(function(conn) {
       var msg = process.argv.slice(2).join(' ') || "Hello World!"
       ch.sendToQueue('task_queue', new Buffer(msg),
                      {deliveryMode: true});
-      console.log("[x] Sent '%s'", msg);
+      console.log(" [x] Sent '%s'", msg);
     });
     return ok;
   }).then(function() { conn.close(); });

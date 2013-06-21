@@ -3,7 +3,7 @@
 var amqp = require('amqplib');
 
 amqp.connect('amqp://localhost').then(function(conn) {
-  process.on('SIGINT', function() { conn.close(); });
+  process.once('SIGINT', function() { conn.close(); });
   return conn.createChannel().then(function(ch) {
     var ok = ch.assertExchange('logs', 'fanout', {durable: false});
     ok = ok.then(function() {
@@ -18,11 +18,11 @@ amqp.connect('amqp://localhost').then(function(conn) {
       return ch.consume(queue, logMessage, {noAck: true});
     });
     return ok.then(function() {
-      console.log('[*] Waiting for logs. To exit press CTRL+C');
+      console.log(' [*] Waiting for logs. To exit press CTRL+C');
     });
 
     function logMessage(msg) {
-      console.log(' [x] %s', msg.content.toString());
+      console.log(" [x] '%s'", msg.content.toString());
     }
   });
 }).then(null, console.warn);
