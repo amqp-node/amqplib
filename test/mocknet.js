@@ -38,9 +38,13 @@ function socketPair() {
 
 function runServer(socket, run) {
   var frames = new Connection(socket);
-  // A cheat: the other side will occasionally close the 'socket',
-  // because closing the connection is part of the test
+  // We will be closing the socket without doing a closing handshake,
+  // so cheat
   frames.expectSocketClose = true;
+  // We also need to create some channel buffers, again a cheat
+  frames.freshChannel(null);
+  frames.freshChannel(null);
+  frames.freshChannel(null);
 
   function send(id, fields, channel, content) {
     channel = channel || 0;
