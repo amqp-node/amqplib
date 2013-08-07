@@ -1,6 +1,5 @@
 amqplib copyright (c) 2013 Michael Bridgen <mikeb@squaremobius.net>
 
-This package, "amqplib", is licensed under the Mozilla Public License
-(MPL) version 2.0. For more information on the MPL, visit
-http://www.mozilla.org/MPL. A copy of the MPL 2.0 is in the file
-LICENSE-MPL-2.0, and it is available at http://mozilla.org/MPL/2.0/.
+This package, "amqplib", is licensed under the MIT License. A copy may
+be found in the file LICENSE-MIT in this directory, or downloaded from
+http://opensource.org/licenses/MIT.

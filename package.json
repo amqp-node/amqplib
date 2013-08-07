@@ -30,5 +30,5 @@
     "RabbitMQ"
   ],
   "author": "Michael Bridgen <mikeb@squaremobius.net>",
-  "license": "MPL 2.0"
+  "license": "MIT"
 }
