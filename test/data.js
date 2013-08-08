@@ -190,9 +190,11 @@ var propertieses = [];
 for (var k in defs) {
   if (k.substr(0, 10) === 'methodInfo') {
     methods.push(method(defs[k]));
+    methods[defs[k].name] = method(defs[k]);
   }
   else if (k.substr(0, 14) === 'propertiesInfo') {
     propertieses.push(properties(defs[k]));
+    propertieses[defs[k].name] = properties(defs[k]);
   }
 };
 
@@ -217,3 +219,5 @@ module.exports = {
   methods: methods,
   properties: propertieses
 };
+
+module.exports.rangeInt = rangeInt;
