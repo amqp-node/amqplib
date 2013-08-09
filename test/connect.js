@@ -1,7 +1,7 @@
-var api = require('../lib/api');
+var connect = require('../lib/connect').connect;
 
 test("Connection refused", function(done) {
-  var open = api.connect('amqp://localhost:23450');
+  var open = connect('amqp://localhost:23450');
   open.then(function() {
     done(new Error('Connection unexpectedly succeeded'));
   }, function(err) {

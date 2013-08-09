@@ -1,6 +1,6 @@
 var assert = require('assert');
 var crypto = require('crypto');
-var api = require('../lib/channel_api');
+var api = require('../channel_api');
 var mock = require('./mocknet');
 var succeed = mock.succeed, fail = mock.fail;
 var when = require('when');
