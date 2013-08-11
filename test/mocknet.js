@@ -1,11 +1,9 @@
-var Frames = require('../lib/frame');
+var Connection = require('../lib/connection').Connection;
 var PassThrough =
   require('stream').PassThrough ||
   require('readable-stream/passthrough');
 var defer = require('when').defer;
 var defs = require('../lib/defs');
-
-// Assume Frames works fine, now test Connection.
 
 // Set up a socket pair {client, server}, such that writes to the
 // client are readable from the server, and writes to the server are
@@ -39,7 +37,10 @@ function socketPair() {
 }
 
 function runServer(socket, run) {
-  var frames = new Frames(socket);
+  var frames = new Connection(socket);
+  // A cheat: the other side will occasionally close the 'socket',
+  // because closing the connection is part of the test
+  frames.expectSocketClose = true;
 
   function send(id, fields, channel, content) {
     channel = channel || 0;

@@ -1,7 +1,8 @@
 var assert = require('assert');
 
-var Frames = require('../lib/frame');
-var HEARTBEAT = Frames.HEARTBEAT;
+var connection = require('../lib/connection');
+var Frames = connection.Connection;
+var HEARTBEAT = require('../lib/frame').HEARTBEAT;
 var Stream = require('stream');
 var PassThrough = Stream.PassThrough ||
     require('readable-stream/passthrough');
