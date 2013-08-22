@@ -14,12 +14,14 @@ client for Node.JS v0.8 and v0.10.
 Project status:
 
  - Expected to work
+ - Complete high-level and low-level APIs (i.e., all bits of the protocol)
  - A fair few tests
  - Ports of the [RabbitMQ tutorials][rabbitmq-tutes] as examples
 
 Not yet:
 
  - Measured test coverage
+ - Completely stable APIs
  - Comprehensive documentation
  - Known to be used in production
 
