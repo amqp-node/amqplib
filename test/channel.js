@@ -245,13 +245,34 @@ test("delivery", channelTest(
 
 test("bad delivery", channelTest(
   function(ch, done) {
-    ch.on('error', succeed(done));
+    errorAndClose = latch(2, done);
+    ch.on('error', succeed(errorAndClose));
+    ch.on('close', errorAndClose);
     ch.open();
   },
   function(send, await, done, ch) {
     send(defs.BasicDeliver, DELIVER_FIELDS, ch);
     // now send another deliver without having sent the content
     send(defs.BasicDeliver, DELIVER_FIELDS, ch);
+    return await(defs.ChannelClose)()
+      .then(function() {
+        send(defs.ChannelCloseOk, {}, ch);
+      });
+  }));
+
+test("bad consumer", channelTest(
+  function(ch, done) {
+    errorAndClose = latch(2, done);
+    ch.on('delivery', function() {
+      throw new Error("I am a bad consumer");
+    });
+    ch.on('error', succeed(errorAndClose));
+    ch.on('close', errorAndClose);
+    ch.open();
+  },
+  function(send, await, done, ch) {
+    send(defs.BasicDeliver, DELIVER_FIELDS, ch);
+    send(false, {}, ch, new Buffer('barfoo'));
     return await(defs.ChannelClose)()
       .then(function() {
         send(defs.ChannelCloseOk, {}, ch);
