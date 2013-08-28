@@ -243,6 +243,19 @@ test("delivery", channelTest(
     send(false, {}, ch, new Buffer('barfoo'));
   }));
 
+test("zero byte msg = no content body frames", channelTest(
+  function(ch, done) {
+    ch.open();
+    ch.on('delivery', function(m) {
+      assert.deepEqual(new Buffer(0), m.content);
+      done();
+    });
+  },
+  function(send, await, done, ch) {
+    send(defs.BasicDeliver, DELIVER_FIELDS, ch);
+    send(false, {}, ch, new Buffer(""));
+  }));
+
 test("bad delivery", channelTest(
   function(ch, done) {
     errorAndClose = latch(2, done);
