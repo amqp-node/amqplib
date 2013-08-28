@@ -95,6 +95,7 @@ println(
 '* https://github.com/squaremo/amqp.node/\n',
 '*/');
 
+println("'use strict';");
 println('var codec = require("./codec");');
 println('var encodeTable = codec.encodeTable;');
 println('var decodeFields = codec.decodeFields;');
