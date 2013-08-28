@@ -165,6 +165,35 @@ function propertiesName(clazz) {
   return initial(clazz.name) + 'Properties';
 }
 
+function valTypeTest(arg) {
+  switch (arg.type) {
+  case 'bit':       return 'true' // everything is booley
+  case 'octet':
+  case 'short':
+  case 'long':
+  case 'longlong':
+  case 'timestamp': return "typeof val === 'number' && !isNaN(val)";
+  case 'shortstr':  return "typeof val === 'string' &&" +
+      "Buffer.byteLength(val) < 256";
+  case 'longstr':   return "Buffer.isBuffer(val)";
+  case 'table':     return "typeof val === 'object'";
+  }
+}
+
+function typeDesc(t) {
+  switch (t) {
+  case 'bit':       return 'a booleany';
+  case 'octet':
+  case 'short':
+  case 'long':
+  case 'longlong':
+  case 'timestamp': return "a number (but not NaN)";
+  case 'shortstr':  return "a string (up to 255 chars)";
+  case 'longstr':   return "a Buffer";
+  case 'table':     return "an object";
+  }
+}
+
 function encoderFn(method) {
   var args = method['args'];
   println('function %s(channel, fields) {', method.encoder);
@@ -187,14 +216,22 @@ function encoderFn(method) {
 
     println('val = %s;', field);
 
+    println('if (!(%s)) {', valTypeTest(a));
+    println('if (val === undefined) {');
     if (a.default !== undefined) {
       var def = JSON.stringify(a.default);
-      println('val = (val === undefined) ? %s : val;', def);
+      println('val = %s', def);
     }
     else {
-      println('if (val === undefined) {');
-      println('throw new Error("Missing value for %s");}', a.name);
+      println('throw new Error("Missing value for %s");', a.name);
     }
+    println('}'); // undefined test
+    println('else')
+    println('throw new TypeError(');
+    println('"Argument \'%s\' wrong type; must be %s");',
+            a.name, typeDesc(a.type));
+
+    println('}'); // type test
 
     // Flush any collected bits before doing a new field
     if (a.type != 'bit' && bitsInARow > 0) {
@@ -347,7 +384,11 @@ function flagAt(index) {
 function encodePropsFn(props) {
   println('function %s(channel, size, fields) {', props.encoder);
   println('var offset = 0, flags = 0, val, len;');
-  println('var buffer = new Buffer(%d);', METHOD_BUFFER_SIZE);
+  // a bit pointless, since we know there's a table, but
+  // .. consistency
+  var bufferSize = fixedSize(props.args);
+  if (bufferSize === -1) bufferSize = METHOD_BUFFER_SIZE;
+  println('var buffer = new Buffer(%d);', bufferSize);
 
   println('buffer[0] = %d', constants.FRAME_HEADER);
   println('buffer.writeUInt16BE(channel, 1);');
@@ -367,7 +408,7 @@ function encodePropsFn(props) {
     var flag = flagAt(i);
     var field = "fields['" + p.name + "']";
     println('val = %s;', field);
-    println('if (val !== undefined) {');
+    println('if (%s) {', valTypeTest(p));
     if (p.type === 'bit') { // which none of them are ..
       println('if (val) flags += %d;', flag);
     }
@@ -412,7 +453,11 @@ function encodePropsFn(props) {
       default: throw new Error("Unexpected argument type: " + p.type);
       }
     }
-    println('}');
+    println('}'); // type test
+    println('else if (val !== undefined)');
+    println('throw new TypeError(');
+    println('"Argument \'%s\' is the wrong type; must be %s");',
+            p.name, typeDesc(p.type));
   }
 
   println('buffer[offset] = %d;', constants.FRAME_END);

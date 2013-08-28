@@ -13,7 +13,7 @@ lib/defs.js: ./Makefile bin/generate-defs.js bin/amqp-rabbitmq-0.9.1.json
 	(cd bin; node ./generate-defs.js > ../lib/defs.js)
 	$(UGLIFY) ./lib/defs.js -o ./lib/defs.js \
 		-c 'sequences=false' \
-		-b 'indent-level=2' 2>/dev/null
+		-b 'indent-level=2' 2>&1 | (grep -v 'WARN' || true)
 
 test: lib/defs.js
 	$(MOCHA) --ui tdd test
