@@ -3,29 +3,24 @@
 var METHOD_BUFFER_SIZE = 2048;
 
 var FS = require('fs');
+var format = require('util').format;
 
 var defs = require('./amqp-rabbitmq-0.9.1.json');
 
 var out = process.stdout;
 
-function nl() { out.write('\n'); }
-function print(str) { out.write(str, 'utf8'); }
-function println(str) { print(str); nl(); }
-var indent = '    ';
+function printf() {
+  out.write(format.apply(format, arguments), 'utf8');
+}
 
-println('var codec = require("./codec");');
-println('var encodeTable = codec.encodeTable;');
-println('var decodeFields = codec.decodeFields;');
-nl();
+function nl() { out.write('\n'); }
+function println() { printf.apply(printf, arguments); nl(); }
 
 var constants = {};
 for (var i = 0, len = defs.constants.length; i < len; i++) {
   var cdef = defs.constants[i];
   constants[constantName(cdef)] = cdef.value;
 }
-
-print('module.exports.constants = ');
-println(JSON.stringify(constants, undefined, 2)); nl();
 
 function constantName(def) {
   return def.name.replace(/-/g, '_');
@@ -91,72 +86,75 @@ for (var i = 0, len = defs.classes.length; i < len; i++) {
   }
 }
 
+// OK let's get emitting
+
+println('var codec = require("./codec");');
+println('var encodeTable = codec.encodeTable;');
+println('var decodeFields = codec.decodeFields;');
+nl();
+
+println('module.exports.constants = %s',
+        JSON.stringify(constants));
+nl();
+
 println('module.exports.decode = function(id, buf) {');
-println(indent + 'switch (id) {');
+println('switch (id) {');
 for (var m in methods) {
   var method = methods[m];
-  println(indent + 'case ' + method.id +
-          ': return ' + method.decoder + '(buf);');
+  println('case %d: return %s(buf);', method.id, method.decoder);
 }
 for (var p in propertieses) {
   var props = propertieses[p];
-  println(indent + 'case ' + props.id +
-          ': return ' + props.decoder + '(buf);');
+  println('case %d: return %s(buf);', props.id,  props.decoder);
 }
-println(indent + '}');
-println('}'); nl();
+println('}}'); nl();
 
-println('module.exports.encodeMethod = function(id, channel, fields) {');
-println(indent + 'switch (id) {');
+println('module.exports.encodeMethod =',
+        'function(id, channel, fields) {');
+println('switch (id) {');
 for (var m in methods) {
   var method = methods[m];
-  println(indent + 'case ' + method.id +
-          ': return ' + method.encoder + '(channel, fields);');
+  println('case %d: return %s(channel, fields);',
+          method.id, method.encoder);
 }
-println(indent + '}');
-println('}');
+println('}}'); nl();
 
-println('module.exports.encodeProperties = function(id, channel, size, fields) {');
-println(indent + 'switch (id) {');
+println('module.exports.encodeProperties ='
+        , 'function(id, channel, size, fields) {');
+println('switch (id) {');
 for (var p in propertieses) {
   var props = propertieses[p];
-  println(indent + 'case ' + props.id +
-          ': return ' + props.encoder + '(channel, size, fields);');
+  println('case %d: return %s(channel, size, fields);',
+          props.id, props.encoder);
 }
-println(indent + '}');
-println('}');
+println('}}'); nl();
 
 println('module.exports.info = function(id) {');
-println(indent + 'switch(id) {');
+println('switch(id) {');
 for (var m in methods) {
   var method = methods[m];
-  println(indent + 'case ' + method.id +
-          ': return ' + method.info + ';');
+  println('case %d: return %s; ', method.id, method.info);
 }
 for (var p in propertieses) {
   var properties = propertieses[p];
-  println(indent + 'case ' + properties.id +
-          ': return ' + properties.info + '();');
+  println('case %d: return %s', properties.id, properties.info);
 }
-println(indent + '}');
-println('}');
-
-nl(); nl();
+println('}}'); nl();
 
 for (var m in methods) {
   var method = methods[m];
-  println('module.exports.' + m + ' = ' + method.id + ';'); nl();
-  println(decoderFn(method)); nl();
-  println(encoderFn(method)); nl();
-  println(infoObj(method)); nl();
+  println('module.exports.%s = %d;', m, method.id);
+  decoderFn(method); nl();
+  encoderFn(method); nl();
+  infoObj(method); nl();
 }
 
 for (var p in propertieses) {
   var properties = propertieses[p];
-  println('module.exports.' + p + ' = ' + properties.id + ';');
-  println(encodePropsFn(properties)); nl();
-  println(decodePropsFn(properties)); nl();
-  println(infoObj(properties)); nl();
+  println('module.exports.%s = %d;', p, properties.id);
+  encodePropsFn(properties); nl();
+  decodePropsFn(properties); nl();
+  infoObj(properties); nl();
 }
 
 function methodId(clazz, method) {
@@ -168,108 +166,103 @@ function propertiesName(clazz) {
 }
 
 function encoderFn(method) {
-  var lines = [];
   var args = method['args'];
-  lines.push('function ' + method.encoder + '(channel, fields) {');
-  lines.push('var offset = 0, val = null, bits = 0, len;');
+  println('function %s(channel, fields) {', method.encoder);
+  println('var offset = 0, val = null, bits = 0, len;');
 
-  var fixed = fixedSize(args);
-  if (fixed > 0) {
-    lines.push('var buffer = new Buffer(' + fixed + ');');
-  }
-  else {
-    lines.push('var buffer = new Buffer(' + METHOD_BUFFER_SIZE + ');');
-  }
-  lines.push('buffer[0] = ' + constants.FRAME_METHOD + ';');
-  lines.push('buffer.writeUInt16BE(channel, 1);');
+  var bufferSize = fixedSize(args);
+  if (bufferSize === -1) bufferSize = METHOD_BUFFER_SIZE;
+  println('var buffer = new Buffer(%d);', bufferSize);
+
+  println('buffer[0] = %d;', constants.FRAME_METHOD);
+  println('buffer.writeUInt16BE(channel, 1);');
   // skip size for now, we'll write it in when we know
-  lines.push('buffer.writeUInt32BE(' + method.id + ', 7);');
-  lines.push('offset = 11;');
+  println('buffer.writeUInt32BE(%d, 7);', method.id);
+  println('offset = 11;');
 
   var bitsInARow = 0;
   for (var i = 0, len = args.length; i < len; i++) {
     var a = args[i];
     var field = "fields['" + a.name + "']";
-    if (a.default) {
+
+    println('val = %s;', field);
+
+    if (a.default !== undefined) {
       var def = JSON.stringify(a.default);
-      lines.push('val = ' + field + '; val = (val === undefined) ? ' + def + ' : val;');
+      println('val = (val === undefined) ? %s : val;', def);
     }
     else {
-      lines.push('if (' + field + ' === undefined)');
-      lines.push(indent + 'throw new Error("Missing value for ' +
-                 a.name + '");');
-      lines.push('val = ' + field + ';');
+      println('if (val === undefined) {');
+      println('throw new Error("Missing value for %s");}', a.name);
     }
 
     // Flush any collected bits before doing a new field
     if (a.type != 'bit' && bitsInARow > 0) {
       bitsInARow = 0;
-      lines.push('buffer[offset] = bits; offset++; bits = 0;');
+      println('buffer[offset] = bits; offset++; bits = 0;');
     }
 
     switch (a.type) {
     case 'octet':
-      lines.push('buffer.writeUInt8(val, offset); offset++;');
+      println('buffer.writeUInt8(val, offset); offset++;');
       break;
     case 'short':
-      lines.push('buffer.writeUInt16BE(val, offset); offset += 2;');
+      println('buffer.writeUInt16BE(val, offset); offset += 2;');
       break;
     case 'long':
-      lines.push('buffer.writeUInt32BE(val, offset); offset += 4;');
+      println('buffer.writeUInt32BE(val, offset); offset += 4;');
       break;
     case 'longlong':
     case 'timestamp':
-      lines.push('buffer.writeUInt64BE(val, offset); offset += 8;');
+      println('buffer.writeUInt64BE(val, offset); offset += 8;');
       break;
     case 'bit':
-      lines.push('if (val) bits += ' + (1 << bitsInARow) + ';');
+      println('if (val) bits += %d;', 1 << bitsInARow);
       if (bitsInARow === 7) { // I don't think this ever happens, but whatever
-        lines.push('buffer[offset] = bits; offset++; bits = 0;');
+        println('buffer[offset] = bits; offset++; bits = 0;');
         bitsInARow = 0;
       }
       else bitsInARow++;
       break;
     case 'shortstr':
-      lines.push('len = Buffer.byteLength(val, "utf8");');
-      lines.push('buffer[offset] = len; offset++;');
-      lines.push('buffer.write(val, offset, "utf8"); offset += len;');
+      println('len = Buffer.byteLength(val, "utf8");');
+      println('buffer[offset] = len; offset++;');
+      println('buffer.write(val, offset, "utf8"); offset += len;');
       break;
     case 'longstr':
-      lines.push('len = val.length;');
-      lines.push('buffer.writeUInt32BE(len, offset); offset += 4;');
-      lines.push('val.copy(buffer, offset); offset += len;');
+      println('len = val.length;');
+      println('buffer.writeUInt32BE(len, offset); offset += 4;');
+      println('val.copy(buffer, offset); offset += len;');
       break;
     case 'table':
-      lines.push('offset += encodeTable(buffer, val, offset);');
+      println('offset += encodeTable(buffer, val, offset);');
       break;
-    default: throw "Unexpected argument type: " + a.type;
+    default: throw new Error("Unexpected argument type: " + a.type);
     }
-
   }
 
   // Flush any collected bits at the end
   if (bitsInARow > 0) {
-    lines.push('buffer[offset] = bits; offset++;');
+    println('buffer[offset] = bits; offset++;');
   }
   
-  lines.push('buffer[offset] = ' + constants.FRAME_END +'; ');
+  println('buffer[offset] = %d;', constants.FRAME_END);
   // size does not include the frame header or frame end byte
-  lines.push('buffer.writeUInt32BE(offset - 7, 3);');
+  println('buffer.writeUInt32BE(offset - 7, 3);');
 
-  if (fixed > 0) {
-    lines.push('return buffer;');
+  if (bufferSize !== METHOD_BUFFER_SIZE) {
+    println('return buffer;');
   }
   else {
-    lines.push('return buffer.slice(0, offset + 1);');
+    println('return buffer.slice(0, offset + 1);');
   }
-  return lines.join('\n' + indent) + '\n}';
+  println('}');
 }
 
 function decoderFn(method) {
-  var lines = [];
   var args = method.args;
-  lines.push('function ' + method.decoder + '(buffer) {');
-  lines.push('var fields = {}, offset = 0, val, len;');
+  println('function %s(buffer) {', method.decoder);
+  println('var fields = {}, offset = 0, val, len;');
   var bitsInARow = 0;
 
   for (var i=0, num=args.length; i < num; i++) {
@@ -279,62 +272,62 @@ function decoderFn(method) {
     // Flush any collected bits before doing a new field
     if (a.type != 'bit' && bitsInARow > 0) {
       bitsInARow = 0;
-      lines.push('offset++;');
+      println('offset++;');
     }
 
     switch (a.type) {
     case 'octet':
-      lines.push('val = buffer[offset]; offset++;');
+      println('val = buffer[offset]; offset++;');
       break;
     case 'short':
-      lines.push('val = buffer.readUInt16BE(offset); offset += 2;');
+      println('val = buffer.readUInt16BE(offset); offset += 2;');
       break;
     case 'long':
-      lines.push('val = buffer.readUInt32BE(offset); offset += 4;');
+      println('val = buffer.readUInt32BE(offset); offset += 4;');
       break;
     case 'longlong':
     case 'timestamp':
-      lines.push('val = buffer.readUInt64BE(offset); offset += 8;');
+      println('val = buffer.readUInt64BE(offset); offset += 8;');
       break;
     case 'bit':
       var bit = 1 << bitsInARow;
-      lines.push('val = !!(buffer[offset] & ' + bit + ');');
+      println('val = !!(buffer[offset] & %d);', bit);
       if (bitsInARow === 7) {
-        lines.push('offset++;');
+        println('offset++;');
         bitsInARow = 0;
       }
       else bitsInARow++;
       break;
     case 'longstr':
-      lines.push('len = buffer.readUInt32BE(offset); offset += 4;');
-      lines.push('val = buffer.slice(offset, offset + len);');
-      lines.push('offset += len;');
+      println('len = buffer.readUInt32BE(offset); offset += 4;');
+      println('val = buffer.slice(offset, offset + len);');
+      println('offset += len;');
       break;
     case 'shortstr':
-      lines.push('len = buffer.readUInt8(offset); offset++;');
-      lines.push('val = buffer.toString("utf8", offset, offset + len);');
-      lines.push('offset += len;');
+      println('len = buffer.readUInt8(offset); offset++;');
+      println('val = buffer.toString("utf8", offset, offset + len);');
+      println('offset += len;');
       break;
     case 'table':
-      lines.push('len = buffer.readUInt32BE(offset); offset += 4;');
-      lines.push('val = decodeFields(buffer.slice(offset, offset + len));');
-      lines.push('offset += len;');
+      println('len = buffer.readUInt32BE(offset); offset += 4;');
+      println('val = decodeFields(buffer.slice(offset, offset + len));');
+      println('offset += len;');
       break;
     default:
       throw new TypeError("Unexpected type in argument list: " + a.type);
     }
-    lines.push(field + ' = val;');
+    println('%s = val;', field);
   }
-  lines.push('return fields;');
-  return lines.join('\n' + indent) + '\n}';
+  println('return fields;');
+  println('}');
 }
 
 function infoObj(thing) {
   var info = JSON.stringify({id: thing.id,
                              name: thing.name,
-                             args: thing.args}, undefined, 2);
-  return 'module.exports.' + thing.info + ' = ' +
-    thing.info + ' = ' + info;
+                             args: thing.args});
+  println('var %s = module.exports.%s = %s;',
+          thing.info, thing.info, info);
 }
 
 // The flags are laid out in groups of fifteen in a short (high to
@@ -352,138 +345,137 @@ function flagAt(index) {
 }
 
 function encodePropsFn(props) {
-  var lines = [];
-  lines.push('function ' + props.encoder + '(channel, size, fields) {');
-  lines.push('var offset = 0, flags = 0, val, len;');
-  lines.push('var buffer = new Buffer(' + METHOD_BUFFER_SIZE + ');');
+  println('function %s(channel, size, fields) {', props.encoder);
+  println('var offset = 0, flags = 0, val, len;');
+  println('var buffer = new Buffer(%d);', METHOD_BUFFER_SIZE);
 
-  lines.push('buffer[0] = ' + constants.FRAME_HEADER + ';');
-  lines.push('buffer.writeUInt16BE(channel, 1);');
+  println('buffer[0] = %d', constants.FRAME_HEADER);
+  println('buffer.writeUInt16BE(channel, 1);');
   // content class ID and 'weight' (== 0)
-  lines.push('buffer.writeUInt32BE(' + (props.id << 16) + ', 7);');
-  // skip size for now, we'll write it in when we know.
-  // body size
-  lines.push('buffer.writeUInt64BE(size, 11);');
+  println('buffer.writeUInt32BE(%d, 7);', props.id << 16);
+  // skip frame size for now, we'll write it in when we know.
 
-  lines.push('flags = 0;');
+  // body size
+  println('buffer.writeUInt64BE(size, 11);');
+
+  println('flags = 0;');
   // we'll write the flags later too
-  lines.push('offset = 21;');
+  println('offset = 21;');
   
   for (var i=0, num=props.args.length; i < num; i++) {
     var p = argument(props.args[i]);
     var flag = flagAt(i);
     var field = "fields['" + p.name + "']";
-    lines.push('if (' + field + ' !== undefined) {');
-    lines.push(indent + 'val = ' + field + ';');
+    println('val = %s;', field);
+    println('if (val !== undefined) {');
     if (p.type === 'bit') { // which none of them are ..
-      lines.push(indent + 'if (val) flags += ' + flag + ';');
+      println('if (val) flags += %d;', flag);
     }
     else {
-      lines.push('flags += ' + flag + ';');
+      println('flags += %d;', flag);
       // %%% FIXME only slightly different to the method args encoding
       switch (p.type) {
       case 'octet':
-        lines.push('buffer.writeUInt8(val, offset); offset++;');
+        println('buffer.writeUInt8(val, offset); offset++;');
         break;
       case 'short':
-        lines.push('buffer.writeUInt16BE(val, offset); offset += 2;');
+        println('buffer.writeUInt16BE(val, offset); offset += 2;');
         break;
       case 'long':
-        lines.push('buffer.writeUInt32BE(val, offset); offset += 4;');
+        println('buffer.writeUInt32BE(val, offset); offset += 4;');
         break;
       case 'longlong':
       case 'timestamp':
-        lines.push('buffer.writeUInt64BE(val, offset); offset += 8;');
+        println('buffer.writeUInt64BE(val, offset); offset += 8;');
         break;
       case 'bit':
-        lines.push('if (val) bits += ' + (1 << bitsInARow) + ';');
+        println('if (val) bits += %d;', 1 << bitsInARow);
         if (bitsInARow === 7) { // I don't think this ever happens, but whatever
-          lines.push('buffer[offset] = bits; offset++; bits = 0;');
+          println('buffer[offset] = bits; offset++; bits = 0;');
           bitsInARow = 0;
         }
         else bitsInARow++;
         break;
       case 'shortstr':
-        lines.push('len = Buffer.byteLength(val, "utf8");');
-        lines.push('buffer[offset] = len; offset++;');
-        lines.push('buffer.write(val, offset, "utf8"); offset += len;');
+        println('len = Buffer.byteLength(val, "utf8");');
+        println('buffer[offset] = len; offset++;');
+        println('buffer.write(val, offset, "utf8"); offset += len;');
         break;
       case 'longstr':
-        lines.push('len = val.length;');
-        lines.push('buffer.writeUInt32BE(len, offset); offset += 4;');
-        lines.push('val.copy(buffer, offset); offset += len;');
+        println('len = val.length;');
+        println('buffer.writeUInt32BE(len, offset); offset += 4;');
+        println('val.copy(buffer, offset); offset += len;');
         break;
       case 'table':
-        lines.push('offset += encodeTable(buffer, val, offset);');
+        println('offset += encodeTable(buffer, val, offset);');
         break;
-      default: throw "Unexpected argument type: " + p.type;
+      default: throw new Error("Unexpected argument type: " + p.type);
       }
     }
-    lines.push('}');
+    println('}');
   }
 
-  lines.push('buffer[offset] = ' + constants.FRAME_END +'; ');
+  println('buffer[offset] = %d;', constants.FRAME_END);
   // size does not include the frame header or frame end byte
-  lines.push('buffer.writeUInt32BE(offset - 7, 3);');
-  lines.push('buffer.writeUInt16BE(flags, 19);');
-  lines.push('return buffer.slice(0, offset + 1);');
-  return lines.join('\n' + indent) + '\n}';
+  println('buffer.writeUInt32BE(offset - 7, 3);');
+  println('buffer.writeUInt16BE(flags, 19);');
+  println('return buffer.slice(0, offset + 1);');
+  println('}');
 }
 
 function decodePropsFn(props) {
-  var lines = [];
-  lines.push('function ' + props.decoder + '(buffer) {');
-  lines.push('var fields = {}, flags, offset = 2, val, len;');
+  println('function %s(buffer) {', props.decoder);
+  println('var fields = {}, flags, offset = 2, val, len;');
 
-  lines.push('flags = buffer.readUInt16BE(0);');
+  println('flags = buffer.readUInt16BE(0);');
 
   for (var i=0, num=props.args.length; i < num; i++) {
     var p = argument(props.args[i]);
     var field = "fields['" + p.name + "']";
 
-    lines.push('if (flags & ' + flagAt(i) + ') {');
+    println('if (flags & %d) {', flagAt(i));
     if (p.type === 'bit') {
-      lines.push(field + ' = true;');
+      println('%d = true;', field);
     }
     else {
       switch (p.type) {
       case 'octet':
-        lines.push('val = buffer[offset]; offset++;');
+        println('val = buffer[offset]; offset++;');
         break;
       case 'short':
-        lines.push('val = buffer.readUInt16BE(offset); offset += 2;');
+        println('val = buffer.readUInt16BE(offset); offset += 2;');
         break;
       case 'long':
-        lines.push('val = buffer.readUInt32BE(offset); offset += 4;');
+        println('val = buffer.readUInt32BE(offset); offset += 4;');
         break;
       case 'longlong':
       case 'timestamp':
-        lines.push('val = buffer.readUInt64BE(offset); offset += 8;');
+        println('val = buffer.readUInt64BE(offset); offset += 8;');
         break;
       case 'longstr':
-        lines.push('len = buffer.readUInt32BE(offset); offset += 4;');
-        lines.push('val = buffer.slice(offset, offset + len);');
-        lines.push('offset += len;');
+        println('len = buffer.readUInt32BE(offset); offset += 4;');
+        println('val = buffer.slice(offset, offset + len);');
+        println('offset += len;');
         break;
       case 'shortstr':
-        lines.push('len = buffer.readUInt8(offset); offset++;');
-        lines.push('val = buffer.toString("utf8", offset, offset + len);');
-        lines.push('offset += len;');
+        println('len = buffer.readUInt8(offset); offset++;');
+        println('val = buffer.toString("utf8", offset, offset + len);');
+        println('offset += len;');
         break;
       case 'table':
-        lines.push('len = buffer.readUInt32BE(offset); offset += 4;');
-        lines.push('val = decodeFields(buffer.slice(offset, offset + len));');
-        lines.push('offset += len;');
+        println('len = buffer.readUInt32BE(offset); offset += 4;');
+        println('val = decodeFields(buffer.slice(offset, offset + len));');
+        println('offset += len;');
         break;
       default:
         throw new TypeError("Unexpected type in argument list: " + p.type);
       }
-      lines.push(field + ' = val;');
+      println('%s = val;', field);
     }
-    lines.push('}');
+    println('}');
   }
-  lines.push('return fields;');
-  return lines.join('\n' + indent) + '\n}';
+  println('return fields;');
+  println('}');
 }
 
 function fixedSize(args) {
