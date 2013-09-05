@@ -48,8 +48,11 @@ function runServer(socket, run) {
 
   function send(id, fields, channel, content) {
     channel = channel || 0;
-    if (!id && content) {
-      frames.sendContent(channel, defs.BasicProperties, fields, content);
+    if (content) {
+      frames.sendMethodAndProperties(channel, id, fields, 
+                                     defs.BasicProperties, fields,
+                                     content.length);
+      frames.sendContent(channel, content);
     }
     else {
       frames.sendMethod(channel, id, fields);

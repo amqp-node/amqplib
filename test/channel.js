@@ -239,8 +239,7 @@ test("delivery", channelTest(
     });
   },
   function(send, await, done, ch) {
-    send(defs.BasicDeliver, DELIVER_FIELDS, ch);
-    send(false, {}, ch, new Buffer('barfoo'));
+    send(defs.BasicDeliver, DELIVER_FIELDS, ch, new Buffer('barfoo'));
   }));
 
 test("zero byte msg = no content body frames", channelTest(
@@ -252,8 +251,7 @@ test("zero byte msg = no content body frames", channelTest(
     });
   },
   function(send, await, done, ch) {
-    send(defs.BasicDeliver, DELIVER_FIELDS, ch);
-    send(false, {}, ch, new Buffer(""));
+    send(defs.BasicDeliver, DELIVER_FIELDS, ch, new Buffer(''));
   }));
 
 test("bad delivery", channelTest(
@@ -273,6 +271,35 @@ test("bad delivery", channelTest(
       });
   }));
 
+test("bad content send", channelTest(
+  function(ch, done) {
+    ch.open();
+    assert.throws(function() {
+      ch.sendMessage({routingKey: 'foo',
+                      exchange: 'amq.direct'},
+                     {}, null);
+    });
+    done();
+  },
+  function(send, await, done, ch) {
+    // nothing gets sent ...
+  }));
+
+test("bad properties send", channelTest(
+  function(ch, done) {
+    ch.open();
+    assert.throws(function() {
+      ch.sendMessage({routingKey: 'foo',
+                      exchange: 'amq.direct'},
+                     {contentEncoding: 7},
+                     new Buffer('foobar'));
+    });
+    done();
+  },
+  function(send, await, done, ch) {
+    // nothing gets sent ...
+  }));  
+
 test("bad consumer", channelTest(
   function(ch, done) {
     errorAndClose = latch(2, done);
@@ -284,8 +311,29 @@ test("bad consumer", channelTest(
     ch.open();
   },
   function(send, await, done, ch) {
-    send(defs.BasicDeliver, DELIVER_FIELDS, ch);
-    send(false, {}, ch, new Buffer('barfoo'));
+    send(defs.BasicDeliver, DELIVER_FIELDS, ch, new Buffer('barfoo'));
+    return await(defs.ChannelClose)()
+      .then(function() {
+        send(defs.ChannelCloseOk, {}, ch);
+      });
+  }));
+
+test("bad send in consumer", channelTest(
+  function(ch, done) {
+    var errorAndClose = latch(2, done);
+    ch.on('close', succeed(errorAndClose));
+    ch.on('error', succeed(errorAndClose));
+
+    ch.on('delivery', function() {
+      ch.sendMessage({routingKey: 'foo',
+                      exchange: 'amq.direct'},
+                     {}, null);
+    });
+
+    ch.open();
+  },
+  function(send, await, done, ch) {
+    send(defs.BasicDeliver, DELIVER_FIELDS, ch, new Buffer('barfoo'));
     return await(defs.ChannelClose)()
       .then(function() {
         send(defs.ChannelCloseOk, {}, ch);
@@ -301,8 +349,7 @@ test("return", channelTest(
     ch.open();
   },
   function(send, await, done, ch) {
-    send(defs.BasicReturn, DELIVER_FIELDS, ch);
-    send(null, {}, ch, new Buffer('barfoo'));
+    send(defs.BasicReturn, DELIVER_FIELDS, ch, new Buffer('barfoo'));
   }));
 
 function confirmTest(variety, Method) {
@@ -324,26 +371,5 @@ function confirmTest(variety, Method) {
 
 confirmTest("ack", defs.BasicAck);
 confirmTest("nack", defs.BasicNack);
-
-test("interleaved RPC/delivery", channelTest(
-  function(ch, done) {
-    var both = latch(2, done);
-    ch.on('delivery', succeed(both));
-
-    ch.open().then(function() {
-      ch.rpc(defs.BasicQos,
-             { global: false, prefetchSize: 0, prefetchCount: 7},
-             defs.BasicQosOk)
-        .then(succeed(both), fail(both));
-    }, fail(both));
-  },
-  function(send, await, done, ch) {
-    return await(defs.BasicQos)()
-      .then(function() {
-        send(defs.BasicDeliver, DELIVER_FIELDS, ch);
-        send(defs.BasicQosOk, {}, ch);
-        send(false, {}, ch, new Buffer('boofar'));
-      });
-  }));
 
 });
