@@ -1,11 +1,10 @@
-
-
 var assert = require('assert');
 var Mux = require('../lib/mux').Mux;
 var PassThrough = require('stream').PassThrough ||
   require('readable-stream/passthrough');
 
 var latch = require('./mocknet').latch;
+var schedule = require('./mocknet').schedule;
 
 function stream() {
   return new PassThrough({objectMode: true});
@@ -36,10 +35,10 @@ test("single input", function(done) {
   var mux = new Mux(output);
   mux.pipeFrom(input);
 
-  var data = [1,2,3,4,5,6,7,8,9]; // not 0, it's treated specially by
-                                  // PassThrough for some reason. By
-                                  // 'specially' I mean it breaks the
-                                  // stream.
+  var data = [1,2,3,4,5,6,7,8,9]; 
+  // not 0, it's treated specially by PassThrough for some reason. By
+  // 'specially' I mean it breaks the stream. See e.g.,
+  // https://github.com/isaacs/readable-stream/pull/55
   data.forEach(input.write.bind(input));
 
   readAllObjects(output, function(vals) {
@@ -109,14 +108,14 @@ test("unpipe", function(done) {
 
   mux.pipeFrom(input);
 
-  setImmediate(function() {
+  schedule(function() {
     pipedData.forEach(input.write.bind(input));
     mux.unpipeFrom(input);
 
-    setImmediate(function() {
+    schedule(function() {
       unpipedData.forEach(input.write.bind(input));
       input.end();
-      setImmediate(function() {
+      schedule(function() {
         // exhaust so that 'end' fires
         var v; while (v = input.read());
       });
@@ -137,10 +136,13 @@ test("unpipe", function(done) {
 });
 
 test("roundrobin", function(done) {
-  var input1 = stream(); input1.id = 1;
-  var input2 = stream(); input2.id = 2;
+  var input1 = stream();
+  var input2 = stream();
   var output = stream();
   var mux = new Mux(output);
+
+  mux.pipeFrom(input1);
+  mux.pipeFrom(input2);
 
   var endLatch = latch(2, function() { output.end(); });
   input1.on('end', endLatch);
@@ -154,11 +156,9 @@ test("roundrobin", function(done) {
   twos.forEach(function(v) { input2.write(v); });
   input2.end();
 
-  mux.pipeFrom(input1);
-  mux.pipeFrom(input2);
-  
   readAllObjects(output, function(vs) {
     assert.deepEqual([1,2,1,2,1,2,1,2,1,2], vs);
     done();
   });
+
 });

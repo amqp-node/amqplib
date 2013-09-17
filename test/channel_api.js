@@ -3,6 +3,7 @@ var crypto = require('crypto');
 var api = require('../channel_api');
 var mock = require('./mocknet');
 var succeed = mock.succeed, fail = mock.fail;
+var schedule = mock.schedule;
 var when = require('when');
 var defer = when.defer;
 
@@ -173,7 +174,7 @@ function waitForQueue(q, condition) {
               c.close();
               ready.resolve(qok);
             }
-            else setImmediate(check);
+            else schedule(check);
           });
         }
         check();

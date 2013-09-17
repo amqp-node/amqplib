@@ -123,5 +123,7 @@ module.exports = {
   runServer: runServer,
   succeed: succeed,
   fail: fail,
-  latch: latch
+  latch: latch,
+  schedule: (typeof setImmediate === 'function') ?
+    setImmediate : process.nextTick
 };
