@@ -1,9 +1,15 @@
+
+
 var assert = require('assert');
 var Mux = require('../lib/mux').Mux;
 var PassThrough = require('stream').PassThrough ||
   require('readable-stream/passthrough');
 
 var latch = require('./mocknet').latch;
+
+function stream() {
+  return new PassThrough({objectMode: true});
+}
 
 function readAllObjects(s, cb) {
   var objs = [];
@@ -22,9 +28,9 @@ function readAllObjects(s, cb) {
   read();
 }
 
-test("straight line", function(done) {
-  var input = new PassThrough({objectMode: true});
-  var output = new PassThrough({objectMode: true});
+test("single input", function(done) {
+  var input = stream();
+  var output = stream();
   input.on('end', function() { output.end() });
 
   var mux = new Mux(output);
@@ -45,9 +51,9 @@ test("straight line", function(done) {
 });
 
 test("two sequential inputs", function(done) {
-  var input1 = new PassThrough({objectMode: true});
-  var input2 = new PassThrough({objectMode: true});
-  var output = new PassThrough({objectMode: true});
+  var input1 = stream();
+  var input2 = stream();
+  var output = stream();
   var mux = new Mux(output);
   mux.pipeFrom(input1);
   mux.pipeFrom(input2);
@@ -69,9 +75,9 @@ test("two sequential inputs", function(done) {
 });
 
 test("two interleaved inputs", function(done) {
-  var input1 = new PassThrough({objectMode: true});
-  var input2 = new PassThrough({objectMode: true});
-  var output = new PassThrough({objectMode: true});
+  var input1 = stream();
+  var input2 = stream();
+  var output = stream();
   var mux = new Mux(output);
   mux.pipeFrom(input1);
   mux.pipeFrom(input2);
@@ -89,6 +95,70 @@ test("two interleaved inputs", function(done) {
 
   readAllObjects(output, function(vs) {
     assert.equal(2 * data.length, vs.length);
+    done();
+  });
+});
+
+test("unpipe", function(done) {
+  var input = stream();
+  var output = stream();
+  var mux = new Mux(output);
+
+  var pipedData = [1,2,3,4,5];
+  var unpipedData = [6,7,8,9];
+
+  mux.pipeFrom(input);
+
+  setImmediate(function() {
+    pipedData.forEach(input.write.bind(input));
+    mux.unpipeFrom(input);
+
+    setImmediate(function() {
+      unpipedData.forEach(input.write.bind(input));
+      input.end();
+      setImmediate(function() {
+        // exhaust so that 'end' fires
+        var v; while (v = input.read());
+      });
+    });
+  });
+
+  input.on('end', function() {
+    output.end();
+  });
+
+  readAllObjects(output, function(vals) {
+    try {
+      assert.deepEqual(pipedData, vals);
+      done();
+    }
+    catch (e) { done(e); }
+  });
+});
+
+test("roundrobin", function(done) {
+  var input1 = stream(); input1.id = 1;
+  var input2 = stream(); input2.id = 2;
+  var output = stream();
+  var mux = new Mux(output);
+
+  var endLatch = latch(2, function() { output.end(); });
+  input1.on('end', endLatch);
+  input2.on('end', endLatch);
+
+  var ones = [1,1,1,1,1];
+  ones.forEach(function(v) { input1.write(v); });
+  input1.end();
+
+  var twos = [2,2,2,2,2];
+  twos.forEach(function(v) { input2.write(v); });
+  input2.end();
+
+  mux.pipeFrom(input1);
+  mux.pipeFrom(input2);
+  
+  readAllObjects(output, function(vs) {
+    assert.deepEqual([1,2,1,2,1,2,1,2,1,2], vs);
     done();
   });
 });
