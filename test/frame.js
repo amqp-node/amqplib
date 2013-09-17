@@ -116,25 +116,25 @@ var Body = sized(function(_n) {
 
 var Content = transform(function(args) {
   return {
-    fields: args[0].fields,
-    body: new Buffer(args[1])
+    method: args[0].fields,
+    header: args[1].fields,
+    body: new Buffer(args[2])
   }
-}, sequence(amqp.properties['BasicProperties'],
-            Body));
-
-var ContentTrace = label("content trace", repeat(Content));
+}, sequence(amqp.methods['BasicDeliver'],
+            amqp.properties['BasicProperties'], Body));
 
 suite("Content framing", function() {
   test("Adhere to frame max",
-       forAll(ContentTrace, FrameMax).satisfy(function(t, max) {
+       forAll(Content, FrameMax).satisfy(function(content, max) {
          var input = inputs();
          var frames = new Frames(input);
          frames.frameMax = max;
-         t.forEach(function(content) {
-           frames.sendContent(0, defs.BasicProperties,
-                              content.fields,
-                              content.body);
-         });
+         frames.sendMethodAndProperties(
+           0,
+           defs.BasicDeliver, content.method,
+           defs.BasicProperties, content.header,
+           content.body.length);
+         frames.sendContent(0, content.body);
          var f, i = 0, largest = 0;
          while (f = input.read()) {
            i++;
@@ -148,5 +148,5 @@ suite("Content framing", function() {
          // indicates fragmentation. The largest is always, of course <= frame max
          //console.log('Frames: %d; frames per message: %d; largest frame %d', i, i / t.length, largest);
          return true;
-       }).asTest({times: 10}));
+       }).asTest());
 });
