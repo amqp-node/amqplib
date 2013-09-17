@@ -445,13 +445,24 @@ confirmtest('multiple confirms', function(ch) {
 
       function prod(num) {
         var cs = [];
-        for (var i=0; i < num; i++)
-          cs.push(ch.sendToQueue(q, new Buffer('bleep')));
+
+        function sendAndPushPromise() {
+          var conf = defer();
+          ch.sendToQueue(q, new Buffer('bleep'), {},
+                         function(err) {
+                           if (err) conf.reject();
+                           else conf.resolve();
+                         });
+          cs.push(conf.promise);
+        }
+
+        for (var i=0; i < num; i++) sendAndPushPromise();
+
         return when.all(cs).then(function() {
           if (multipleRainbows) return true;
           else if (num > 500) throw new Error(
             "Couldn't provoke the server" +
-              "into multi-acking with " + num +
+              " into multi-acking with " + num +
               " messages; giving up");
           else {
             //console.warn("Failed with " + num + "; trying " + num * 2);
