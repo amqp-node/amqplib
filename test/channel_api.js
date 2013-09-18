@@ -333,6 +333,23 @@ chtest("cancel consumer", function(ch) {
   });
 });
 
+chtest("cancelled consumer", function(ch) {
+  var q = 'test.cancelled-consumer';
+  var nullRecv = defer();
+  
+  doAll(
+    ch.assertQueue(q),
+    ch.purgeQueue(q),
+    ch.consume(q, function(msg) {
+      if (msg === null) nullRecv.resolve();
+      else nullRecv.reject(new Error('Message not expected'));
+    }))
+    .then(function() {
+      ch.deleteQueue(q);
+    });
+  return nullRecv.promise;
+});
+
 // ack, by default, removes a single message from the queue
 chtest("ack", function(ch) {
   var q = 'test.ack';

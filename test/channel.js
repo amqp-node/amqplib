@@ -352,6 +352,21 @@ test("return", channelTest(
     send(defs.BasicReturn, DELIVER_FIELDS, ch, new Buffer('barfoo'));
   }));
 
+test("cancel", channelTest(
+  function(ch, done) {
+    ch.on('cancel', function(f) {
+      assert.equal('product of society', f.consumerTag);
+      done();
+    });
+    ch.open();
+  },
+  function(send, await, done, ch) {
+    send(defs.BasicCancel, {
+      consumerTag: 'product of society',
+      nowait: false
+    }, ch);
+  }));
+
 function confirmTest(variety, Method) {
   return test('confirm ' + variety, channelTest(
     function(ch, done) {
