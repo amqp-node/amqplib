@@ -372,4 +372,41 @@ function confirmTest(variety, Method) {
 confirmTest("ack", defs.BasicAck);
 confirmTest("nack", defs.BasicNack);
 
+test("out-of-order acks", channelTest(
+  function(ch, done) {
+    var allConfirms = latch(3, function() {
+      assert.equal(0, ch.unconfirmed.length);
+      assert.equal(4, ch.lwm);
+      done();
+    });
+    ch.pushConfirmCallback(allConfirms);
+    ch.pushConfirmCallback(allConfirms);
+    ch.pushConfirmCallback(allConfirms);
+    ch.open();
+  },
+  function(send, await, done, ch) {
+    send(defs.BasicAck, {deliveryTag: 2, multiple: false}, ch);
+    send(defs.BasicAck, {deliveryTag: 3, multiple: false}, ch);
+    send(defs.BasicAck, {deliveryTag: 1, multiple: false}, ch);
+  }));
+
+test("not all out-of-order acks", channelTest(
+  function(ch, done) {
+    var allConfirms = latch(2, function() {
+      assert.equal(1, ch.unconfirmed.length);
+      assert.equal(3, ch.lwm);
+      done();
+    });
+    ch.pushConfirmCallback(allConfirms); // tag = 1
+    ch.pushConfirmCallback(allConfirms); // tag = 2
+    ch.pushConfirmCallback(function() {
+      done(new Error('Confirm callback should not be called'));
+    });
+    ch.open();
+  },
+  function(send, await, done, ch) {
+    send(defs.BasicAck, {deliveryTag: 2, multiple: false}, ch);
+    send(defs.BasicAck, {deliveryTag: 1, multiple: false}, ch);
+  }));
+
 });
