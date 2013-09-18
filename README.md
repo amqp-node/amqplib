@@ -9,7 +9,7 @@
  * [Examples from RabbitMQ tutorials][tutes]
 
 A library for making AMQP 0-9-1 clients for Node.JS, and an AMQP 0-9-1
-client for Node.JS v0.8 and v0.10.
+client for Node.JS v0.8, v0.9, v0.10, and v0.11.
 
 Project status:
 
@@ -23,15 +23,17 @@ Not yet:
  - Measured test coverage
  - Completely stable APIs
  - Comprehensive documentation
- - Known to be used in production
+ - Known to be used in production (if anyone *is* using it in
+   production, do let me know)
 
 ## Client API example
 
 ```javascript
 var q = 'tasks';
 
-// Publisher
 var open = require('amqplib').connect('amqp://localhost');
+
+// Publisher
 open.then(function(conn) {
   var ok = conn.createChannel();
   ok = ok.then(function(ch) {
@@ -64,12 +66,18 @@ another using the environment variable `URL`; e.g.,
 
     URL=amqp://dev.rabbitmq.com npm test
 
-(NB You may experience test failures due to timeouts if using the
-dev.rabbitmq.com instance)
+**NB** You may experience test failures due to timeouts if using the
+dev.rabbitmq.com instance.
 
 You can run it under different versions of Node.JS using [nave][]:
 
     nave use 0.8 npm test
+
+or run the tests on all supported versions of Node.JS in one go:
+
+    make test-all-nodejs
+
+(which also needs `nave` installed, of course).
 
 Lastly, setting the environment variable `LOG_ERRORS` will cause the
 tests to output error messages encountered, to the console; this is
