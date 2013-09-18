@@ -49,8 +49,10 @@ open.then(function(conn) {
   ok = ok.then(function(ch) {
     ch.assertQueue(q);
     ch.consume(q, function(msg) {
-      console.log(msg.content.toString());
-      ch.ack(msg);
+      if (msg !== null) {
+        console.log(msg.content.toString());
+        ch.ack(msg);
+      }
     });
   });
   return ok;
