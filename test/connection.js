@@ -69,6 +69,31 @@ function connectionTest(client, server) {
   };
 }
 
+suite("Connection errors", function() {
+
+  test("socket close during open", function(done) {
+    // RabbitMQ itself will take at least 3 seconds to close the socket
+    // in the event of a handshake problem. Instead of using a live
+    // connection, I'm just going to pretend.
+    var pair = mock.socketPair();
+    var conn = new Connection(pair.client);
+    pair.server.on('readable', function() {
+      pair.server.end();
+    });
+    conn.open({}).then(fail(done), succeed(done));
+  });
+
+  test("bad frame during open", function(done) {
+    var ss = mock.socketPair();
+    var conn = new (require('../lib/connection').Connection)(ss.client);
+    ss.server.on('readable', function() {
+      ss.server.write(new Buffer([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
+    });
+    conn.open({}).then(fail(done), succeed(done));
+  });
+
+});
+
 suite("Connection open", function() {
 
 test("happy", connectionTest(
@@ -138,7 +163,7 @@ test("Unexpected socket close", connectionTest(
     var errorAndClosed = latch(2, done);
     c.on('error', succeed(errorAndClosed));
     c.on('close', succeed(errorAndClosed));
-    c.open(OPEN_OPTS);
+    c.open(OPEN_OPTS).then(null, fail(done));
   },
   function(send, await, done, socket) {
     happy_open(send, await)

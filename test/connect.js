@@ -1,10 +1,30 @@
 var connect = require('../lib/connect').connect;
+var assert = require('assert');
+var mock = require('./mocknet');
+var fail = mock.fail, succeed = mock.succeed;
 
-test("Connection refused", function(done) {
-  var open = connect('amqp://localhost:23450');
-  open.then(function() {
-    done(new Error('Connection unexpectedly succeeded'));
-  }, function(err) {
-    done();
+suite("Connect API", function() {
+
+  test("Connection refused", function(done) {
+    var open = connect('amqp://localhost:23450');
+    open.then(fail(done), succeed(done));
   });
+  
+  // %% this ought to fail the promise, rather than throwing an error
+  test("bad URL", function() {
+    assert.throws(function() {
+      connect('blurble');
+    });
+  });
+
+  test("wrongly typed open option", function(done) {
+    var url = require('url');
+    var parts = url.parse(URL, true);
+    var q = parts.query || {};
+    q.frameMax = 'NOT A NUMBER';
+    parts.query = q;
+    var u = url.format(parts);
+    connect(u).then(fail(done), succeed(done));
+  });
+  
 });
