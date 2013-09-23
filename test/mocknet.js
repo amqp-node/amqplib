@@ -63,18 +63,21 @@ function runServer(socket, run) {
     return function() {
       var d = defer();
       if (method) {
-        frames.accept = function(f) {
+        frames.step(function(e, f) {
+          if (e !== null) return d.reject(e);
           if (f.id === method)
             d.resolve(f);
           else
             d.reject(new Error("Expected method: " + method +
                                ", got " + f.id));
-        };
+        });
       }
       else {
-        frames.accept = d.resolve.bind(d);
+        frames.step(function(e, f) {
+          if (e !== null) return d.reject(e);
+          d.resolve(f);
+        });
       }
-      frames.step();
       return d.promise;
     };
   }

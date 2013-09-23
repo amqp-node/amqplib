@@ -77,7 +77,7 @@ suite("Parsing", function() {
       });
 
       partition(bufs).forEach(input.write.bind(input));
-      frames.run();
+      frames.acceptLoop();
       return i === t.length;
     }).asTest({times: 20})
   };
