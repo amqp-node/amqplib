@@ -1,7 +1,7 @@
 var connect = require('../lib/connect').connect;
 var assert = require('assert');
-var mock = require('./mocknet');
-var fail = mock.fail, succeed = mock.succeed;
+var util = require('./util');
+var fail = util.fail, succeed = util.succeed;
 
 suite("Connect API", function() {
 

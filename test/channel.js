@@ -4,8 +4,8 @@ var assert = require('assert');
 var defer = require('when').defer;
 var Channel = require('../lib/channel').Channel;
 var Connection = require('../lib/connection').Connection;
-var mock = require('./mocknet');
-var succeed = mock.succeed, fail = mock.fail, latch = mock.latch;
+var util = require('./util');
+var succeed = util.succeed, fail = util.fail, latch = util.latch;
 var defs = require('../lib/defs');
 var conn_handshake = require('./connection').connection_handshake;
 var OPEN_OPTS = require('./connection').OPEN_OPTS;
@@ -14,7 +14,7 @@ var LOG_ERRORS = process.env.LOG_ERRORS;
 
 function baseChannelTest(client, server) {
   return function(done) {
-    var pair = mock.socketPair();
+    var pair = util.socketPair();
     var c = new Connection(pair.client);
     if (LOG_ERRORS) c.on('error', console.warn);
     c.open(OPEN_OPTS).then(function() {
@@ -22,7 +22,7 @@ function baseChannelTest(client, server) {
     }, fail(done));
 
     pair.server.read(8); // discard the protocol header
-    var s = mock.runServer(pair.server, function(send, await) {
+    var s = util.runServer(pair.server, function(send, await) {
       conn_handshake(send, await)
         .then(function() {
           server(send, await, done);

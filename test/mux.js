@@ -3,8 +3,8 @@ var Mux = require('../lib/mux').Mux;
 var PassThrough = require('stream').PassThrough ||
   require('readable-stream/passthrough');
 
-var latch = require('./mocknet').latch;
-var schedule = require('./mocknet').schedule;
+var latch = require('./util').latch;
+var schedule = require('./util').schedule;
 
 function stream() {
   return new PassThrough({objectMode: true});

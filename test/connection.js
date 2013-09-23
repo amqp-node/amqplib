@@ -3,8 +3,8 @@ var defs = require('../lib/defs');
 var Connection = require('../lib/connection').Connection;
 var HEARTBEAT = require('../lib/frame').HEARTBEAT;
 var HB_BUF = require('../lib/frame').HEARTBEAT_BUF;
-var mock = require('./mocknet');
-var succeed = mock.succeed, fail = mock.fail, latch = mock.latch;
+var util = require('./util');
+var succeed = util.succeed, fail = util.fail, latch = util.latch;
 
 var LOG_ERRORS = process.env.LOG_ERRORS;
 
@@ -53,7 +53,7 @@ module.exports.connection_handshake = happy_open;
 
 function connectionTest(client, server) {
   return function(done) {
-    var pair = mock.socketPair();
+    var pair = util.socketPair();
     var c = new Connection(pair.client);
     if (LOG_ERRORS) c.on('error', console.warn);
     client(c, done);
@@ -63,7 +63,7 @@ function connectionTest(client, server) {
     assert.deepEqual(new Buffer("AMQP" + String.fromCharCode(0,0,9,1)),
                      protocolHeader);
 
-    var s = mock.runServer(pair.server, function(send, await) {
+    var s = util.runServer(pair.server, function(send, await) {
       server(send, await, done, pair.server);
     });
   };
@@ -75,7 +75,7 @@ suite("Connection errors", function() {
     // RabbitMQ itself will take at least 3 seconds to close the socket
     // in the event of a handshake problem. Instead of using a live
     // connection, I'm just going to pretend.
-    var pair = mock.socketPair();
+    var pair = util.socketPair();
     var conn = new Connection(pair.client);
     pair.server.on('readable', function() {
       pair.server.end();
@@ -84,7 +84,7 @@ suite("Connection errors", function() {
   });
 
   test("bad frame during open", function(done) {
-    var ss = mock.socketPair();
+    var ss = util.socketPair();
     var conn = new (require('../lib/connection').Connection)(ss.client);
     ss.server.on('readable', function() {
       ss.server.write(new Buffer([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));

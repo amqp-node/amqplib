@@ -75,7 +75,7 @@ function runServer(socket, run) {
       else {
         frames.step(function(e, f) {
           if (e !== null) return d.reject(e);
-          d.resolve(f);
+          else d.resolve(f);
         });
       }
       return d.promise;

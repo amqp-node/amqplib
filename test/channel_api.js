@@ -1,9 +1,9 @@
 var assert = require('assert');
 var crypto = require('crypto');
 var api = require('../channel_api');
-var mock = require('./mocknet');
-var succeed = mock.succeed, fail = mock.fail;
-var schedule = mock.schedule;
+var util = require('./util');
+var succeed = util.succeed, fail = util.fail;
+var schedule = util.schedule;
 var when = require('when');
 var defer = when.defer;
 
