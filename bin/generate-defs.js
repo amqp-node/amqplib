@@ -115,6 +115,7 @@ for (var p in propertieses) {
   var props = propertieses[p];
   println('case %d: return %s(buf);', props.id,  props.decoder);
 }
+println('default: throw new Error("Unknown class/method ID");');
 println('}}'); nl();
 
 println('module.exports.encodeMethod =',
@@ -125,6 +126,7 @@ for (var m in methods) {
   println('case %d: return %s(channel, fields);',
           method.id, method.encoder);
 }
+println('default: throw new Error("Unknown class/method ID");');
 println('}}'); nl();
 
 println('module.exports.encodeProperties ='
@@ -135,6 +137,7 @@ for (var p in propertieses) {
   println('case %d: return %s(channel, size, fields);',
           props.id, props.encoder);
 }
+println('default: throw new Error("Unknown class/properties ID");');
 println('}}'); nl();
 
 println('module.exports.info = function(id) {');
@@ -147,6 +150,7 @@ for (var p in propertieses) {
   var properties = propertieses[p];
   println('case %d: return %s', properties.id, properties.info);
 }
+println('default: throw new Error("Unknown class/method ID");');
 println('}}'); nl();
 
 for (var m in methods) {

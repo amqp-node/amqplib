@@ -1,4 +1,6 @@
 var assert = require('assert');
+var succeed = require('./util').succeed;
+var fail = require('./util').fail;
 
 var connection = require('../lib/connection');
 var Frames = connection.Connection;
@@ -41,6 +43,38 @@ suite("Explicit parsing", function() {
     assert(frames.recvFrame() === HEARTBEAT);
     assert(!frames.recvFrame());
   });
+
+  function testBogusFrame(name, bytes) {
+    test(name, function(done) {
+      var input = inputs();
+      var frames = new Frames(input);
+      frames.frameMax = 5; //for the max frame test
+      input.write(new Buffer(bytes));
+      frames.step(function(err, frame) {
+        if (err != null) done();
+        else done(new Error('Was a bogus frame!'));
+      });
+    });
+  }
+
+  testBogusFrame('Wrong sized frame',
+                 [defs.constants.FRAME_BODY,
+                  0,0, 0,0,0,0, // zero length
+                  65, // but a byte!
+                  defs.constants.FRAME_END]);
+
+  testBogusFrame('Unknown method frame',
+                 [defs.constants.FRAME_METHOD,
+                  0,0, 0,0,0,4,
+                  0,0,0,0, // garbage ID
+                  defs.constants.FRAME_END]);
+
+  testBogusFrame('> max frame',
+                 [defs.constants.FRAME_BODY,
+                  0,0, 0,0,0,6, // too big!
+                  65,66,67,68,69,70,
+                  defs.constants.FRAME_END]);
+
 });
 
 // Now for a bit more fun.
