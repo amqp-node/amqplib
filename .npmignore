@@ -6,3 +6,4 @@ scratch
 bin/amqp-rabbitmq-0.9.1.json
 bin/generate-defs.js
 etc/
+coverage/
