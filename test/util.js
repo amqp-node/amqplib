@@ -121,12 +121,23 @@ function latch(count, done) {
   };
 }
 
+// Call a thunk with a continuation that will be called with an error
+// if the thunk throws one, or nothing if it runs to completion.
+function completes(thunk, done) {
+  try {
+    thunk();
+    done();
+  }
+  catch (e) { done(e); }
+}
+
 module.exports = {
   socketPair: socketPair,
   runServer: runServer,
   succeed: succeed,
   fail: fail,
   latch: latch,
+  completes: completes,
   schedule: (typeof setImmediate === 'function') ?
     setImmediate : process.nextTick
 };

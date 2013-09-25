@@ -6,6 +6,7 @@ var Channel = require('../lib/channel').Channel;
 var Connection = require('../lib/connection').Connection;
 var util = require('./util');
 var succeed = util.succeed, fail = util.fail, latch = util.latch;
+var completes = util.completes;
 var defs = require('../lib/defs');
 var conn_handshake = require('./connection').connection_handshake;
 var OPEN_OPTS = require('./connection').OPEN_OPTS;
@@ -14,19 +15,20 @@ var LOG_ERRORS = process.env.LOG_ERRORS;
 
 function baseChannelTest(client, server) {
   return function(done) {
+    var bothDone = latch(2, done);
     var pair = util.socketPair();
     var c = new Connection(pair.client);
     if (LOG_ERRORS) c.on('error', console.warn);
     c.open(OPEN_OPTS).then(function() {
-      client(c, done);
-    }, fail(done));
+      client(c, bothDone);
+    }, fail(bothDone));
 
     pair.server.read(8); // discard the protocol header
     var s = util.runServer(pair.server, function(send, await) {
       conn_handshake(send, await)
         .then(function() {
-          server(send, await, done);
-        }, fail(done));
+          server(send, await, bothDone);
+        }, fail(bothDone));
     });
   };
 }
@@ -75,7 +77,7 @@ test("open", channelTest(
     ch.open().then(succeed(done), fail(done));
   },
   function(send, await, done) {
-    return true;
+    done();
   }));
 
 test("bad server", baseChannelTest(
@@ -87,7 +89,7 @@ test("bad server", baseChannelTest(
     return await(defs.ChannelOpen)()
       .then(function(open) {
         send(defs.ChannelCloseOk, {}, open.channel);
-      });
+      }).then(succeed(done), fail(done));
   }));
 
 test("open, close", channelTest(
@@ -102,27 +104,23 @@ test("open, close", channelTest(
     return await(defs.ChannelClose)()
       .then(function(close) {
         send(defs.ChannelCloseOk, {}, ch);
-      });
+      }).then(succeed(done), fail(done));;
   }));
 
-test("server close", function(done0) {
-  var doneLatch = latch(2, done0);
-
-  channelTest(
-    function(ch, done) {
-      ch.on('error', succeed(done));
-      ch.open();
-    },
-    function(send, await, done, ch) {
-      send(defs.ChannelClose, {
-        replyText: 'Forced close',
-        replyCode: defs.constants.CHANNEL_ERROR,
-        classId: 0, methodId: 0
-      }, ch);
-      await(defs.ChannelCloseOk)()
-        .then(succeed(done), fail(done));
-    })(doneLatch);
-});
+test("server close", channelTest(
+  function(ch, done) {
+    ch.on('error', succeed(done));
+    ch.open();
+  },
+  function(send, await, done, ch) {
+    send(defs.ChannelClose, {
+      replyText: 'Forced close',
+      replyCode: defs.constants.CHANNEL_ERROR,
+      classId: 0, methodId: 0
+    }, ch);
+    await(defs.ChannelCloseOk)()
+      .then(succeed(done), fail(done));
+  }));
 
 }); //suite
 
@@ -143,7 +141,7 @@ test("RPC", channelTest(
       ch.rpc(defs.BasicQos, fields, defs.BasicQosOk).then(whee, boom);
       ch.rpc(defs.BasicQos, fields, defs.BasicQosOk).then(whee, boom);
       ch.rpc(defs.BasicQos, fields, defs.BasicQosOk).then(whee, boom);
-    }).then(null, fail(done));
+    }).then(null, fail(rpcLatch));
   },
   function(send, await, done, ch) {
     function sendOk(f) {
@@ -155,7 +153,8 @@ test("RPC", channelTest(
       .then(await(defs.BasicQos))
       .then(sendOk)
       .then(await(defs.BasicQos))
-      .then(sendOk);
+      .then(sendOk)
+      .then(succeed(done), fail(done));
   }));
 
 test("Bad RPC", channelTest(
@@ -169,7 +168,7 @@ test("Bad RPC", channelTest(
       .then(function() {
         ch.rpc(defs.BasicRecover, {requeue: true}, defs.BasicRecoverOk)
           .then(fail(done), succeed(errLatch));
-      }, fail(done));
+      }, fail(errLatch));
   },
   function(send, await, done, ch) {
     return await()()
@@ -179,7 +178,7 @@ test("Bad RPC", channelTest(
       .then(await(defs.ChannelClose))
       .then(function() {
         send(defs.ChannelCloseOk, {}, ch);
-      });
+      }).then(succeed(done), fail(done));
   }));
 
 test("RPC on closed channel", channelTest(
@@ -207,7 +206,7 @@ test("RPC on closed channel", channelTest(
         }, ch);
         return await(defs.ChannelCloseOk);
       })
-      .then(null, fail(done));
+      .then(succeed(done), fail(done));
   }));
 
 test("publish", channelTest(
@@ -219,7 +218,7 @@ test("publish", channelTest(
           mandatory: false, immediate: false, ticket: 0
         }, {}, new Buffer('foobar'));
       })
-      .then(null, fail(done));
+      .then(succeed(done), fail(done));
   },
   function(send, await, done, ch) {
     await(defs.BasicPublish)()
@@ -234,31 +233,37 @@ test("delivery", channelTest(
   function(ch, done) {
     ch.open();
     ch.on('delivery', function(m) {
-      assert.equal('barfoo', m.content.toString());
-      done();
+      completes(function() {
+        assert.equal('barfoo', m.content.toString());
+      }, done);
     });
   },
   function(send, await, done, ch) {
-    send(defs.BasicDeliver, DELIVER_FIELDS, ch, new Buffer('barfoo'));
+    completes(function() {
+      send(defs.BasicDeliver, DELIVER_FIELDS, ch, new Buffer('barfoo'));
+    }, done);
   }));
 
 test("zero byte msg = no content body frames", channelTest(
   function(ch, done) {
     ch.open();
     ch.on('delivery', function(m) {
-      assert.deepEqual(new Buffer(0), m.content);
-      done();
+      completes(function() {
+        assert.deepEqual(new Buffer(0), m.content);
+      }, done);
     });
   },
   function(send, await, done, ch) {
-    send(defs.BasicDeliver, DELIVER_FIELDS, ch, new Buffer(''));
+    completes(function() {
+      send(defs.BasicDeliver, DELIVER_FIELDS, ch, new Buffer(''));
+    }, done);
   }));
 
 test("bad delivery", channelTest(
   function(ch, done) {
     errorAndClose = latch(2, done);
     ch.on('error', succeed(errorAndClose));
-    ch.on('close', errorAndClose);
+    ch.on('close', succeed(errorAndClose));
     ch.open();
   },
   function(send, await, done, ch) {
@@ -268,36 +273,38 @@ test("bad delivery", channelTest(
     return await(defs.ChannelClose)()
       .then(function() {
         send(defs.ChannelCloseOk, {}, ch);
-      });
+      }).then(succeed(done), fail(done));
   }));
 
 test("bad content send", channelTest(
   function(ch, done) {
-    ch.open();
-    assert.throws(function() {
-      ch.sendMessage({routingKey: 'foo',
-                      exchange: 'amq.direct'},
-                     {}, null);
-    });
-    done();
+    completes(function() {
+      ch.open();
+      assert.throws(function() {
+        ch.sendMessage({routingKey: 'foo',
+                        exchange: 'amq.direct'},
+                       {}, null);
+      });
+    }, done);
   },
   function(send, await, done, ch) {
-    // nothing gets sent ...
+    done();
   }));
 
 test("bad properties send", channelTest(
   function(ch, done) {
-    ch.open();
-    assert.throws(function() {
-      ch.sendMessage({routingKey: 'foo',
-                      exchange: 'amq.direct'},
-                     {contentEncoding: 7},
-                     new Buffer('foobar'));
-    });
-    done();
+    completes(function() {
+      ch.open();
+      assert.throws(function() {
+        ch.sendMessage({routingKey: 'foo',
+                        exchange: 'amq.direct'},
+                       {contentEncoding: 7},
+                       new Buffer('foobar'));
+      });
+    }, done);
   },
   function(send, await, done, ch) {
-    // nothing gets sent ...
+    done();
   }));  
 
 test("bad consumer", channelTest(
@@ -307,7 +314,7 @@ test("bad consumer", channelTest(
       throw new Error("I am a bad consumer");
     });
     ch.on('error', succeed(errorAndClose));
-    ch.on('close', errorAndClose);
+    ch.on('close', succeed(errorAndClose));
     ch.open();
   },
   function(send, await, done, ch) {
@@ -315,7 +322,7 @@ test("bad consumer", channelTest(
     return await(defs.ChannelClose)()
       .then(function() {
         send(defs.ChannelCloseOk, {}, ch);
-      });
+      }).then(succeed(done), fail(done));
   }));
 
 test("bad send in consumer", channelTest(
@@ -327,60 +334,72 @@ test("bad send in consumer", channelTest(
     ch.on('delivery', function() {
       ch.sendMessage({routingKey: 'foo',
                       exchange: 'amq.direct'},
-                     {}, null);
+                     {}, null); // can't send null
     });
 
     ch.open();
   },
   function(send, await, done, ch) {
-    send(defs.BasicDeliver, DELIVER_FIELDS, ch, new Buffer('barfoo'));
+    completes(function() {
+      send(defs.BasicDeliver, DELIVER_FIELDS, ch,
+           new Buffer('barfoo'));
+    }, done);
     return await(defs.ChannelClose)()
       .then(function() {
         send(defs.ChannelCloseOk, {}, ch);
-      });
+      }).then(succeed(done), fail(done));
   }));
 
 test("return", channelTest(
   function(ch, done) {
     ch.on('return', function(m) {
-      assert.equal('barfoo', m.content.toString());
-      done();
+      completes(function() {
+        assert.equal('barfoo', m.content.toString());
+      }, done);
     });
     ch.open();
   },
   function(send, await, done, ch) {
-    send(defs.BasicReturn, DELIVER_FIELDS, ch, new Buffer('barfoo'));
+    completes(function() {
+      send(defs.BasicReturn, DELIVER_FIELDS, ch, new Buffer('barfoo'));
+    }, done);
   }));
 
 test("cancel", channelTest(
   function(ch, done) {
     ch.on('cancel', function(f) {
-      assert.equal('product of society', f.consumerTag);
-      done();
+      completes(function() {
+        assert.equal('product of society', f.consumerTag);
+      }, done);
     });
     ch.open();
   },
   function(send, await, done, ch) {
-    send(defs.BasicCancel, {
-      consumerTag: 'product of society',
-      nowait: false
-    }, ch);
+    completes(function() {
+      send(defs.BasicCancel, {
+        consumerTag: 'product of society',
+        nowait: false
+      }, ch);
+    }, done);
   }));
 
 function confirmTest(variety, Method) {
   return test('confirm ' + variety, channelTest(
     function(ch, done) {
       ch.on(variety, function(f) {
-        assert.equal(1, f.deliveryTag);
-        done();
+        completes(function() {
+          assert.equal(1, f.deliveryTag);
+        }, done);
       });
       ch.open();
     },
     function(send, await, done, ch) {
-      send(Method, {
-        deliveryTag: 1,
-        multiple: false
-      }, ch);
+      completes(function() {
+        send(Method, {
+          deliveryTag: 1,
+          multiple: false
+        }, ch);
+      }, done);
     }));
 }
 
@@ -390,9 +409,10 @@ confirmTest("nack", defs.BasicNack);
 test("out-of-order acks", channelTest(
   function(ch, done) {
     var allConfirms = latch(3, function() {
-      assert.equal(0, ch.unconfirmed.length);
-      assert.equal(4, ch.lwm);
-      done();
+      completes(function() {
+        assert.equal(0, ch.unconfirmed.length);
+        assert.equal(4, ch.lwm);
+      }, done);
     });
     ch.pushConfirmCallback(allConfirms);
     ch.pushConfirmCallback(allConfirms);
@@ -400,17 +420,20 @@ test("out-of-order acks", channelTest(
     ch.open();
   },
   function(send, await, done, ch) {
-    send(defs.BasicAck, {deliveryTag: 2, multiple: false}, ch);
-    send(defs.BasicAck, {deliveryTag: 3, multiple: false}, ch);
-    send(defs.BasicAck, {deliveryTag: 1, multiple: false}, ch);
+    completes(function() {
+      send(defs.BasicAck, {deliveryTag: 2, multiple: false}, ch);
+      send(defs.BasicAck, {deliveryTag: 3, multiple: false}, ch);
+      send(defs.BasicAck, {deliveryTag: 1, multiple: false}, ch);
+    }, done);
   }));
 
 test("not all out-of-order acks", channelTest(
   function(ch, done) {
     var allConfirms = latch(2, function() {
-      assert.equal(1, ch.unconfirmed.length);
-      assert.equal(3, ch.lwm);
-      done();
+      completes(function() {
+        assert.equal(1, ch.unconfirmed.length);
+        assert.equal(3, ch.lwm);
+      }, done);
     });
     ch.pushConfirmCallback(allConfirms); // tag = 1
     ch.pushConfirmCallback(allConfirms); // tag = 2
@@ -420,8 +443,10 @@ test("not all out-of-order acks", channelTest(
     ch.open();
   },
   function(send, await, done, ch) {
-    send(defs.BasicAck, {deliveryTag: 2, multiple: false}, ch);
-    send(defs.BasicAck, {deliveryTag: 1, multiple: false}, ch);
+    completes(function() {
+      send(defs.BasicAck, {deliveryTag: 2, multiple: false}, ch);
+      send(defs.BasicAck, {deliveryTag: 1, multiple: false}, ch);
+    }, done);
   }));
 
 });

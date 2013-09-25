@@ -5,6 +5,7 @@ var HEARTBEAT = require('../lib/frame').HEARTBEAT;
 var HB_BUF = require('../lib/frame').HEARTBEAT_BUF;
 var util = require('./util');
 var succeed = util.succeed, fail = util.fail, latch = util.latch;
+var completes = util.completes;
 
 var LOG_ERRORS = process.env.LOG_ERRORS;
 
@@ -53,10 +54,11 @@ module.exports.connection_handshake = happy_open;
 
 function connectionTest(client, server) {
   return function(done) {
+    var bothDone = latch(2, done);
     var pair = util.socketPair();
     var c = new Connection(pair.client);
     if (LOG_ERRORS) c.on('error', console.warn);
-    client(c, done);
+    client(c, bothDone);
 
     // NB only not a race here because the writes are synchronous
     var protocolHeader = pair.server.read(8);
@@ -64,7 +66,7 @@ function connectionTest(client, server) {
                      protocolHeader);
 
     var s = util.runServer(pair.server, function(send, await) {
-      server(send, await, done, pair.server);
+      server(send, await, bothDone, pair.server);
     });
   };
 }
@@ -101,7 +103,7 @@ test("happy", connectionTest(
     c.open(OPEN_OPTS).then(succeed(done), fail(done));
   },
   function(send, await, done) {
-    happy_open(send, await).then(null, fail(done));
+    happy_open(send, await).then(succeed(done), fail(done));
   }));
 
 test("wrong first frame", connectionTest(
@@ -110,10 +112,12 @@ test("wrong first frame", connectionTest(
   },
   function(send, await, done) {
     // bad server! bad! whatever were you thinking?
-    send(defs.ConnectionTune,
-         {channelMax: 0,
-          heartbeat: 0,
-          frameMax: 0});
+    completes(function() {
+      send(defs.ConnectionTune,
+           {channelMax: 0,
+            heartbeat: 0,
+            frameMax: 0});
+    }, done);
   }));
 
 });
@@ -136,7 +140,7 @@ test("wrong frame on channel 0", connectionTest(
       .then(await(defs.ConnectionClose))
       .then(function(close) {
         send(defs.ConnectionCloseOk, {}, 0);
-      }).then(null, fail(done));
+      }).then(succeed(done), fail(done));
   }));
 
 test("unopened channel",  connectionTest(
@@ -155,7 +159,7 @@ test("unopened channel",  connectionTest(
       .then(await(defs.ConnectionClose))
       .then(function(close) {
         send(defs.ConnectionCloseOk, {}, 0);
-      }).then(null, fail(done));
+      }).then(succeed(done), fail(done));
   }));
 
 test("Unexpected socket close", connectionTest(
@@ -170,6 +174,7 @@ test("Unexpected socket close", connectionTest(
       .then(function() {
         socket.end();
       })
+      .then(succeed(done), fail(done));
   }));
 
 });
@@ -190,7 +195,7 @@ test("happy", connectionTest(
       .then(function(close) {
         send(defs.ConnectionCloseOk, {});
       })
-      .then(null, fail(done));
+      .then(succeed(done), fail(done));
   }));
 
 test("interleaved close frames", connectionTest(
@@ -215,7 +220,7 @@ test("interleaved close frames", connectionTest(
       .then(function(f) {
         send(defs.ConnectionCloseOk, {});
       })
-      .then(null, fail(done));
+      .then(succeed(done), fail(done));
   }));
 
 test("server-initiated close", connectionTest(
@@ -235,7 +240,7 @@ test("server-initiated close", connectionTest(
         });
       })
       .then(await(defs.ConnectionCloseOk))
-      .then(null, fail(done));
+      .then(succeed(done), fail(done));
   }));
 });
 
@@ -253,12 +258,14 @@ teardown(function() {
 
 test("send heartbeat after open", connectionTest(
   function(c, done) {
-    var opts = Object.create(OPEN_OPTS);
-    opts.heartbeat = 1;
-    // Don't leave the error waiting to happen for the next test, this
-    // confuses mocha awfully
-    c.on('error', function() {});
-    c.open(opts);
+    completes(function() {
+      var opts = Object.create(OPEN_OPTS);
+      opts.heartbeat = 1;
+      // Don't leave the error waiting to happen for the next test, this
+      // confuses mocha awfully
+      c.on('error', function() {});
+      c.open(opts);
+    }, done);
   },
   function(send, await, done, socket) {
     var timer;
@@ -284,7 +291,8 @@ test("detect lack of heartbeats", connectionTest(
     c.open(opts);
   },
   function(send, await, done, socket) {
-    happy_open(send, await);
+    happy_open(send, await)
+      .then(succeed(done), fail(done));
     // conspicuously not sending anything ...
   }));
 
