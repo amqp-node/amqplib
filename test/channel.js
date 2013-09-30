@@ -70,11 +70,21 @@ var DELIVER_FIELDS = {
   replyText: 'derp',
 };
 
+function open(ch) {
+  var opened = defer();
+  ch._rpc(defs.ChannelOpen, {outOfBand: ''}, defs.ChannelOpenOk,
+          function(err, _) {
+            if (err === null) opened.resolve();
+            else opened.reject(err);
+          });
+  return opened.promise;
+}
+
 suite("channel open and close", function() {
 
 test("open", channelTest(
   function(ch, done) {
-    ch.open().then(succeed(done), fail(done));
+    open(ch).then(succeed(done), fail(done));
   },
   function(send, await, done) {
     done();
@@ -83,7 +93,7 @@ test("open", channelTest(
 test("bad server", baseChannelTest(
   function(c, done) {
     var ch = new Channel(c);
-    ch.open().then(fail(done), succeed(done));
+    open(ch).then(fail(done), succeed(done));
   },
   function(send, await, done) {
     return await(defs.ChannelOpen)()
@@ -94,9 +104,12 @@ test("bad server", baseChannelTest(
 
 test("open, close", channelTest(
   function(ch, done) {
-    ch.open()
+    open(ch)
       .then(function() {
-        ch.close();
+        var closed = defer();
+        ch.closeBecause("Bye", defs.constants.REPLY_SUCCESS,
+                        closed.resolve);
+        return closed.promise;
       })
       .then(succeed(done), fail(done));
   },
@@ -110,7 +123,7 @@ test("open, close", channelTest(
 test("server close", channelTest(
   function(ch, done) {
     ch.on('error', succeed(done));
-    ch.open();
+    open(ch);
   },
   function(send, await, done, ch) {
     send(defs.ChannelClose, {
@@ -128,19 +141,23 @@ suite("channel machinery", function() {
 
 test("RPC", channelTest(
   function(ch, done) {
-    ch.open().then(function() {
+    open(ch).then(function() {
       var rpcLatch = latch(3, done);
-      var whee = succeed(rpcLatch);
-      var boom = fail(rpcLatch);
+
+      function wheeboom(err, f) {
+        if (err !== null) rpcLatch(err);
+        else rpcLatch();
+      }
+
       var fields = {
         prefetchCount: 10,
         prefetchSize: 0,
         global: false
       };
       
-      ch.rpc(defs.BasicQos, fields, defs.BasicQosOk).then(whee, boom);
-      ch.rpc(defs.BasicQos, fields, defs.BasicQosOk).then(whee, boom);
-      ch.rpc(defs.BasicQos, fields, defs.BasicQosOk).then(whee, boom);
+      ch._rpc(defs.BasicQos, fields, defs.BasicQosOk, wheeboom);
+      ch._rpc(defs.BasicQos, fields, defs.BasicQosOk, wheeboom);
+      ch._rpc(defs.BasicQos, fields, defs.BasicQosOk, wheeboom);
     }).then(null, fail(rpcLatch));
   },
   function(send, await, done, ch) {
@@ -164,10 +181,13 @@ test("Bad RPC", channelTest(
     var errLatch = latch(2, done);
     ch.on('error', succeed(errLatch));
     
-    ch.open()
+    open(ch)
       .then(function() {
-        ch.rpc(defs.BasicRecover, {requeue: true}, defs.BasicRecoverOk)
-          .then(fail(done), succeed(errLatch));
+        ch._rpc(defs.BasicRecover, {requeue: true}, defs.BasicRecoverOk,
+                function(err) {
+                  if (err !== null) errLatch();
+                  else errLatch(new Error('Expected RPC failure'));
+                });
       }, fail(errLatch));
   },
   function(send, await, done, ch) {
@@ -183,16 +203,23 @@ test("Bad RPC", channelTest(
 
 test("RPC on closed channel", channelTest(
   function(ch, done) {
-    ch.open();
+    open(ch);
     var close = defer(), fail1 = defer(), fail2 = defer();
     ch.on('error', close.resolve);
-    ch.rpc(defs.BasicRecover, {requeue:true}, defs.BasicRecoverOk)
-      .then(fail1.reject, fail1.resolve);
-    ch.rpc(defs.BasicRecover, {requeue:true}, defs.BasicRecoverOk)
-      .then(fail2.reject, fail2.resolve);
 
+    function failureCb(d) {
+      return function(err) {
+        if (err !== null) d.resolve();
+        else d.reject();
+      }
+    }
+
+    ch._rpc(defs.BasicRecover, {requeue:true}, defs.BasicRecoverOk,
+            failureCb(fail1));
+    ch._rpc(defs.BasicRecover, {requeue:true}, defs.BasicRecoverOk, 
+            failureCb(fail2));
     close.promise
-      .then(function(){ return fail1.promise; })
+      .then(function() { return fail1.promise; })
       .then(function() { return fail2.promise; })
       .then(succeed(done), fail(done));
   },
@@ -211,7 +238,7 @@ test("RPC on closed channel", channelTest(
 
 test("publish", channelTest(
   function(ch, done) {
-    ch.open()
+    open(ch)
       .then(function() {
         ch.sendMessage({
           exchange: 'foo', routingKey: 'bar',
@@ -231,7 +258,7 @@ test("publish", channelTest(
 
 test("delivery", channelTest(
   function(ch, done) {
-    ch.open();
+    open(ch);
     ch.on('delivery', function(m) {
       completes(function() {
         assert.equal('barfoo', m.content.toString());
@@ -246,7 +273,7 @@ test("delivery", channelTest(
 
 test("zero byte msg = no content body frames", channelTest(
   function(ch, done) {
-    ch.open();
+    open(ch);
     ch.on('delivery', function(m) {
       completes(function() {
         assert.deepEqual(new Buffer(0), m.content);
@@ -264,7 +291,7 @@ test("bad delivery", channelTest(
     errorAndClose = latch(2, done);
     ch.on('error', succeed(errorAndClose));
     ch.on('close', succeed(errorAndClose));
-    ch.open();
+    open(ch);
   },
   function(send, await, done, ch) {
     send(defs.BasicDeliver, DELIVER_FIELDS, ch);
@@ -279,7 +306,7 @@ test("bad delivery", channelTest(
 test("bad content send", channelTest(
   function(ch, done) {
     completes(function() {
-      ch.open();
+      open(ch);
       assert.throws(function() {
         ch.sendMessage({routingKey: 'foo',
                         exchange: 'amq.direct'},
@@ -294,7 +321,7 @@ test("bad content send", channelTest(
 test("bad properties send", channelTest(
   function(ch, done) {
     completes(function() {
-      ch.open();
+      open(ch);
       assert.throws(function() {
         ch.sendMessage({routingKey: 'foo',
                         exchange: 'amq.direct'},
@@ -315,7 +342,7 @@ test("bad consumer", channelTest(
     });
     ch.on('error', succeed(errorAndClose));
     ch.on('close', succeed(errorAndClose));
-    ch.open();
+    open(ch);
   },
   function(send, await, done, ch) {
     send(defs.BasicDeliver, DELIVER_FIELDS, ch, new Buffer('barfoo'));
@@ -337,7 +364,7 @@ test("bad send in consumer", channelTest(
                      {}, null); // can't send null
     });
 
-    ch.open();
+    open(ch);
   },
   function(send, await, done, ch) {
     completes(function() {
@@ -357,7 +384,7 @@ test("return", channelTest(
         assert.equal('barfoo', m.content.toString());
       }, done);
     });
-    ch.open();
+    open(ch);
   },
   function(send, await, done, ch) {
     completes(function() {
@@ -372,7 +399,7 @@ test("cancel", channelTest(
         assert.equal('product of society', f.consumerTag);
       }, done);
     });
-    ch.open();
+    open(ch);
   },
   function(send, await, done, ch) {
     completes(function() {
@@ -391,7 +418,7 @@ function confirmTest(variety, Method) {
           assert.equal(1, f.deliveryTag);
         }, done);
       });
-      ch.open();
+      open(ch);
     },
     function(send, await, done, ch) {
       completes(function() {
@@ -417,7 +444,7 @@ test("out-of-order acks", channelTest(
     ch.pushConfirmCallback(allConfirms);
     ch.pushConfirmCallback(allConfirms);
     ch.pushConfirmCallback(allConfirms);
-    ch.open();
+    open(ch);
   },
   function(send, await, done, ch) {
     completes(function() {
@@ -440,7 +467,7 @@ test("not all out-of-order acks", channelTest(
     ch.pushConfirmCallback(function() {
       done(new Error('Confirm callback should not be called'));
     });
-    ch.open();
+    open(ch);
   },
   function(send, await, done, ch) {
     completes(function() {
