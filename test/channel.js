@@ -135,6 +135,26 @@ test("server close", channelTest(
       .then(succeed(done), fail(done));
   }));
 
+test("overlapping channel/server close", channelTest(
+  function(ch, done) {
+    ch.open();
+    completes(function() {
+      ch.close();
+    }, done);
+  },
+  function(send, await, done, ch) {
+    await(defs.ChannelClose)()
+      .then(function() {
+        send(defs.ConnectionClose, {
+          replyText: 'Got there first',
+          replyCode: defs.constants.CONNECTION_FORCED,
+          classId: 0, methodId: 0
+        }, 0);
+      })
+      .then(await(defs.ConnectionCloseOk))
+      .then(succeed(done), fail(done));
+  }));
+
 }); //suite
 
 suite("channel machinery", function() {

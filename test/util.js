@@ -5,6 +5,10 @@ var PassThrough =
 var defer = require('when').defer;
 var defs = require('../lib/defs');
 
+var schedule = (typeof setImmediate === 'function') ?
+  setImmediate : process.nextTick;
+
+
 // Set up a socket pair {client, server}, such that writes to the
 // client are readable from the server, and writes to the server are
 // readable at the client.
@@ -49,13 +53,17 @@ function runServer(socket, run) {
   function send(id, fields, channel, content) {
     channel = channel || 0;
     if (content) {
-      frames.sendMethodAndProperties(channel, id, fields, 
-                                     defs.BasicProperties, fields,
-                                     content.length);
-      frames.sendContent(channel, content);
+      schedule(function() {
+        frames.sendMethodAndProperties(channel, id, fields, 
+                                       defs.BasicProperties, fields,
+                                       content.length);
+        frames.sendContent(channel, content);
+      });
     }
     else {
-      frames.sendMethod(channel, id, fields);
+      schedule(function() {
+        frames.sendMethod(channel, id, fields);
+      });
     }
   }
 
@@ -138,6 +146,5 @@ module.exports = {
   fail: fail,
   latch: latch,
   completes: completes,
-  schedule: (typeof setImmediate === 'function') ?
-    setImmediate : process.nextTick
+  schedule: schedule
 };

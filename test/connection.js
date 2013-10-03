@@ -120,6 +120,25 @@ test("wrong first frame", connectionTest(
     }, done);
   }));
 
+test("unexpected socket close", connectionTest(
+  function(c, done) {
+    c.open(OPEN_OPTS).then(fail(done),
+                           succeed(done));
+  },
+  function(send, await, done, socket) {
+    send(defs.ConnectionStart,
+         {versionMajor: 0,
+          versionMinor: 9,
+          serverProperties: {},
+          mechanisms: new Buffer('PLAIN'),
+          locales: new Buffer('en_US')});
+    return await(defs.ConnectionStartOk)()
+      .then(function() {
+        socket.end();
+      })
+      .then(succeed(done), fail(done));
+  }));
+
 });
 
 suite("Connection running", function() {
@@ -162,19 +181,21 @@ test("unopened channel",  connectionTest(
       }).then(succeed(done), fail(done));
   }));
 
-test("Unexpected socket close", connectionTest(
+test("unexpected socket close", connectionTest(
   function(c, done) {
     var errorAndClosed = latch(2, done);
     c.on('error', succeed(errorAndClosed));
     c.on('close', succeed(errorAndClosed));
-    c.open(OPEN_OPTS).then(null, fail(done));
+    c.open(OPEN_OPTS).then(function() {
+      c.sendHeartbeat();
+    }).then(null, fail(errorAndClosed));
   },
   function(send, await, done, socket) {
     happy_open(send, await)
+      .then(await())
       .then(function() {
         socket.end();
-      })
-      .then(succeed(done), fail(done));
+      }).then(succeed(done));
   }));
 
 });
