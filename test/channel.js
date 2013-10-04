@@ -137,9 +137,9 @@ test("server close", channelTest(
 
 test("overlapping channel/server close", channelTest(
   function(ch, done) {
-    ch.open();
+    open(ch);
     completes(function() {
-      ch.close();
+      ch.closeBecause("Bye", defs.constants.REPLY_SUCCESS);
     }, done);
   },
   function(send, await, done, ch) {
