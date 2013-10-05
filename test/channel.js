@@ -18,7 +18,9 @@ function baseChannelTest(client, server) {
     var bothDone = latch(2, done);
     var pair = util.socketPair();
     var c = new Connection(pair.client);
+
     if (LOG_ERRORS) c.on('error', console.warn);
+
     c.open(OPEN_OPTS).then(function() {
       client(c, bothDone);
     }, fail(bothDone));
@@ -38,7 +40,7 @@ function channelTest(client, server) {
     function(conn, done) {
       var ch = new Channel(conn);
       if (LOG_ERRORS) ch.on('error', console.warn);
-      client(ch, done);
+      client(ch, done, conn);
     },
     function(send, await, done) {
       channel_handshake(send, await)
@@ -136,11 +138,11 @@ test("server close", channelTest(
   }));
 
 test("overlapping channel/server close", channelTest(
-  function(ch, done) {
-    open(ch);
-    completes(function() {
+  function(ch, done, conn) {
+    conn.on('error', succeed(done));
+    open(ch).then(function() {
       ch.closeBecause("Bye", defs.constants.REPLY_SUCCESS);
-    }, done);
+    }, fail(done));
   },
   function(send, await, done, ch) {
     await(defs.ChannelClose)()
