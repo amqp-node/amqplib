@@ -139,10 +139,12 @@ test("server close", channelTest(
 
 test("overlapping channel/server close", channelTest(
   function(ch, done, conn) {
-    conn.on('error', succeed(done));
+    var both = latch(2, done);
+    conn.on('error', succeed(both));
+    ch.on('close', succeed(both));
     open(ch).then(function() {
       ch.closeBecause("Bye", defs.constants.REPLY_SUCCESS);
-    }, fail(done));
+    }, fail(both));
   },
   function(send, await, done, ch) {
     await(defs.ChannelClose)()
