@@ -97,6 +97,7 @@ println(
 
 println("'use strict';");
 println('var codec = require("./codec");');
+println('var ints = require("buffer-more-ints");');
 println('var encodeTable = codec.encodeTable;');
 println('var decodeFields = codec.decodeFields;');
 nl();
@@ -263,7 +264,7 @@ function encoderFn(method) {
       break;
     case 'longlong':
     case 'timestamp':
-      println('buffer.writeUInt64BE(val, offset); offset += 8;');
+      println('ints.writeUInt64BE(buffer, val, offset); offset += 8;');
       break;
     case 'bit':
       println('if (val) bits += %d;', 1 << bitsInARow);
@@ -336,7 +337,7 @@ function decoderFn(method) {
       break;
     case 'longlong':
     case 'timestamp':
-      println('val = buffer.readUInt64BE(offset); offset += 8;');
+      println('val = ints.readUInt64BE(buffer, offset); offset += 8;');
       break;
     case 'bit':
       var bit = 1 << bitsInARow;
@@ -409,7 +410,7 @@ function encodePropsFn(props) {
   // skip frame size for now, we'll write it in when we know.
 
   // body size
-  println('buffer.writeUInt64BE(size, 11);');
+  println('ints.writeUInt64BE(buffer, size, 11);');
 
   println('flags = 0;');
   // we'll write the flags later too
@@ -439,7 +440,7 @@ function encodePropsFn(props) {
         break;
       case 'longlong':
       case 'timestamp':
-        println('buffer.writeUInt64BE(val, offset); offset += 8;');
+        println('ints.writeUInt64BE(buffer, val, offset); offset += 8;');
         break;
       case 'bit':
         println('if (val) bits += %d;', 1 << bitsInARow);
@@ -507,7 +508,7 @@ function decodePropsFn(props) {
         break;
       case 'longlong':
       case 'timestamp':
-        println('val = buffer.readUInt64BE(offset); offset += 8;');
+        println('val = ints.readUInt64BE(buffer, offset); offset += 8;');
         break;
       case 'longstr':
         println('len = buffer.readUInt32BE(offset); offset += 4;');

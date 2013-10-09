@@ -1,6 +1,7 @@
 var codec = require('../lib/codec');
 var defs = require('../lib/defs');
 var assert = require('assert');
+var ints = require('buffer-more-ints');
 
 var C = require('claire');
 var forAll = C.forAll;
@@ -54,7 +55,7 @@ var testCases = [
     ['decimal', {decimal: {'!': 'decimal', value: {digits: 2345, places: 2}}},
      [7,100,101,99,105,109,97,108,68,2,0,0,9,41]],
     ['float', {float: {'!': 'float', value: 0.1}},
-     [5,102,108,111,97,116,102,61,204,204,205]],,
+     [5,102,108,111,97,116,102,61,204,204,205]],
 ];
 
 function bufferToArray(b) {
@@ -132,7 +133,7 @@ function roundtripProperties(Properties) {
                                     properties.fields);
     // FIXME depends on framing, ugh
     var fs1 = defs.decode(properties.id, buf.slice(19, buf.length));
-    assert.equal(properties.size, buf.readUInt64BE(11));
+    assert.equal(properties.size, ints.readUInt64BE(buf, 11));
     assert.deepEqual(properties.fields, fs1);
     return true;
   });
