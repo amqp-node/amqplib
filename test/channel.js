@@ -157,6 +157,25 @@ test("overlapping channel/server close", channelTest(
       .then(succeed(done), fail(done));
   }));
 
+test("double close", channelTest(
+  function(ch, done) {
+    open(ch).then(function() {
+      ch.closeBecause("First close", defs.constants.REPLY_SUCCESS);
+      // NB no synchronisation, we do this straight away
+      assert.throws(function() {
+        ch.closeBecause("Second close", defs.constants.REPLY_SUCCESS);
+      });
+    }).then(succeed(done), fail(done));
+  },
+  function(send, await, done, ch) {
+    await(defs.ChannelClose)()
+      .then(function() {
+        send(defs.ChannelCloseOk, {
+        }, ch);
+      })
+      .then(succeed(done), fail(done));
+  }));
+
 }); //suite
 
 suite("channel machinery", function() {

@@ -263,6 +263,26 @@ test("server-initiated close", connectionTest(
       .then(await(defs.ConnectionCloseOk))
       .then(succeed(done), fail(done));
   }));
+
+test("double close", connectionTest(
+  function(c, done) {
+    c.open(OPEN_OPTS).then(function() {
+      c.close();
+      // NB no synchronisation, we do this straight away
+      assert.throws(function() {
+        c.close();
+      });
+    }).then(succeed(done), fail(done));
+  },
+  function(send, await, done) {
+    happy_open(send, await)
+      .then(await(defs.ConnectionClose))
+      .then(function() {
+        send(defs.ConnectionCloseOk, {});
+      })
+      .then(succeed(done), fail(done));
+  }));
+
 });
 
 suite("heartbeats", function() {
