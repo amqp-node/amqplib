@@ -222,6 +222,14 @@ reason. Such reasons include
   something named in an argument not existing)
  * an human closed the channel with an admin tool
 
+### `Channel#on('return', function(msg) {...})`
+
+If a message is published with the `mandatory` flag (it's an option to
+`Channel#publish` in this API), it may be returned to the sending
+channel if it cannot be routed. Whenever this happens, the channel
+will emit `return` with a message object (as described in `#consume`)
+as an argument.
+
 ### `Channel#assertQueue([queue], [options])`
 
 Assert a queue into existence. This operation is idempotent given
