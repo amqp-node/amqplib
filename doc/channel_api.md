@@ -28,7 +28,8 @@ for a reply.
 Failed operations will
 
  * reject the current RPC, if there is one
- * invalidate the channel object
+ * invalidate the channel object, meaning further operations will
+   throw an exception
  * reject any RPCs waiting to be sent
  * cause the channel object to emit `'error'`
  * cause the channel object to emit `'close'`
@@ -52,9 +53,8 @@ amqp.connect().then(function(conn) {
 ```
 
 (The dependence of the later operations above on prior operations is
-OK, by the way, because RPCs are synchronous per channel. Any failures
-will invalidate the channel, so subsequent operations will also
-fail.)
+OK, by the way, because RPCs are serialised per channel. Any failures
+will invalidate the channel, so subsequent operations will also fail.)
 
 Many operations have mandatory arguments as well as optional arguments
 with defaults; in general, the former appear as parameters to the
@@ -69,7 +69,7 @@ be convenient.
 Connect to an AMQP 0-9-1 server, optionally given an AMQP URL (see
 [AMQP URI syntax][amqpurl]) and socket options. The protocol part
 (`amqp:` or `amqps:`) is mandatory; defaults for elided parts are as
-given in `'amqp://guest:guest@localhost:5672'`. If the URL is omitted
+given in `'amqp://guest:guest@localhost:5672'`. If the URI is omitted
 entirely, it will default to `'amqp://localhost'`, which given the
 defaults for missing parts, will connect to a RabbitMQ installation
 with factory settings, on localhost.
@@ -84,7 +84,7 @@ that its name must be escaped; so e.g., the virtual host named `/foo`
 is `'%2Ffoo'`; in a full URI, `'amqp://localhost/%2Ffoo'`.
 
 Further AMQP tuning parameters may be given in the query part of the
-URL, e.g., as in `'amqp://localhost?frameMax=0x1000'`. These are:
+URI, e.g., as in `'amqp://localhost?frameMax=0x1000'`. These are:
 
  * `frameMax`, the size in bytes of the maximum frame allowed over the
    connection. `0` means no limit (but since frames have a size field
@@ -110,6 +110,14 @@ SSL connection; see the [SSL guide][ssl-doc].
 Returns a promise which will either be resolved with an open
 `ChannelModel` or rejected with a sympathetically-worded error (in
 en_US).
+
+##### Heartbeating
+
+If you supply a non-zero period in seconds as the `heartbeat`
+parameter, the connection will be monitored for liveness. If the
+client fails to read data from the connection for two successive
+intervals, the connection will emit an error and close. It will also
+send heartbeats to the server (in the absence of other data).
 
 ## `ChannelModel(connection)`
 
@@ -158,7 +166,9 @@ to do I/O.
 ### `ChannelModel#on('close', function() {...})`
 
 Emitted once the closing handshake initiated by `#close()` has
-completed, or if the underlying stream (e.g., socket) has closed.
+completed; or, if server closed the connection, once the client has
+sent the closing handshake; or, if the underlying stream (e.g.,
+socket) has closed.
 
 ### `ChannelModel#on('error', function (err) {...})`
 
@@ -195,8 +205,7 @@ point. When using the client library in an application, obtain an open
 ### `Channel#close()`
 
 Close a channel. Returns a promise which will be resolved once the
-closing handshake is complete. Any unresolved operations on the
-channel will be abandoned (and the returned promises rejected).
+closing handshake is complete.
 
 There's not usually any reason to close a channel rather than
 continuing to use it until you're ready to close the connection
@@ -208,10 +217,10 @@ channels.
 ### `Channel#on('close', function() {...})`
 
 A channel will emit `'close'` once the closing handshake (possibly
-initiated by `#close()`) has completed.
+initiated by `#close()`) has completed; or, if its connection closes.
 
-Closing a connection implicitly closes all the channels it is
-multiplexing; in this case the channels will each emit `'close'`.
+When a channel closes, any unresolved operations on the channel will
+be abandoned (and the returned promises rejected).
 
 ### `Channel#on('error', function(err) {...})`
 
@@ -222,6 +231,9 @@ reason. Such reasons include
   something named in an argument not existing)
  * an human closed the channel with an admin tool
 
+A channel will not emit `'error'` if its connection closes with an
+error.
+
 ### `Channel#on('return', function(msg) {...})`
 
 If a message is published with the `mandatory` flag (it's an option to
@@ -229,6 +241,13 @@ If a message is published with the `mandatory` flag (it's an option to
 channel if it cannot be routed. Whenever this happens, the channel
 will emit `return` with a message object (as described in `#consume`)
 as an argument.
+
+### `Channel#on('drain', function() {...})`
+
+Like a [stream.Writable][nodejs-drain], a channel will emit `'drain'`,
+if it has previously returned `false` from `#publish` or
+`#sendToQueue`, once its write buffer has been emptied (i.e., it is
+ready for writes again).
 
 ### `Channel#assertQueue([queue], [options])`
 
@@ -387,6 +406,9 @@ The options:
  * `alternateExchange` (string): an exchange to send messages to if
   this exchange can't route them to any queues.
 
+ * `arguments` (object): any additional arguments that may be needed
+   by an exchange type.
+
 The server reply echoes the exchange name, in the field `exchange`.
 
 ### `Channel#checkExchange(exchange)`
@@ -417,10 +439,10 @@ The server reply has no fields.
 
 ### `Channel#unbindExchange(destination, source, pattern, [args])`
 
-Remove a binding from an exchange to a queue. A binding with the exact
-`source` exchange, destination `queue`, routing key `pattern`, and
-extension `args` will be removed. If no such binding exists, it's &ndash;
-you guessed it &ndash; a channel error.
+Remove a binding from an exchange to another exchange. A binding with
+the exact `source` exchange, `destination` exchange, routing key
+`pattern`, and extension `args` will be removed. If no such binding
+exists, it's &ndash; you guessed it &ndash; a channel error.
 
 ### `Channel#publish(exchange, routingKey, content, [options])`
 
@@ -438,8 +460,8 @@ Publish a single message to an exchange. The mandatory parameters
 
 The remaining parameters are provided as fields in `options`, and are
 divided into those that have some meaning to RabbitMQ and those that
-will be ignored by RabbitMQ. `options` may be omitted altogether, in
-which case defaults as noted will apply.
+will be ignored by RabbitMQ but passed on to consumers. `options` may
+be omitted altogether, in which case defaults as noted will apply.
 
 The "meaningful" options are a mix of fields in BasicDeliver (the
 method used to publish a message), BasicProperties (in the message
@@ -498,13 +520,13 @@ Ignored by RabbitMQ (but may be useful for applications):
    along with the message content. The value as sent may be augmented
    by extension-specific fields if they are given in the parameters,
    for example, 'CC', since these are encoded as message headers; the
-   supplied value won't be mutated.
+   supplied value won't be mutated
 
  * `priority` (0..9): a notional priority for the message; presently
    ignored by RabbitMQ
 
  * `correlationId` (string): usually used to match replies to
-   requests, or similar.
+   requests, or similar
 
  * `replyTo` (string): often used to name a queue to which the
    receiving application must send replies, in an RPC scenario (many
@@ -521,11 +543,15 @@ Ignored by RabbitMQ (but may be useful for applications):
  * `appId` (string): an arbitrary identifier for the originating
    application
 
+`#publish` mimics the [`stream.Writable`][nodejs-write] interface in
+its return value; it will return `false` if the channel's write buffer
+is 'full', and `true` otherwise.
+
 ### `Channel#sendToQueue(queue, content, [options])`
 
 Send a single message with the `content` given as a buffer to the
-specific `queue` named, bypassing routing. The options are exactly the
-same as for `#publish`.
+specific `queue` named, bypassing routing. The options and return
+value are exactly the same as for `#publish`.
 
 ### `Channel#consume(queue, callback, [options])`
 
@@ -536,7 +562,7 @@ Options (which may be omitted altogether):
  * `consumerTag` (string): a name which the server will use to
   distinguish message deliveries for the consumer; mustn't be already
   in use on the channel. It's usually easier to omit this, in which
-  case the server will create a random name and supply it in its
+  case the server will create a random name and supply it in the
   reply.
 
  * `noLocal` (boolean): in theory, if true then the broker won't
@@ -554,8 +580,7 @@ Options (which may be omitted altogether):
   your channel (so usually only useful if you've made a 'private'
   queue by letting the server choose its name).
 
- * `arguments` (object): arbitrary arguments. No RabbitMQ extensions
-  use these, but hey go to town.
+ * `arguments` (object): arbitrary arguments. Go to town.
 
 The server reply contains one field, `consumerTag`. It is necessary to
 remember this somewhere if you will later want to cancel this consume
@@ -588,6 +613,9 @@ things mentioned under `#publish` as options that are
 transmitted. Note that RabbitMQ extensions (just `CC`, presently) are
 sent in the `headers` table so will appear there in deliveries.
 
+If the [consumer is cancelled][rabbitmq-consumer-cancel] by RabbitMQ,
+the callback will be invoked with `null`.
+
 ### `Channel#cancel(consumerTag)`
 
 This instructs the server to stop sending messages to the consumer
@@ -602,15 +630,15 @@ which may have been generated by the server.
 ### `Channel#get(queue, [options])`
 
 Ask a queue for a message, as an RPC. This returns a promise that will
-be resolved with either false, if there is no message to be had, or a
-message (in the same shape as detailed in `#consume`).
+be resolved with either `false`, if there is no message to be had, or
+a message (in the same shape as detailed in `#consume`).
 
 Options:
 
  * noAck (boolean): if true, the message will be assumed by the server
    to be acknowledged (i.e., dequeued) as soon as it's been sent over
    the wire. Default is false, that is, you will be expected to
-   acknowledge messages.
+   acknowledge the message.
 
 ### `Channel#ack(message, [allUpTo])`
 
@@ -651,6 +679,9 @@ messages back on the queue or queues from which they came. Defaults to
 true if not given, so if you want to make sure messages are
 dead-lettered or discarded, supply false here.
 
+This and `#nackAll` use a [RabbitMQ-specific
+extension][rabbitmq-nack].
+
 ### `Channel#nackAll([requeue])`
 
 Reject all messages outstanding on this channel. If `requeue` is true,
@@ -679,10 +710,29 @@ value is a promise that will be resolved with an open channel.
 
 On the resulting channel, each published message is 'acked' or (in
 exceptional circumstances) 'nacked' by the server, thereby indicating
-that it's been dealt with. A confirm channel has the same methods as a
-regular channel, except that `#publish` and `#sendToQueue` return a
-promise that will be resolved when the message is acked, or rejected
-should it be nacked.
+that it's been dealt with.
+
+A confirm channel has the same methods as a
+regular channel, except that `#publish` and `#sendToQueue` take a
+callback as an additional argument:
+
+```javascript
+var open = require('amqplib').connect();
+open.then(function(c) {
+  c.createConfirmChannel().then(function(ch) {
+    ch.sendToQueue('foo', new Buffer('foobar'), {},
+                   function(err, ok) {
+                     if (err !== null)
+                       console.warn('Message nacked!');
+                     else
+                       console.log('Message acked');
+    });
+  });
+});
+```
+
+In practice this means the `options` argument must be supplied, at
+least as an empty object.
 
 There are, broadly speaking, two uses for confirms. The first is to be
 able to act on the information that a message has been accepted, for
@@ -701,3 +751,7 @@ connection, then call `#createConfirmChannel`.
 [rabbitmq-confirms]: http://www.rabbitmq.com/confirms.html
 [rabbitmq-docs]: http://www.rabbitmq.com/documentation.html
 [ssl-doc]: doc/ssl.html
+[rabbitmq-consumer-cancel]: http://www.rabbitmq.com/consumer-cancel.html
+[rabbitmq-nack]: http://www.rabbitmq.com/nack.html
+[nodejs-write]: http://nodejs.org/api/stream.html#stream_writable_write_chunk_encoding_callback
+[nodejs-drain]: http://nodejs.org/api/stream.html#stream_event_drain
