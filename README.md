@@ -87,6 +87,11 @@ really only useful for checking the kind and formatting of the errors.
 
     LOG_ERRORS=true npm test
 
+## Test coverage
+
+    make coverage
+    open file://`pwd`/coverage/lcov-report/index.html
+
 [gh-pages]: http://squaremo.github.com/amqp.node/
 [gh-pages-apiref]: http://squaremo.github.com/amqp.node/doc/channel_api.html
 [nave]: https://github.com/isaacs/nave
