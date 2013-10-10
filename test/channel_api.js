@@ -293,6 +293,43 @@ chtest("consume via exchange-exchange binding", function(ch) {
     });
 });
 
+// bind again, unbind, publish, get-empty
+chtest("unbind exchange", function(ch) {
+  var source = 'test.unbind-ex-source';
+  var dest = 'test.unbind-ex-dest';
+  var q = 'test.unbind-ex-queue';
+  var viabinding = randomString();
+  var direct = randomString();
+
+  return doAll(
+    ch.assertExchange(source, 'fanout', EX_OPTS),
+    ch.assertExchange(dest, 'fanout', EX_OPTS),
+    ch.assertQueue(q, QUEUE_OPTS),
+    ch.purgeQueue(q),
+    ch.bindExchange(dest, source, '', {}),
+    ch.bindQueue(q, dest, '', {}))
+    .then(function() {
+      ch.publish(source, '', new Buffer('foobar'));
+      return waitForMessages(q);})
+    .then(function() { // message got through!
+      return ch.get(q, {noAck:true})
+        .then(function(m) {assert(m);});})
+    .then(function() {
+      return ch.unbindExchange(dest, source, '', {});})
+    .then(function() {
+      // via the no-longer-existing binding
+      ch.publish(source, '', new Buffer(viabinding));
+      // direct to the queue
+      ch.sendToQueue(q, new Buffer(direct));
+      return waitForMessages(q);})
+    .then(function() {return ch.get(q)})
+    .then(function(m) {
+      // the direct to queue message got through, the via-binding
+      // message (sent first) did not
+      assert.equal(direct, m.content.toString());
+    });
+});
+
 // This is a bit convoluted. Sorry.
 chtest("cancel consumer", function(ch) {
   var q = 'test.consumer-cancel';
