@@ -111,6 +111,13 @@ Returns a promise which will either be resolved with an open
 `ChannelModel` or rejected with a sympathetically-worded error (in
 en_US).
 
+Supplying a malformed URI will cause `connect()` to throw an
+exception; other problems, including refused and dropped TCP
+connections, will result in a rejected promise. Note that RabbitMQ,
+per the AMQP specification, will close the socket in the case of an
+authentication failure, making a dropped connection ambiguous (it will
+also wait a few seconds before doing so).
+
 ##### Heartbeating
 
 If you supply a non-zero period in seconds as the `heartbeat`
