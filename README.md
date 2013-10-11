@@ -4,6 +4,7 @@
 
     npm install amqplib
 
+ * [Change log][changelog]
  * [GitHub pages][gh-pages]
  * [API reference][gh-pages-apiref]
  * [Examples from RabbitMQ tutorials][tutes]
@@ -97,3 +98,4 @@ really only useful for checking the kind and formatting of the errors.
 [nave]: https://github.com/isaacs/nave
 [tutes]: https://github.com/squaremo/amqp.node/tree/master/examples/tutorials
 [rabbitmq-tutes]: http://www.rabbitmq.com/getstarted.html
+[changelog]: https://github.com/squaremo/amqp.node/blob/master/CHANGELOG.md
