@@ -14,6 +14,7 @@ amqp.connect('amqp://localhost').then(function(conn) {
     return ok.then(function() {
       ch.publish(ex, '', new Buffer(message));
       console.log(" [x] Sent '%s'", message);
+      return ch.close();
     });
   })).ensure(function() { conn.close(); });
 }).then(null, console.warn);
