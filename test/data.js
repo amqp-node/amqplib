@@ -87,7 +87,7 @@ var FieldArray = label('field-array', recursive(function() {
     LongStr, ShortStr, Octet,
     UShort, ULong, ULongLong,
     Short, Long, LongLong,
-    Bit, Float, Double, FieldTable)
+    Bit, Float, Double, FieldTable, FieldArray)
 }));
 
 var FieldTable = label('table', recursive(function() {
@@ -97,7 +97,7 @@ var FieldTable = label('table', recursive(function() {
                  LongStr, ShortStr, Octet,
                  UShort, ULong, ULongLong,
                  Short, Long, LongLong,
-                 Bit, Float, Double, FieldArray))
+                 Bit, Float, Double, FieldArray, FieldTable))
 }));
 
 // Internal tests of our properties
