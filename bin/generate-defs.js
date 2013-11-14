@@ -1,11 +1,16 @@
-// A safe size for the buffer to write into if we don't know how big
-// the encoding is going to be.
-var METHOD_BUFFER_SIZE = 2048;
-
 var FS = require('fs');
 var format = require('util').format;
 
 var defs = require('./amqp-rabbitmq-0.9.1.json');
+
+var FRAME_OVERHEAD = 8; // type + channel + size + frame-end
+
+var METHOD_OVERHEAD = FRAME_OVERHEAD + 4;
+// F_O + classId + methodId
+
+var PROPERTIES_OVERHEAD = FRAME_OVERHEAD + 4 + 8 + 2;
+// F_O + classId + weight + content size + flags
+
 
 var out = process.stdout;
 
@@ -95,15 +100,20 @@ println(
 '* https://github.com/squaremo/amqp.node/\n',
 '*/');
 
-println("'use strict';");
+println("'use strict';"); nl();
+
 println('var codec = require("./codec");');
 println('var ints = require("buffer-more-ints");');
 println('var encodeTable = codec.encodeTable;');
 println('var decodeFields = codec.decodeFields;');
 nl();
 
+println('var SCRATCH = new Buffer(2048);');
+
 println('module.exports.constants = %s',
         JSON.stringify(constants));
+nl();
+println('module.exports.FRAME_OVERHEAD = %d;', FRAME_OVERHEAD);
 nl();
 
 println('module.exports.decode = function(id, buf) {');
@@ -207,14 +217,124 @@ function typeDesc(t) {
   }
 }
 
+
+// Emit code to assign the arg value to `val`.
+function assignArg(a) {
+  println("val = fields['%s'];", a.name);
+}
+
+// Emit code for assigning an argument value to `val`, checking that
+// it exists (if it does not have a default) and is the correct
+// type.
+function checkAssignArg(a) {
+  assignArg(a);
+  println('if (!(%s)) {', valTypeTest(a));
+  println('if (val === undefined) {');
+  if (a.default !== undefined) {
+    var def = JSON.stringify(a.default);
+    println('val = %s', def);
+  }
+  else {
+    println('throw new Error("Missing value for %s");', a.name);
+  }
+  println('}'); // undefined test
+  println('else')
+  println('throw new TypeError(');
+  println('"Argument \'%s\' wrong type; must be %s");',
+          a.name, typeDesc(a.type));
+  println('}'); // type test
+}
+
+// Emit code for encoding `val` as a table and assign to a fresh
+// variable (based on the arg name). I use a scratch buffer to compose
+// the encoded table, otherwise I'd have to do a size calculation pass
+// first. I can get away with this only because 1. the encoding
+// procedures are not re-entrant; and, 2. I copy the result into
+// another buffer before returning. `scratchOffset`, `val`, `len` are
+// expected to have been declared.
+function assignTable(a) {
+  var varname = tableVar(a);
+  println(
+    "len = encodeTable(SCRATCH, val, scratchOffset);", a.name);
+  println('var %s = SCRATCH.slice(scratchOffset, scratchOffset + len);', varname);
+  println('scratchOffset += len;');
+}
+
+function tableVar(a) {
+  return a.name + '_encoded';
+}
+
+function stringLenVar(a) {
+  return a.name + '_len';
+}
+
+function assignStringLen(a) {
+  var v = stringLenVar(a);
+  println("var %s = Buffer.byteLength(fields['%s'], 'utf8');",
+          v, a.name);
+}
+
+
 function encoderFn(method) {
   var args = method['args'];
   println('function %s(channel, fields) {', method.encoder);
-  println('var offset = 0, val = null, bits = 0, len;');
+  println('var offset = 0, val = null, bits = 0, varyingSize = 0;');
+  println('var len, scratchOffset = 0;');
 
-  var bufferSize = fixedSize(args);
-  if (bufferSize === -1) bufferSize = METHOD_BUFFER_SIZE;
-  println('var buffer = new Buffer(%d);', bufferSize);
+  // Encoding is split into two parts. Some fields have a fixed size
+  // (e.g., integers of a specific width), while some have a size that
+  // depends on the datum (e.g., strings). Each field will therefore
+  // either 1. contribute to the fixed size; or 2. emit code to
+  // calculate the size (and possibly the encoded value, in the case
+  // of tables).
+  var fixedSize = METHOD_OVERHEAD;
+
+  var bitsInARow = 0;
+
+  for (var i=0, len = args.length; i < len; i++) {
+    var arg = args[i];
+
+    if (arg.type != 'bit') bitsInARow = 0;
+
+    switch (arg.type) {
+    // varying size
+    case 'shortstr':
+      checkAssignArg(arg);
+      assignStringLen(arg);
+      println("varyingSize += %s;", stringLenVar(arg));
+      fixedSize += 1;
+      break;
+    case 'longstr':
+      checkAssignArg(arg);
+      println("varyingSize += val.length;");
+      fixedSize += 4;
+      break;
+    case 'table':
+      // For a table we have to encode the table before we can see its
+      // length.
+      checkAssignArg(arg);
+      assignTable(arg);
+      println('varyingSize += %s.length;', tableVar(arg));
+      break;
+
+    // fixed size
+    case 'octet': fixedSize += 1; break;
+    case 'short': fixedSize += 2; break;
+    case 'long': fixedSize += 4; break;
+    case 'longlong': //fall through
+    case 'timestamp':
+      fixedSize += 8; break;
+    case 'bit':
+      bitsInARow ++;
+      // open a fresh pack o' bits
+      if (bitsInARow === 1) fixedSize += 1;
+      // just used a pack; reset
+      else if (bitsInARow === 8) bitsInARow = 0;
+      break;
+    }
+  }
+
+  println('var buffer = new Buffer(%d + varyingSize);', fixedSize);
 
   println('buffer[0] = %d;', constants.FRAME_METHOD);
   println('buffer.writeUInt16BE(channel, 1);');
@@ -222,29 +342,10 @@ function encoderFn(method) {
   println('buffer.writeUInt32BE(%d, 7);', method.id);
   println('offset = 11;');
 
-  var bitsInARow = 0;
+  bitsInARow = 0;
+
   for (var i = 0, len = args.length; i < len; i++) {
     var a = args[i];
-    var field = "fields['" + a.name + "']";
-
-    println('val = %s;', field);
-
-    println('if (!(%s)) {', valTypeTest(a));
-    println('if (val === undefined) {');
-    if (a.default !== undefined) {
-      var def = JSON.stringify(a.default);
-      println('val = %s', def);
-    }
-    else {
-      println('throw new Error("Missing value for %s");', a.name);
-    }
-    println('}'); // undefined test
-    println('else')
-    println('throw new TypeError(');
-    println('"Argument \'%s\' wrong type; must be %s");',
-            a.name, typeDesc(a.type));
-
-    println('}'); // type test
 
     // Flush any collected bits before doing a new field
     if (a.type != 'bit' && bitsInARow > 0) {
@@ -254,19 +355,24 @@ function encoderFn(method) {
 
     switch (a.type) {
     case 'octet':
+      checkAssignArg(a);
       println('buffer.writeUInt8(val, offset); offset++;');
       break;
     case 'short':
+      checkAssignArg(a);
       println('buffer.writeUInt16BE(val, offset); offset += 2;');
       break;
     case 'long':
+      checkAssignArg(a);
       println('buffer.writeUInt32BE(val, offset); offset += 4;');
       break;
     case 'longlong':
     case 'timestamp':
+      checkAssignArg(a);
       println('ints.writeUInt64BE(buffer, val, offset); offset += 8;');
       break;
     case 'bit':
+      checkAssignArg(a);
       println('if (val) bits += %d;', 1 << bitsInARow);
       if (bitsInARow === 7) { // I don't think this ever happens, but whatever
         println('buffer[offset] = bits; offset++; bits = 0;');
@@ -275,17 +381,19 @@ function encoderFn(method) {
       else bitsInARow++;
       break;
     case 'shortstr':
-      println('len = Buffer.byteLength(val, "utf8");');
-      println('buffer[offset] = len; offset++;');
-      println('buffer.write(val, offset, "utf8"); offset += len;');
+      assignArg(a);
+      println('buffer[offset] = %s; offset++;', stringLenVar(a));
+      println('buffer.write(val, offset, "utf8"); offset += %s;',
+              stringLenVar(a));
       break;
     case 'longstr':
+      assignArg(a);
       println('len = val.length;');
       println('buffer.writeUInt32BE(len, offset); offset += 4;');
       println('val.copy(buffer, offset); offset += len;');
       break;
     case 'table':
-      println('offset += encodeTable(buffer, val, offset);');
+      println('offset += %s.copy(buffer, offset);', tableVar(a));
       break;
     default: throw new Error("Unexpected argument type: " + a.type);
     }
@@ -295,17 +403,12 @@ function encoderFn(method) {
   if (bitsInARow > 0) {
     println('buffer[offset] = bits; offset++;');
   }
-  
+
   println('buffer[offset] = %d;', constants.FRAME_END);
   // size does not include the frame header or frame end byte
   println('buffer.writeUInt32BE(offset - 7, 3);');
 
-  if (bufferSize !== METHOD_BUFFER_SIZE) {
-    println('return buffer;');
-  }
-  else {
-    println('return buffer.slice(0, offset + 1);');
-  }
+  println('return buffer;');
   println('}');
 }
 
@@ -385,7 +488,7 @@ function infoObj(thing) {
 // following if there's more than fifteen. Presence and absence
 // are conflated with true and false, for bit fields (i.e., if the
 // flag for the field is set, it's true, otherwise false).
-// 
+//
 // However, none of that is actually used in AMQP 0-9-1. The only
 // instance of properties -- basic properties -- has 14 fields, none
 // of them bits.
@@ -397,11 +500,54 @@ function flagAt(index) {
 function encodePropsFn(props) {
   println('function %s(channel, size, fields) {', props.encoder);
   println('var offset = 0, flags = 0, val, len;');
-  // a bit pointless, since we know there's a table, but
-  // .. consistency
-  var bufferSize = fixedSize(props.args);
-  if (bufferSize === -1) bufferSize = METHOD_BUFFER_SIZE;
-  println('var buffer = new Buffer(%d);', bufferSize);
+  println('var scratchOffset = 0, varyingSize = 0;');
+
+  var fixedSize = PROPERTIES_OVERHEAD;
+
+  var args = props.args;
+
+  function incVarying(by) {
+    println("varyingSize += %d;", by);
+  }
+
+  for (var i=0, num=args.length; i < num; i++) {
+    var p = args[i];
+
+    assignArg(p);
+    println("if (val != undefined) {");
+
+    println("if (%s) {", valTypeTest(p));
+    switch (p.type) {
+    case 'shortstr':
+      assignStringLen(p);
+      incVarying(1);
+      println('varyingSize += %s;', stringLenVar(p));
+      break;
+    case 'longstr':
+      incVarying(4);
+      println('varyingSize += val.length;');
+      break;
+    case 'table':
+      assignTable(p);
+      println('varyingSize += %s.length;', tableVar(p));
+      break;
+    case 'octet': incVarying(1); break;
+    case 'short': incVarying(2); break;
+    case 'long': incVarying(4); break;
+    case 'longlong': // fall through
+    case 'timestamp':
+      incVarying(8); break;
+      // no case for bit, as they are accounted for in the flags
+    }
+    println('} else {');
+    println('throw new TypeError(');
+    println('"Argument \'%s\' is the wrong type; must be %s");',
+            p.name, typeDesc(p.type));
+    println('}');
+    println('}');
+  }
+
+  println('var buffer = new Buffer(%d + varyingSize);', fixedSize);
 
   println('buffer[0] = %d', constants.FRAME_HEADER);
   println('buffer.writeUInt16BE(channel, 1);');
@@ -415,13 +561,13 @@ function encodePropsFn(props) {
   println('flags = 0;');
   // we'll write the flags later too
   println('offset = 21;');
-  
-  for (var i=0, num=props.args.length; i < num; i++) {
-    var p = argument(props.args[i]);
+
+  for (var i=0, num=args.length; i < num; i++) {
+    var p = args[i];
     var flag = flagAt(i);
-    var field = "fields['" + p.name + "']";
-    println('val = %s;', field);
-    println('if (%s) {', valTypeTest(p));
+
+    assignArg(p);
+    println("if (val != undefined) {");
     if (p.type === 'bit') { // which none of them are ..
       println('if (val) flags += %d;', flag);
     }
@@ -440,37 +586,27 @@ function encodePropsFn(props) {
         break;
       case 'longlong':
       case 'timestamp':
-        println('ints.writeUInt64BE(buffer, val, offset); offset += 8;');
-        break;
-      case 'bit':
-        println('if (val) bits += %d;', 1 << bitsInARow);
-        if (bitsInARow === 7) { // I don't think this ever happens, but whatever
-          println('buffer[offset] = bits; offset++; bits = 0;');
-          bitsInARow = 0;
-        }
-        else bitsInARow++;
+        println('ints.writeUInt64BE(buffer, val, offset);');
+        println('offset += 8;');
         break;
       case 'shortstr':
-        println('len = Buffer.byteLength(val, "utf8");');
-        println('buffer[offset] = len; offset++;');
-        println('buffer.write(val, offset, "utf8"); offset += len;');
+        var v = stringLenVar(p);
+        println('buffer[offset] = %s; offset++;', v);
+        println("buffer.write(val, offset, 'utf8');");
+        println("offset += %s;", v);
         break;
       case 'longstr':
-        println('len = val.length;');
-        println('buffer.writeUInt32BE(len, offset); offset += 4;');
-        println('val.copy(buffer, offset); offset += len;');
+        println('buffer.writeUInt32BE(val.length, offset);');
+        println('offset += 4;');
+        println('offset += val.copy(buffer, offset);');
         break;
       case 'table':
-        println('offset += encodeTable(buffer, val, offset);');
+        println('offset += %s.copy(buffer, offset);', tableVar(p));
         break;
       default: throw new Error("Unexpected argument type: " + p.type);
       }
     }
-    println('}'); // type test
-    println('else if (val !== undefined)');
-    println('throw new TypeError(');
-    println('"Argument \'%s\' is the wrong type; must be %s");',
-            p.name, typeDesc(p.type));
+    println('}'); // != undefined
   }
 
   println('buffer[offset] = %d;', constants.FRAME_END);
@@ -534,27 +670,4 @@ function decodePropsFn(props) {
   }
   println('return fields;');
   println('}');
-}
-
-function fixedSize(args) {
-  var size = 12; // header, size, and frame end marker
-  var bitsInARow = 0;
-  for (var i = 0, len = args.length; i < len; i++) {
-    if (args[i].type != 'bit') bitsInARow = 0;
-    switch (args[i].type) {
-    case 'octet': size++; break;
-    case 'short': size += 2; break;
-    case 'long': size += 4; break;
-    case 'longlong':
-    case 'timestamp': size += 8; break;
-    case 'bit':
-      if (bitsInARow % 8 === 0) {
-        size++;
-      }
-      bitsInARow++;
-      break;
-    default: return -1;
-    }
-  }
-  return size;
 }
