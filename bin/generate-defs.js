@@ -412,10 +412,20 @@ function encoderFn(method) {
   println('}');
 }
 
+function fieldsDecl(args) {
+  println('var fields = {');
+  for (var i=0, num=args.length; i < num; i++) {
+    println('%s: undefined,', args[i].name);
+  }
+  println('};');
+}
+
 function decoderFn(method) {
   var args = method.args;
   println('function %s(buffer) {', method.decoder);
-  println('var fields = {}, offset = 0, val, len;');
+  println('var offset = 0, val, len;');
+  fieldsDecl(args);
+
   var bitsInARow = 0;
 
   for (var i=0, num=args.length; i < num; i++) {
@@ -618,13 +628,18 @@ function encodePropsFn(props) {
 }
 
 function decodePropsFn(props) {
+  var args = props.args;
+
   println('function %s(buffer) {', props.decoder);
-  println('var fields = {}, flags, offset = 2, val, len;');
+  println('var flags, offset = 2, val, len;');
 
   println('flags = buffer.readUInt16BE(0);');
+  println('if (flags === 0) return {};');
 
-  for (var i=0, num=props.args.length; i < num; i++) {
-    var p = argument(props.args[i]);
+  fieldsDecl(args);
+
+  for (var i=0, num=args.length; i < num; i++) {
+    var p = argument(args[i]);
     var field = "fields['" + p.name + "']";
 
     println('if (flags & %d) {', flagAt(i));
