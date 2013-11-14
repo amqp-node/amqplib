@@ -163,12 +163,11 @@ suite("Content framing", function() {
          var input = inputs();
          var frames = new Frames(input);
          frames.frameMax = max;
-         frames.sendMethodAndProperties(
+         frames.sendMessage(
            0,
            defs.BasicDeliver, content.method,
            defs.BasicProperties, content.header,
-           content.body.length);
-         frames.sendContent(0, content.body);
+           content.body);
          var f, i = 0, largest = 0;
          while (f = input.read()) {
            i++;

@@ -54,10 +54,9 @@ function runServer(socket, run) {
     channel = channel || 0;
     if (content) {
       schedule(function() {
-        frames.sendMethodAndProperties(channel, id, fields, 
-                                       defs.BasicProperties, fields,
-                                       content.length);
-        frames.sendContent(channel, content);
+        frames.sendMessage(channel, id, fields,
+                           defs.BasicProperties, fields,
+                           content);
       });
     }
     else {
