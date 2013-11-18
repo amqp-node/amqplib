@@ -83,7 +83,7 @@ var Decimal = label('decimal', transform(
 
 var FieldArray = label('field-array', recursive(function() {
   return arb.Array(
-    //    arb.Nothing,
+    arb.Null,
     LongStr, ShortStr, Octet,
     UShort, ULong, ULongLong,
     Short, Long, LongLong,
@@ -93,7 +93,7 @@ var FieldArray = label('field-array', recursive(function() {
 var FieldTable = label('table', recursive(function() {
   return sized(function() { return 5; },
                arb.Object(
-                 // arb.Nothing,
+                 arb.Null,
                  LongStr, ShortStr, Octet,
                  UShort, ULong, ULongLong,
                  Short, Long, LongLong,
