@@ -4,6 +4,18 @@
 
     git log v0.1.0..
 
+### Fixes
+
+ * Safer frame construction, no longer relies on allocating a large,
+   fixed-size buffer and hoping it's big enough
+
+### Enhancements
+
+ * Better write speed from batching frames for small messages
+ * Other minor efficiency gains
+ * Channel and connection state errors (e.g., trying to write when
+   closed) include a stack trace from when they moved to that state
+
 ## Changes in v0.1.0 (since v0.0.2)
 
     git log v0.0.2..v0.1.0
@@ -13,7 +25,7 @@
  * Consumer callbacks are invoked with `null` if the consumer is
    cancelled (see
    [RabbitMQ's consumer cancel notification][rabbitmq-consumer-cancel])
- * In confirm channels, instead of `#publish` and `#sentToQueue`
+ * In confirm channels, instead of `#publish` and `#sendToQueue`
    returning promises, they return a boolean as for normal channels,
    and take a Node.JS-style `function (err, ok)` callback for the
    server ack or nack
