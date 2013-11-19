@@ -21,6 +21,16 @@ function printf() {
 function nl() { out.write('\n'); }
 function println() { printf.apply(printf, arguments); nl(); }
 
+function isEmptyObject(val) {
+  return (val != null && typeof val === 'object' &&
+          Object.keys(val).length === 0);
+}
+
+function stringifyValue(val) {
+  return (isEmptyObject(val)) ? 'EMPTY_OBJECT' :
+    JSON.stringify(val);
+}
+
 var constants = {};
 for (var i = 0, len = defs.constants.length; i < len; i++) {
   var cdef = defs.constants[i];
@@ -109,6 +119,7 @@ println('var decodeFields = codec.decodeFields;');
 nl();
 
 println('var SCRATCH = new Buffer(2048);');
+println('var EMPTY_OBJECT = Object.freeze({});');
 
 println('module.exports.constants = %s',
         JSON.stringify(constants));
@@ -231,8 +242,7 @@ function checkAssignArg(a) {
   println('if (!(%s)) {', valTypeTest(a));
   println('if (val === undefined) {');
   if (a.default !== undefined) {
-    var def = JSON.stringify(a.default);
-    println('val = %s', def);
+    println('val = %s', stringifyValue(a.default));
   }
   else {
     println('throw new Error("Missing value for %s");', a.name);
