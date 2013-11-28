@@ -11,10 +11,14 @@
 
 ### Enhancements
 
+ * Support for RabbitMQ's consumer priority extension
+ * Support for RabbitMQ's connnection.blocked extension
  * Better write speed from batching frames for small messages
- * Other minor efficiency gains
+ * Other minor efficiency gains in method encoding and decoding
  * Channel and connection state errors (e.g., trying to write when
    closed) include a stack trace from when they moved to that state
+ * The `arguments` table, passed as an option to some methods, can
+   include fields in its prototype chain
 
 ## Changes in v0.1.0 (since v0.0.2)
 
