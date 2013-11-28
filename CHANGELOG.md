@@ -8,6 +8,8 @@
 
  * Safer frame construction, no longer relies on allocating a large,
    fixed-size buffer and hoping it's big enough
+ * The ports of RabbitMQ tutorials now avoid a race between publishing
+   and closing the connection
 
 ### Enhancements
 
@@ -19,6 +21,8 @@
    closed) include a stack trace from when they moved to that state
  * The `arguments` table, passed as an option to some methods, can
    include fields in its prototype chain
+ * Provide the more accurately named `persistent` as a near equivalent
+   of `deliveryMode`
 
 ## Changes in v0.1.0 (since v0.0.2)
 
