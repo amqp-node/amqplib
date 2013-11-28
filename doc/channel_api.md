@@ -578,11 +578,14 @@ Used by RabbitMQ but not sent on to consumers:
    is not routed to a queue (i.e., if there are no bindings that match
    its routing key).
 
- * `deliveryMode` (boolean): if true, the message will survive a
-   broker restart, provided it's in a durable queue. Default is
-   false. (In the specification this is either `1` meaning
-   non-persistent, or `2` meaning persistent. That's just obscure
-   though)
+ * `persistent` (boolean): If truthy, the message will survive broker
+   restarts provided it's in a queue that also survives
+   restarts. Corresponds to, and overrides, the property
+   `deliveryMode`.
+
+ * `deliveryMode` (boolean or numeric): Either `1` or falsey, meaning
+   non-persistent; or, `2` or truthy, meaning persistent. That's just
+   obscure though. Use the option `persistent` instead.
 
  * `BCC` (string or array of string): like `CC`, except that the value
    will not be sent in the message headers to consumers.
