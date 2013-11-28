@@ -198,6 +198,33 @@ test("unexpected socket close", connectionTest(
       }).then(succeed(done));
   }));
 
+test("connection.blocked", connectionTest(
+  function(c, done) {
+    c.on('blocked', succeed(done));
+    c.open(OPEN_OPTS);
+  },
+  function(send, await, done, socket) {
+    happy_open(send, await)
+      .then(function() {
+        send(defs.ConnectionBlocked, {reason: 'felt like it'}, 0);
+      })
+      .then(succeed(done));
+  }));
+
+test("connection.unblocked", connectionTest(
+  function(c, done) {
+    c.on('unblocked', succeed(done));
+    c.open(OPEN_OPTS);
+  },
+  function(send, await, done, socket) {
+    happy_open(send, await)
+      .then(function() {
+        send(defs.ConnectionUnblocked, {}, 0);
+      })
+      .then(succeed(done));
+  }));
+
+
 });
 
 suite("Connection close", function() {
