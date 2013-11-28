@@ -53,7 +53,7 @@ In `amqplib`, parsing and serialising are dealt with in the modules
  * `codec` procedures for parsing and serialising values;
  *  `defs` generated code for encoding and decoding protocol methods;
     and,
- * `frames` for turning a byte streams into decoded frames and
+ * `frame` for turning a byte stream into decoded frames and
    vice-versa.
 
 Connection state is maintained in a `Connection` object (module
@@ -62,8 +62,8 @@ these two modules also implement the opening and closing handshakes.
 
 The interfaces among these modules is small and mostly mediated with
 primitive values; e.g., strings and numbers. A few points of interface
-require callbacks in the form of duck-typed objects (e.g., an object
-with an `#accept` method).
+require callbacks of the `function(err, ok) {}` variety, or in the
+form of duck-typed objects (e.g., an object with an `#accept` method).
 
 
 [rabbit.js]: https://github.com/squaremo/rabbit.js
