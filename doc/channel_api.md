@@ -23,7 +23,8 @@ the protocol but asynchronous from the library's point of view;
 accordingly, most methods return promises yielding the server's reply
 (often containing useful information such as generated
 identifiers). RPCs are queued by the channel if it is already waiting
-for a reply.
+for a reply -- synchronising on RPCs in this way is implicitly
+required by the protocol specification.
 
 Failed operations will
 
@@ -33,6 +34,29 @@ Failed operations will
  * reject any RPCs waiting to be sent
  * cause the channel object to emit `'error'`
  * cause the channel object to emit `'close'`
+
+Since the RPCs are effectively synchronised, any such channel error is
+very likely to have been caused by the outstanding RPC. However, it's
+often sufficient to fire off a number of RPCs and check only the
+returned promise for the last, since it'll be rejected if it or any of
+its predecessors fail.
+
+The exception thrown on operations subsequent to a failure *or*
+closure also contains the stack at the point that the channel was
+closed, in the field `stackAtStateChange`. This may be useful to
+determine what has caused an unexpected closure.
+
+```js
+connection.createChannel().then(function(ch) {
+  ch.close();
+  try {
+    ch.close();
+  }
+  catch (alreadyClosed) {
+    console.log(alreadyClosed.stackAtStateChange);
+  }
+});
+```
 
 Promises returned from methods are amenable to composition using, for
 example, when.js's functions:
@@ -52,17 +76,49 @@ amqp.connect().then(function(conn) {
 }).then(null, console.warn);
 ```
 
-(The dependence of the later operations above on prior operations is
-OK, by the way, because RPCs are serialised per channel. Any failures
-will invalidate the channel, so subsequent operations will also fail.)
-
 Many operations have mandatory arguments as well as optional arguments
 with defaults; in general, the former appear as parameters to the
 method while latter are collected in a single `options` parameter, to
 be supplied as an object with the fields mentioned. Extraneous fields
 in `options` are ignored, so it is often possible to coalesce the
 options for a number of operations into a single object, should that
-be convenient.
+be convenient. Likewise, fields from the prototype chain are accepted,
+so a common `options` value can be specialised by e.g., using
+`Object.create(common)` then setting some fields.
+
+Often, AMQP commands have an `arguments` table that can contain
+arbitrary values, usually used by implementation-specific extensions
+like [RabbitMQ's consumer
+priorities][rabbitmq-consumer-priority]. This is accessible as the
+option `arguments`, an object: if an API method does not account for
+an extension in its `options`, you can fall back to using the
+arguments object, though bear in mind that the field name will usually
+be 'x-something', while the options are just 'something'. Values
+passed in `options`, if understood by the API, will override those
+given in `arguments`.
+
+```js
+var common_options = {durable: true, noAck: true};
+ch.assertQueue('foo', common_options);
+// Only 'durable' counts for queues
+
+var bar_opts = Object.create(common_options);
+bar_opts.autoDelete = true;
+// "Subclass" our options
+ch.assertQueue('bar', bar_opts);
+
+var foo_consume_opts = Object.create(common_options);
+foo_consume_opts.arguments = {'x-priority': 10};
+ch.consume('foo', console.log, foo_consume_opts);
+// Use the arguments table to give a priority, even though it's
+// available as an option
+
+var bar_consume_opts = Object.create(foo_consume_opts);
+bar_consume_opts.priority = 5;
+ch.consume('bar', console.log, bar_consume_opts);
+// The 'priority' option will override that given in the arguments
+// table
+```
 
 ## `connect([url], [socketOptions])`
 
@@ -126,7 +182,7 @@ client fails to read data from the connection for two successive
 intervals, the connection will emit an error and close. It will also
 send heartbeats to the server (in the absence of other data).
 
-## `ChannelModel(connection)`
+## `new ChannelModel(connection)`
 
 This constructor represents a connection in the channel API. It takes
 as an argument a `connection.Connection`; though it is better to use
@@ -191,13 +247,26 @@ being called; such reasons include:
 
 `'close'` will also be emitted, after `'error'`.
 
+### `ChannelModel#on('blocked', function(reason) {...})`
+
+Emitted when a RabbitMQ server (after version 3.2.0) decides to block
+the connection. Typically it will do this if there is some resource
+shortage, e.g., memory, and messages are published on the
+connection. See the RabbitMQ [documentation for this
+extension][rabbitmq-connection-blocked] for details.
+
+### `ChannelModel#on('unblocked', function() {...})`
+
+Emitted at some time after `'blocked'`, once the resource shortage has
+alleviated.
+
 ### `ChannelModel#createChannel()`
 
 Open a fresh channel. Returns a promise of an open `Channel`. May fail
 if there are no more channels available (i.e., if there are already
 `channelMax` channels open).
 
-## `Channel`
+## `new Channel(connection)`
 
 This constructor represents a protocol channel. Channels are
 multiplexed over connections, and represent something like a session,
@@ -207,7 +276,7 @@ channels.
 The constructor is exported from the module as an extension
 point. When using the client library in an application, obtain an open
 `Channel` by opening a connection (`connect()` above) and calling
-`#createChannel`.
+`#createChannel` or `#createConfirmChannel`.
 
 ### `Channel#close()`
 
@@ -326,11 +395,12 @@ queue *doesn't* exist; if it does exist, you go through to the next
 round!  There's no options as with `#assertQueue()`, just the queue
 name. The reply from the server is the same as for `#assertQueue()`.
 
-### `Channel#deleteQueue(queue)`
+### `Channel#deleteQueue(queue, [options])`
 
 Delete the queue named. Naming a queue that doesn't exist will result
-in the server closing the channel, to teach you a lesson. The options
-here are:
+in the server closing the channel, to teach you a lesson (except in
+RabbitMQ version 3.2.0 and after[1][rabbitmq-idempotent-delete]). The
+options here are:
 
  * `ifUnused` (boolean): if true and the queue has consumers, it will
    not be deleted and the channel will be closed. Defaults to false.
@@ -346,7 +416,7 @@ You should leave out the options altogether if you want to delete the
 queue unconditionally.
 
 The server reply contains a single field, `messageCount`, with the
-number of messages deleted along with the queue.
+number of messages deleted or dead-lettered along with the queue.
 
 ### `Channel#purgeQueue(queue)`
 
@@ -381,7 +451,9 @@ as `source` with the `pattern` and arguments given. Omitting `args` is
 equivalent to supplying an empty object (no arguments). Beware:
 attempting to unbind when there is no such binding may result in a
 punitive error (the AMQP specification says it's a connection-killing
-mistake; RabbitMQ softens this to a channel error. Good ol' RabbitMQ).
+mistake; RabbitMQ before version 3.2.0 softens this to a channel
+error, and from version 3.2.0, doesn't treat it as an error at
+all[1][rabbitmq-idempotent-delete]. Good ol' RabbitMQ).
 
 ### `Channel#assertExchange(exchange, type, [options])`
 
@@ -430,6 +502,10 @@ Delete an exchange. The only meaningful field in `options` is:
  * ifUnused (boolean): if true and the exchange has bindings, it will
   not be deleted and the channel will be closed.
 
+If the exchange does not exist, a channel error is raised (RabbitMQ
+version 3.2.0 and after will not raise an
+error[1][rabbitmq-idempotent-delete]).
+
 The server reply has no fields.
 
 ### `Channel#bindExchange(destination, source, pattern, [args])`
@@ -440,7 +516,7 @@ Bind an exchange to another exchange. The exchange named by
 given. For example, a `direct` exchange will relay messages that have
 a routing key equal to the pattern.
 
-**NB** Exchange to exchange bindings is a RabbitMQ extension.
+**NB** Exchange to exchange binding is a RabbitMQ extension.
 
 The server reply has no fields.
 
@@ -449,7 +525,9 @@ The server reply has no fields.
 Remove a binding from an exchange to another exchange. A binding with
 the exact `source` exchange, `destination` exchange, routing key
 `pattern`, and extension `args` will be removed. If no such binding
-exists, it's &ndash; you guessed it &ndash; a channel error.
+exists, it's &ndash; you guessed it &ndash; a channel error, except in
+RabbitMQ >= version 3.2.0, for which it succeeds
+trivially[1][rabbitmq-idempotent-delete].
 
 ### `Channel#publish(exchange, routingKey, content, [options])`
 
@@ -586,6 +664,11 @@ Options (which may be omitted altogether):
   consume from this queue; if there already is a consumer, there goes
   your channel (so usually only useful if you've made a 'private'
   queue by letting the server choose its name).
+
+ * `priority` (integer): gives a priority to the consumer; higher
+   priority consumers get messages in preference to lower priority
+   consumers. See [this RabbitMQ extension's
+   documentation][rabbitmq-consumer-priority]
 
  * `arguments` (object): arbitrary arguments. Go to town.
 
@@ -753,6 +836,18 @@ This constructor is a channel that uses confirms. It is exported as an
 extension point. To obtain such a channel, use `connect` to get a
 connection, then call `#createConfirmChannel`.
 
+---------
+
+#### <a name="idempotent-deletes">RabbitMQ and deletion</a>
+
+RabbitMQ version 3.2.0 makes queue and exchange deletions (and unbind)
+effectively idempotent, by not raising an error if the exchange,
+queue, or binding does not exist.
+
+This does not apply to preconditions given to the operations. For
+example deleting a queue with `{ifEmpty: true}` will still fail if
+there are messages in the queue.
+
 [amqpurl]: http://www.rabbitmq.com/uri-spec.html
 [rabbitmq-tutes]: http://www.rabbitmq.com/getstarted.html
 [rabbitmq-confirms]: http://www.rabbitmq.com/confirms.html
@@ -762,3 +857,6 @@ connection, then call `#createConfirmChannel`.
 [rabbitmq-nack]: http://www.rabbitmq.com/nack.html
 [nodejs-write]: http://nodejs.org/api/stream.html#stream_writable_write_chunk_encoding_callback
 [nodejs-drain]: http://nodejs.org/api/stream.html#stream_event_drain
+[rabbitmq-consumer-priority]: http://www.rabbitmq.com/consumer-priority.html
+[rabbitmq-connection-blocked]: http://www.rabbitmq.com/connection-blocked.html
+[rabbitmq-idempotent-delete]: #idempotent-deletes
