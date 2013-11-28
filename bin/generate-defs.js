@@ -265,7 +265,7 @@ function checkAssignArg(a) {
 function assignTable(a) {
   var varname = tableVar(a);
   println(
-    "len = encodeTable(SCRATCH, val, scratchOffset);", a.name);
+    "len = encodeTable(SCRATCH, val, scratchOffset);");
   println('var %s = SCRATCH.slice(scratchOffset, scratchOffset + len);', varname);
   println('scratchOffset += len;');
 }

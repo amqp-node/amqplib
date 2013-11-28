@@ -16,7 +16,7 @@ clean:
 	rm lib/defs.js bin/amqp-rabbitmq-0.9.1.json
 	rm -rf ./coverage
 
-lib/defs.js: bin/generate-defs.js bin/amqp-rabbitmq-0.9.1.json
+lib/defs.js: $(UGLIFY) bin/generate-defs.js bin/amqp-rabbitmq-0.9.1.json
 	(cd bin; node ./generate-defs.js > ../lib/defs.js)
 	$(UGLIFY) ./lib/defs.js -o ./lib/defs.js \
 		-c 'sequences=false' --comments \
@@ -30,10 +30,16 @@ test-all-nodejs: lib/defs.js
 		do nave use $$v $(MOCHA) -u tdd -R progress test; \
 		done
 
-coverage: lib/defs.js
+coverage: $(ISTANBUL) lib/defs.js
 	$(ISTANBUL) cover $(_MOCHA) -- -u tdd -R progress test/
 	$(ISTANBUL) report
 	@echo "HTML report at file://$$(pwd)/coverage/lcov-report/index.html"
 
 bin/amqp-rabbitmq-0.9.1.json:
 	curl $(AMQP_JSON) > $@
+
+$(ISTANBUL):
+	npm install
+
+$(UGLIFY):
+	npm install
