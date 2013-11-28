@@ -1,8 +1,12 @@
 # Change log for amqplib
 
-## Changes in master (since v0.1.0)
+## Changes in master (since v0.1.1)
 
-    git log v0.1.0..
+    git log v0.1.1..
+
+## Changes in v0.1.1 (since v0.1.0)
+
+    git log v0.1.0..v0.1.1
 
 ### Fixes
 
