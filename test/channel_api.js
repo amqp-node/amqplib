@@ -145,7 +145,7 @@ chtest("delete queue", function(ch) {
 });
 
 chtest("fail to delete no queue", function(ch) {
-  return expectFail(ch.deleteQueue('test.random-' + randomString()));
+  return ch.deleteQueue('test.random-' + randomString());
 });
 
 chtest("delete exchange", function(ch) {
