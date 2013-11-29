@@ -862,4 +862,4 @@ there are messages in the queue.
 [nodejs-drain]: http://nodejs.org/api/stream.html#stream_event_drain
 [rabbitmq-consumer-priority]: http://www.rabbitmq.com/consumer-priority.html
 [rabbitmq-connection-blocked]: http://www.rabbitmq.com/connection-blocked.html
-[rabbitmq-idempotent-delete]: #idempotent-deletes
+[rabbitmq-idempotent-delete]: doc/channel_api.html#idempotent-deletes
