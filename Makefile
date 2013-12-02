@@ -3,10 +3,10 @@ JSON=amqp-rabbitmq-0.9.1.json
 RABBITMQ_CODEGEN=https://raw.github.com/rabbitmq/rabbitmq-codegen
 AMQP_JSON=$(RABBITMQ_CODEGEN)/$(RABBITMQ_SRC_VERSION)/$(JSON)
 
-MOCHA=./node_modules/mocha/bin/mocha
-_MOCHA=./node_modules/mocha/bin/_mocha
-UGLIFY=./node_modules/uglify-js/bin/uglifyjs
-ISTANBUL=./node_modules/istanbul/lib/cli.js
+MOCHA=./node_modules/.bin/mocha
+_MOCHA=./node_modules/.bin/_mocha
+UGLIFY=./node_modules/.bin/uglifyjs
+ISTANBUL=./node_modules/.bin/istanbul
 
 .PHONY: test test-all-nodejs all clean coverage
 
