@@ -1,3 +1,5 @@
+'use strict';
+
 var claire = require('claire');
 
 var forAll = claire.forAll,

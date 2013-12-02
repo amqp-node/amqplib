@@ -1,3 +1,5 @@
+'use strict';
+
 var Connection = require('../lib/connection').Connection;
 var PassThrough =
   require('stream').PassThrough ||

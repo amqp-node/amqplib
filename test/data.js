@@ -1,5 +1,7 @@
 // Property-based testing representations of various things in AMQP
 
+'use strict';
+
 var C = require('claire');
 
 var forAll = C.forAll;
@@ -101,7 +103,7 @@ var FieldTable = label('table', recursive(function() {
 }));
 
 // Internal tests of our properties
-domainProps = [
+var domainProps = [
   [Octet, function(n) { return n >= 0 && n < 256; }],
   [ShortStr, function(s) { return typeof s === 'string' && s.length < 256; }],
   [LongStr, function(s) { return Buffer.isBuffer(s); }],
@@ -137,7 +139,7 @@ suite("Domains", function() {
 var ArgTimestamp = label('timestamp', ULongLong);
 
 // These are the domains used in method arguments
-ARG_TYPES = {
+var ARG_TYPES = {
   'octet': Octet,
   'shortstr': ShortStr,
   'longstr': LongStr,

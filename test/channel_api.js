@@ -1,3 +1,5 @@
+'use strict';
+
 var assert = require('assert');
 var crypto = require('crypto');
 var api = require('../channel_api');
@@ -7,7 +9,7 @@ var schedule = util.schedule;
 var when = require('when');
 var defer = when.defer;
 
-URL = process.env.URL || 'amqp://localhost';
+var URL = process.env.URL || 'amqp://localhost';
 
 function connect() {
   return api.connect(URL);
@@ -465,7 +467,7 @@ chtest("prefetch", function(ch) {
 
 });
 
-confirmtest = channel_test.bind(null, 'createConfirmChannel');
+var confirmtest = channel_test.bind(null, 'createConfirmChannel');
 
 suite("confirms", function() {
 

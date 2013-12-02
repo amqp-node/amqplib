@@ -1,3 +1,5 @@
+'use strict';
+
 var assert = require('assert');
 var succeed = require('./util').succeed;
 var fail = require('./util').fail;

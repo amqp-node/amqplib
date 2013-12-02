@@ -1,3 +1,5 @@
+'use strict';
+
 var assert = require('assert');
 var defs = require('../lib/defs');
 var Connection = require('../lib/connection').Connection;

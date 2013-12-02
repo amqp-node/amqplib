@@ -1,4 +1,6 @@
-// Test the channel model API
+// Test the channel machinery
+
+'use strict';
 
 var assert = require('assert');
 var defer = require('when').defer;
@@ -331,7 +333,7 @@ test("zero byte msg = no content body frames", channelTest(
 
 test("bad delivery", channelTest(
   function(ch, done) {
-    errorAndClose = latch(2, done);
+    var errorAndClose = latch(2, done);
     ch.on('error', succeed(errorAndClose));
     ch.on('close', succeed(errorAndClose));
     open(ch);
@@ -379,7 +381,7 @@ test("bad properties send", channelTest(
 
 test("bad consumer", channelTest(
   function(ch, done) {
-    errorAndClose = latch(2, done);
+    var errorAndClose = latch(2, done);
     ch.on('delivery', function() {
       throw new Error("I am a bad consumer");
     });

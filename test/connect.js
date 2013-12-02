@@ -1,7 +1,11 @@
+'use strict';
+
 var connect = require('../lib/connect').connect;
 var assert = require('assert');
 var util = require('./util');
 var fail = util.fail, succeed = util.succeed;
+
+var URL = process.env.URL || 'amqp://localhost';
 
 suite("Connect API", function() {
 

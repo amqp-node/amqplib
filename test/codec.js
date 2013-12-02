@@ -1,3 +1,5 @@
+'use strict';
+
 var codec = require('../lib/codec');
 var defs = require('../lib/defs');
 var assert = require('assert');

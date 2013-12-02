@@ -1,3 +1,5 @@
+'use strict';
+
 var assert = require('assert');
 var Mux = require('../lib/mux').Mux;
 var PassThrough = require('stream').PassThrough ||
