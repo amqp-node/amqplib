@@ -118,7 +118,7 @@ println('var encodeTable = codec.encodeTable;');
 println('var decodeFields = codec.decodeFields;');
 nl();
 
-println('var SCRATCH = new Buffer(2048);');
+println('var SCRATCH = new Buffer(4096);');
 println('var EMPTY_OBJECT = Object.freeze({});');
 
 println('module.exports.constants = %s',
