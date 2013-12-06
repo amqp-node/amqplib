@@ -281,7 +281,7 @@ test("RPC on closed channel", channelTest(
       .then(succeed(done), fail(done));
   }));
 
-test("publish", channelTest(
+test("publish all < single chunk threshold", channelTest(
   function(ch, done) {
     open(ch)
       .then(function() {
@@ -301,6 +301,68 @@ test("publish", channelTest(
       }).then(succeed(done), fail(done));
   }));
 
+test("publish content > single chunk threshold", channelTest(
+  function(ch, done) {
+    open(ch);
+    completes(function() {
+      ch.sendMessage({
+        exchange: 'foo', routingKey: 'bar',
+        mandatory: false, immediate: false, ticket: 0
+      }, {}, new Buffer(3000));
+    }, done);
+  },
+  function(send, await, done, ch) {
+    await(defs.BasicPublish)()
+      .then(await(defs.BasicProperties))
+      .then(await(undefined)) // content frame
+      .then(function(f) {
+        assert.equal(3000, f.content.length);
+      }).then(succeed(done), fail(done));
+  }));
+
+test("publish method & headers > threshold", channelTest(
+  function(ch, done) {
+    open(ch);
+    completes(function() {
+      ch.sendMessage({
+        exchange: 'foo', routingKey: 'bar',
+        mandatory: false, immediate: false, ticket: 0
+      }, {
+        headers: {foo: new Buffer(3000)}
+      }, new Buffer('foobar'));
+    }, done);
+  },
+  function(send, await, done, ch) {
+    await(defs.BasicPublish)()
+      .then(await(defs.BasicProperties))
+      .then(await(undefined)) // content frame
+      .then(function(f) {
+        assert.equal('foobar', f.content.toString());
+      }).then(succeed(done), fail(done));
+  }));
+
+test("publish zero-length message", channelTest(
+  function(ch, done) {
+    open(ch);
+    completes(function() {
+      ch.sendMessage({
+        exchange: 'foo', routingKey: 'bar',
+        mandatory: false, immediate: false, ticket: 0
+      }, {}, new Buffer(0));
+      ch.sendMessage({
+        exchange: 'foo', routingKey: 'bar',
+        mandatory: false, immediate: false, ticket: 0
+      }, {}, new Buffer(0));
+    }, done);
+  },
+  function(send, await, done, ch) {
+    await(defs.BasicPublish)()
+      .then(await(defs.BasicProperties))
+    // no content frame for a zero-length message
+      .then(await(defs.BasicPublish))
+      .then(succeed(done), fail(done));
+  }));
+
 test("delivery", channelTest(
   function(ch, done) {
     open(ch);
@@ -316,7 +378,7 @@ test("delivery", channelTest(
     }, done);
   }));
 
-test("zero byte msg = no content body frames", channelTest(
+test("zero byte msg", channelTest(
   function(ch, done) {
     open(ch);
     ch.on('delivery', function(m) {

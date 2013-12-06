@@ -190,6 +190,45 @@ function waitForMessages(q, num) {
   });
 }
 
+suite("sendMessage", function() {
+
+// publish different size messages
+chtest("send to queue and get from queue", function(ch) {
+  var q = 'test.send-to-q';
+  var msg = randomString();
+  return doAll(
+    ch.assertQueue(q, QUEUE_OPTS),
+    ch.purgeQueue(q))
+    .then(function() {
+      ch.sendToQueue(q, new Buffer(msg));
+      return waitForMessages(q);})
+    .then(function() {
+      return ch.get(q, {noAck: true});})
+    .then(function(m) {
+      assert(m);
+      assert.equal(msg, m.content.toString());
+    });
+});
+
+chtest("send (and get) zero content to queue", function(ch) {
+  var q = 'test.send-to-q';
+  var msg = new Buffer(0);
+  return doAll(
+    ch.assertQueue(q, QUEUE_OPTS),
+    ch.purgeQueue(q))
+    .then(function() {
+      ch.sendToQueue(q, msg);
+      return waitForMessages(q);})
+    .then(function() {
+      return ch.get(q, {noAck: true});})
+    .then(function(m) {
+      assert(m);
+      assert.deepEqual(msg, m.content);
+    });
+});
+
+});
+
 suite("binding, consuming", function() {
 
 // bind, publish, get
