@@ -4,6 +4,14 @@
 
     git log v0.1.1..
 
+### Fixes
+
+ * Restore support for publishing zero-length messages
+
+### Enhancements
+
+ * An option to set TCP_NODELAY on connection sockets
+
 ## Changes in v0.1.1 (since v0.1.0)
 
     git log v0.1.0..v0.1.1
