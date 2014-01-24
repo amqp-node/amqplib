@@ -32,9 +32,12 @@ function stringifyValue(val) {
 }
 
 var constants = {};
+var constant_strs = {};
+
 for (var i = 0, len = defs.constants.length; i < len; i++) {
   var cdef = defs.constants[i];
   constants[constantName(cdef)] = cdef.value;
+  constant_strs[cdef.value] = cdef.name;
 }
 
 function constantName(def) {
@@ -123,6 +126,9 @@ println('var EMPTY_OBJECT = Object.freeze({});');
 
 println('module.exports.constants = %s',
         JSON.stringify(constants));
+nl();
+println('module.exports.constant_strs = %s',
+        JSON.stringify(constant_strs));
 nl();
 println('module.exports.FRAME_OVERHEAD = %d;', FRAME_OVERHEAD);
 nl();
