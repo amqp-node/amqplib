@@ -1,8 +1,8 @@
 # Change log for amqplib
 
-## Changes in master (since v0.1.1)
+## Changes in v0.1.2 (since v0.1.1)
 
-    git log v0.1.1..
+    git log v0.1.1..v0.1.2
 
 ### Fixes
 
@@ -10,6 +10,7 @@
 
 ### Enhancements
 
+ * Recognise [authentication failures][rabbitmq-auth-failure]
  * An option to set TCP_NODELAY on connection sockets
 
 ## Changes in v0.1.1 (since v0.1.0)
@@ -70,3 +71,4 @@
 
 
 [rabbitmq-consumer-cancel]: http://www.rabbitmq.com/consumer-cancel.html
+[rabbitmq-auth-failure]: http://www.rabbitmq.com/auth-notification.html
