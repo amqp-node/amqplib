@@ -163,16 +163,24 @@ The socket options will be passed to the socket library (`net` or
 prototype. This is useful for supplying certificates and so on for an
 SSL connection; see the [SSL guide][ssl-doc].
 
+The socket options may also include the key `noDelay`, with a boolean
+value. If the value is `true`, this sets
+[`TCP_NODELAY`][wikipedia-nagling] on the underlying socket.
+
 Returns a promise which will either be resolved with an open
 `ChannelModel` or rejected with a sympathetically-worded error (in
 en_US).
 
 Supplying a malformed URI will cause `connect()` to throw an
 exception; other problems, including refused and dropped TCP
-connections, will result in a rejected promise. Note that RabbitMQ,
-per the AMQP specification, will close the socket in the case of an
-authentication failure, making a dropped connection ambiguous (it will
-also wait a few seconds before doing so).
+connections, will result in a rejected promise.
+
+RabbitMQ since version 3.2.0 will send a frame to notify the client of
+authentication failures, which results in a rejected promise; RabbitMQ
+before version 3.2.0, per the AMQP specification, will close the
+socket in the case of an authentication failure, making a dropped
+connection ambiguous (it will also wait a few seconds before doing
+so).
 
 ##### Heartbeating
 
@@ -863,3 +871,4 @@ there are messages in the queue.
 [rabbitmq-consumer-priority]: http://www.rabbitmq.com/consumer-priority.html
 [rabbitmq-connection-blocked]: http://www.rabbitmq.com/connection-blocked.html
 [rabbitmq-idempotent-delete]: doc/channel_api.html#idempotent-deletes
+[wikipedia-nagling]: http://en.wikipedia.org/wiki/Nagle%27s_algorithm
