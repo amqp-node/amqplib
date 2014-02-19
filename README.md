@@ -17,15 +17,15 @@ Project status:
  - Expected to work
  - Complete high-level and low-level APIs (i.e., all bits of the protocol)
  - A fair few tests
- - Ports of the [RabbitMQ tutorials][rabbitmq-tutes] as examples
-
-Not yet:
-
  - Measured test coverage
- - Completely stable APIs
- - Comprehensive documentation
- - Known to be used in production (if anyone *is* using it in
-   production, do let me know)
+ - Ports of the [RabbitMQ tutorials][rabbitmq-tutes] as [examples][tutes]
+
+Still working on:
+
+ - Getting to 100% (or very close to 100%) test coverage
+ - Settling on completely stable APIs
+ - Establishing a long history of battle-testing in production (if
+   anyone has been using it in production, do let me know)
 
 ## Client API example
 
