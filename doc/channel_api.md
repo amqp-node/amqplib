@@ -788,6 +788,11 @@ extension][rabbitmq-nack].
 Reject all messages outstanding on this channel. If `requeue` is true,
 or omitted, the server will try to re-enqueue the messages.
 
+### `Channel#reject(message, [requeue])`
+
+Reject a message. Equivalent to `#nack(message, false, requeue)`, but
+works in older versions of RabbitMQ (< v2.3.0) where `nack` does not.
+
 ### `Channel#prefetch(count)`
 
 Set the prefetch count for this channel. The `count` given is the
