@@ -478,6 +478,31 @@ chtest("nack", function(ch) {
     });
 });
 
+// reject is a near-synonym for nack, the latter of which is not
+// available in earlier RabbitMQ (or in AMQP proper).
+chtest("reject", function(ch) {
+  var q = 'test.reject';
+  var msg1 = randomString();
+
+  return doAll(
+    ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
+    .then(function() {
+      ch.sendToQueue(q, new Buffer(msg1));
+      return waitForMessages(q);})
+    .then(function() {
+      return ch.get(q, {noAck: false})})
+    .then(function(m) {
+      assert.equal(msg1, m.content.toString());
+      ch.reject(m);
+      return waitForMessages(q);})
+    .then(function() {
+      return ch.get(q);})
+    .then(function(m) {
+      assert(m);
+      assert.equal(msg1, m.content.toString());
+    });
+});
+
 chtest("prefetch", function(ch) {
   var q = 'test.prefetch';
   return doAll(
