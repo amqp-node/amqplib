@@ -1,5 +1,15 @@
 # Change log for amqplib
 
+## Changes in v0.1.3 (since v0.1.2)
+
+    git log v0.1.2..v0.1.3
+
+### Enhancements
+
+ * Add support in the API for using Basic.Reject rather than
+   Basic.Nack, the latter of which is a RabbitMQ extension and not in
+   older versions of RabbitMQ.
+
 ## Changes in v0.1.2 (since v0.1.1)
 
     git log v0.1.1..v0.1.2
