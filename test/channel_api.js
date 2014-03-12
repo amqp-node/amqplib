@@ -94,6 +94,7 @@ chtest("assert and check queue", function(ch) {
 chtest("assert and check exchange", function(ch) {
   return ch.assertExchange('test.check-exchange', 'direct', EX_OPTS)
     .then(function(eok) {
+      assert.equal('test.check-exchange', eok.exchange);
       return ch.checkExchange('test.check-exchange');
     });
 });
