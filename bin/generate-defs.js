@@ -240,6 +240,11 @@ function assignArg(a) {
   println("val = fields['%s'];", a.name);
 }
 
+function assignOrDefault(a) {
+  println("val = fields['%s'];", a.name);
+  println("if (val === undefined) val = %s;", JSON.stringify(a.default));
+}
+
 // Emit code for assigning an argument value to `val`, checking that
 // it exists (if it does not have a default) and is the correct
 // type.
@@ -248,15 +253,15 @@ function checkAssignArg(a) {
   println('if (!(%s)) {', valTypeTest(a));
   println('if (val === undefined) {');
   if (a.default !== undefined) {
-    println('val = %s', stringifyValue(a.default));
+    println('val = %s;', JSON.stringify(a.default));
   }
   else {
-    println('throw new Error("Missing value for %s");', a.name);
+    println('throw new Error("Missing value for mandatory field \'%s\'");', a.name);
   }
   println('}'); // undefined test
   println('else')
   println('throw new TypeError(');
-  println('"Argument \'%s\' wrong type; must be %s");',
+  println('"Field \'%s\' is the wrong type; must be %s");',
           a.name, typeDesc(a.type));
   println('}'); // type test
 }
@@ -286,8 +291,8 @@ function stringLenVar(a) {
 
 function assignStringLen(a) {
   var v = stringLenVar(a);
-  println("var %s = Buffer.byteLength(fields['%s'], 'utf8');",
-          v, a.name);
+  // Assumes the value or default is in val
+  println("var %s = Buffer.byteLength(val, 'utf8');", v);
 }
 
 
@@ -397,13 +402,13 @@ function encoderFn(method) {
       else bitsInARow++;
       break;
     case 'shortstr':
-      assignArg(a);
+      assignOrDefault(a);
       println('buffer[offset] = %s; offset++;', stringLenVar(a));
       println('buffer.write(val, offset, "utf8"); offset += %s;',
               stringLenVar(a));
       break;
     case 'longstr':
-      assignArg(a);
+      assignOrDefault(a);
       println('len = val.length;');
       println('buffer.writeUInt32BE(len, offset); offset += 4;');
       println('val.copy(buffer, offset); offset += len;');
@@ -567,7 +572,7 @@ function encodePropsFn(props) {
     }
     println('} else {');
     println('throw new TypeError(');
-    println('"Argument \'%s\' is the wrong type; must be %s");',
+    println('"Field \'%s\' is the wrong type; must be %s");',
             p.name, typeDesc(p.type));
     println('}');
     println('}');
