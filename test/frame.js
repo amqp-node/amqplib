@@ -91,6 +91,9 @@ var sequence = claire.sequence;
 var transform = claire.transform;
 var sized = claire.sized;
 
+var assertEqualModuloDefaults =
+  require('./codec').assertEqualModuloDefaults;
+
 var Trace = label('frame trace',
                   repeat(choice.apply(choice, amqp.methods)));
 
@@ -101,9 +104,17 @@ suite("Parsing", function() {
       var bufs = [];
       var input = inputs();
       var frames = new Frames(input);
-      var i = 0;
+      var i = 0, ex;
       frames.accept = function(f) {
-        assert.deepEqual(f, t[i]);
+        // A minor hack to make sure we get the assertion exception;
+        // otherwise, it's just a test that we reached the line
+        // incrementing `i` for each frame.
+        try {
+          assertEqualModuloDefaults(t[i], f.fields);
+        }
+        catch (e) {
+          ex = e;
+        }
         i++;
       };
       
@@ -114,6 +125,7 @@ suite("Parsing", function() {
 
       partition(bufs).forEach(input.write.bind(input));
       frames.acceptLoop();
+      if (ex) throw ex;
       return i === t.length;
     }).asTest({times: 20})
   };

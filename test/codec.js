@@ -119,12 +119,55 @@ suite("Roundtrip values", function() {
   });
 });
 
+// Asserts that the decoded fields are equal to the original fields,
+// or equal to a default where absent in the original. The defaults
+// depend on the type of method or properties.
+//
+// This works slightly different for methods and properties: for
+// methods, each field must have a value, so the default is
+// substituted for undefined values when encoding; for properties,
+// fields may be absent in the encoded value, so a default is
+// substituted for missing fields when decoding. The effect is the
+// same so far as these tests are concerned.
+function assertEqualModuloDefaults(original, decodedFields) {
+  var args = defs.info(original.id).args;
+  for (var i=0; i < args.length; i++) {
+    var arg = args[i];
+    var originalValue = original.fields[arg.name];
+    var decodedValue = decodedFields[arg.name];
+    try {
+      if (originalValue === undefined) {
+        // longstr gets special treatment here, since the defaults are
+        // given as strings rather than buffers, but the decoded values
+        // will be buffers.
+        assert.deepEqual((arg.type === 'longstr') ?
+                         new Buffer(arg.default) : arg.default,
+                         decodedValue);
+      }
+      else {
+        assert.deepEqual(originalValue, decodedValue);
+      }
+    }
+    catch (assertionErr) {
+      var methodOrProps = defs.info(original.id).name;
+      assertionErr.message += ' (frame ' + methodOrProps +
+        ' field ' + arg.name + ')';
+      throw assertionErr;
+    }
+  }
+  // %%% TODO make sure there's no surplus fields
+  return true;
+}
+
+// This is handy for elsewhere
+module.exports.assertEqualModuloDefaults = assertEqualModuloDefaults;
+
 function roundtripMethod(Method) {
   return forAll(Method).satisfy(function(method) {
     var buf = defs.encodeMethod(method.id, 0, method.fields);
     // FIXME depends on framing, ugh
     var fs1 = defs.decode(method.id, buf.slice(11, buf.length));
-    assert.deepEqual(method.fields, fs1);
+    assertEqualModuloDefaults(method, fs1);
     return true;
   });
 }
@@ -136,7 +179,7 @@ function roundtripProperties(Properties) {
     // FIXME depends on framing, ugh
     var fs1 = defs.decode(properties.id, buf.slice(19, buf.length));
     assert.equal(properties.size, ints.readUInt64BE(buf, 11));
-    assert.deepEqual(properties.fields, fs1);
+    assertEqualModuloDefaults(properties, fs1);
     return true;
   });
 }

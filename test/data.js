@@ -13,6 +13,8 @@ var sequence = C.sequence;
 var asGenerator = C.asGenerator;
 var sized = C.sized;
 var recursive = C.recursive;
+var choice = C.choice;
+var Undefined = C.Undefined;
 
 // Stub these out so we can use outside tests
 // if (!suite) var suite = function() {}
@@ -152,7 +154,12 @@ var ARG_TYPES = {
 };
 
 function argtype(thing) {
-  return ARG_TYPES[thing.type];
+  if (thing.default === undefined) {
+    return ARG_TYPES[thing.type];
+  }
+  else {
+    return choice(ARG_TYPES[thing.type], Undefined);
+  }
 }
 
 function zipObject(vals, names) {

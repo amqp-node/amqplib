@@ -207,14 +207,15 @@ function propertiesName(clazz) {
 
 function valTypeTest(arg) {
   switch (arg.type) {
-  case 'bit':       return 'true' // everything is booley
+  // everything is booleany
+  case 'bit':       return 'true'
   case 'octet':
   case 'short':
   case 'long':
   case 'longlong':
   case 'timestamp': return "typeof val === 'number' && !isNaN(val)";
   case 'shortstr':  return "typeof val === 'string' &&" +
-      "Buffer.byteLength(val) < 256";
+      " Buffer.byteLength(val) < 256";
   case 'longstr':   return "Buffer.isBuffer(val)";
   case 'table':     return "typeof val === 'object'";
   }
@@ -222,7 +223,7 @@ function valTypeTest(arg) {
 
 function typeDesc(t) {
   switch (t) {
-  case 'bit':       return 'a booleany';
+  case 'bit':       return 'booleany';
   case 'octet':
   case 'short':
   case 'long':
@@ -234,6 +235,15 @@ function typeDesc(t) {
   }
 }
 
+function defaultValueRepr(arg) {
+  switch (arg.type) {
+  case 'longstr':
+    return format("new Buffer(%s)", JSON.stringify(arg.default));
+  default:
+    // assumes no tables as defaults
+    return JSON.stringify(arg.default);
+  }
+}
 
 // Emit code to assign the arg value to `val`.
 function assignArg(a) {
@@ -242,7 +252,7 @@ function assignArg(a) {
 
 function assignOrDefault(a) {
   println("val = fields['%s'];", a.name);
-  println("if (val === undefined) val = %s;", JSON.stringify(a.default));
+  println("if (val === undefined) val = %s;", defaultValueRepr(a));
 }
 
 // Emit code for assigning an argument value to `val`, checking that
@@ -250,16 +260,15 @@ function assignOrDefault(a) {
 // type.
 function checkAssignArg(a) {
   assignArg(a);
-  println('if (!(%s)) {', valTypeTest(a));
   println('if (val === undefined) {');
   if (a.default !== undefined) {
-    println('val = %s;', JSON.stringify(a.default));
+    println('val = %s;', defaultValueRepr(a));
   }
   else {
     println('throw new Error("Missing value for mandatory field \'%s\'");', a.name);
   }
   println('}'); // undefined test
-  println('else')
+  println('else if (!(%s)) {', valTypeTest(a));
   println('throw new TypeError(');
   println('"Field \'%s\' is the wrong type; must be %s");',
           a.name, typeDesc(a.type));
