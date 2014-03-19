@@ -1,5 +1,18 @@
 # Change log for amqplib
 
+## Changes since v0.1.3
+
+    git log v0.1.3..
+
+### Fixes
+
+ * Correctly deal with missing fields (issue 48)
+
+### Enhancements
+
+ * The response to assertExchange now contains the exchange name,
+   analagous to assertQueue (issue 49)
+
 ## Changes in v0.1.3 (since v0.1.2)
 
     git log v0.1.2..v0.1.3
