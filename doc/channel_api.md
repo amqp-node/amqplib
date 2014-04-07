@@ -802,6 +802,11 @@ server will not send more messages on this channel until one or more
 have been acknowledged. A falsey value for `count` indicates no such
 limit.
 
+**NB** RabbitMQ v3.3.0 changes the meaning of prefetch (basic.qos) to
+apply per-*consumer*, rather than per-channel. It will apply to
+consumers started after the method is called. See
+[rabbitmq-prefetch][].
+
 ### `Channel#recover()`
 
 Requeue unacknowledged messages on this channel. The returned promise
@@ -876,4 +881,5 @@ there are messages in the queue.
 [rabbitmq-consumer-priority]: http://www.rabbitmq.com/consumer-priority.html
 [rabbitmq-connection-blocked]: http://www.rabbitmq.com/connection-blocked.html
 [rabbitmq-idempotent-delete]: doc/channel_api.html#idempotent-deletes
+[rabbitmq-prefetch]: http://www.rabbitmq.com/consumer-prefetch.html
 [wikipedia-nagling]: http://en.wikipedia.org/wiki/Nagle%27s_algorithm
