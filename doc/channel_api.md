@@ -793,7 +793,7 @@ or omitted, the server will try to re-enqueue the messages.
 Reject a message. Equivalent to `#nack(message, false, requeue)`, but
 works in older versions of RabbitMQ (< v2.3.0) where `nack` does not.
 
-### `Channel#prefetch(count)`
+### `Channel#prefetch(count, [global])`
 
 Set the prefetch count for this channel. The `count` given is the
 maximum number of messages sent over the channel that can be awaiting
@@ -806,6 +806,10 @@ limit.
 apply per-*consumer*, rather than per-channel. It will apply to
 consumers started after the method is called. See
 [rabbitmq-prefetch][].
+
+Use the `global` flag to get the per-channel behaviour. To keep life
+interesting, using the `global` flag with an RabbitMQ older than
+v3.3.0 will bring down the whole connection.
 
 ### `Channel#recover()`
 
