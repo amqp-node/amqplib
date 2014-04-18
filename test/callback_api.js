@@ -21,6 +21,27 @@ function doneCallback(done) {
   };
 }
 
+function twice(done) {
+  var first = function(err) {
+    if (err == undefined) second = done;
+    else second = ignore, done(err);
+  };
+  var second = function(err) {
+    if (err == undefined) first = done;
+    else first = ignore, done(err);
+  };
+  return {first:  function(err) { first(err); },
+          second: function(err) { second(err); }};
+}
+
+// Adapt 'done' to a callback that's expected to fail
+function failCallback(done) {
+  return function(err, _) {
+    if (err == null) done(new Error('Expected failure, got ' + val));
+    else done();
+  };
+}
+
 // Split the callback into separate continuations, handy for exiting
 // early.
 function kCallback(k, ek) {
@@ -78,5 +99,44 @@ channel_test('assert, check, delete exchange', function(ch, done) {
       }, done));
     }, done));
 });
+
+channel_test('fail on check non-queue', function(ch, done) {
+  var both = twice(done);
+  ch.on('error', failCallback(both.first));
+  ch.checkQueue('test.cb.nothere', failCallback(both.second));
+});
+
+channel_test('fail on check non-exchange', function(ch, done) {
+  var both = twice(done);
+  ch.on('error', failCallback(both.first));
+  ch.checkExchange('test.cb.nothere', failCallback(both.second));
+});
+
+});
+
+suite('bindings', function() {
+
+channel_test('bind queue', function(ch, done) {
+  ch.assertQueue('test.cb.bindq', {}, kCallback(function(q) {
+    ch.assertExchange(
+      'test.cb.bindex', 'fanout', {}, kCallback(function(ex) {
+        ch.bindQueue(q.queue, ex.exchange, '', {},
+                     doneCallback(done));
+      }, done));
+  }, done));
+});
+
+channel_test('bind exchange', function(ch, done) {
+  ch.assertExchange(
+    'test.cb.bindex1', 'fanout', {}, kCallback(function(ex1) {
+      ch.assertExchange(
+        'test.cb.bindex2', 'fanout', {}, kCallback(function(ex2) {
+          ch.bindExchange(ex1.exchange,
+                          ex2.exchange, '', {},
+                          doneCallback(done));
+        }, done));
+    }, done));
+});
+
 
 });
