@@ -1,5 +1,6 @@
 'use strict';
 
+var crypto = require('crypto');
 var Connection = require('../lib/connection').Connection;
 var PassThrough =
   require('stream').PassThrough ||
@@ -9,6 +10,12 @@ var defs = require('../lib/defs');
 
 var schedule = (typeof setImmediate === 'function') ?
   setImmediate : process.nextTick;
+
+function randomString() {
+  var hash = crypto.createHash('sha1');
+  hash.update(crypto.randomBytes(64));
+  return hash.digest('base64');
+}
 
 
 // Set up a socket pair {client, server}, such that writes to the
@@ -147,5 +154,6 @@ module.exports = {
   fail: fail,
   latch: latch,
   completes: completes,
-  schedule: schedule
+  schedule: schedule,
+  randomString: randomString
 };

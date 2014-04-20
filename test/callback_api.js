@@ -4,8 +4,8 @@ var assert = require('assert');
 var crypto = require('crypto');
 var api = require('../callback_api');
 var util = require('./util');
-var succeed = util.succeed, fail = util.fail;
 var schedule = util.schedule;
+var randomString = util.randomString;
 
 var URL = process.env.URL || 'amqp://localhost';
 
@@ -50,6 +50,15 @@ function kCallback(k, ek) {
     else ek(err);
   };
 }
+
+function waitForMessages(ch, q, k) {
+  ch.checkQueue(q, function(e, ok) {
+    if (e != null) return k(e);
+    else if (ok.messageCount > 0) return k(null, ok);
+    else schedule(waitForMessages.bind(null, ch, q, k));
+  });
+}
+
 
 suite('connect', function() {
 
@@ -138,5 +147,60 @@ channel_test('bind exchange', function(ch, done) {
     }, done));
 });
 
+});
+
+suite('sending messages', function() {
+
+channel_test('send to queue and consume noAck', function(ch, done) {
+  var msg = randomString();
+  ch.assertQueue('', {exclusive: true}, function(e, q) {
+    if (e !== null) return done(e);
+    ch.consume(q.queue, function(m) {
+      if (m.content.toString() == msg) done();
+      else done(new Error("message content doesn't match:" +
+                          msg + " =/= " + m.content.toString()));
+    }, {noAck: true, exclusive: true});
+    ch.sendToQueue(q.queue, new Buffer(msg));
+  });
+});
+
+channel_test('send to queue and consume ack', function(ch, done) {
+  var msg = randomString();
+  ch.assertQueue('', {exclusive: true}, function(e, q) {
+    if (e !== null) return done(e);
+    ch.consume(q.queue, function(m) {
+      if (m.content.toString() == msg) {
+        ch.ack(m);
+        done();
+      }
+      else done(new Error("message content doesn't match:" +
+                          msg + " =/= " + m.content.toString()));
+    }, {noAck: false, exclusive: true});
+    ch.sendToQueue(q.queue, new Buffer(msg));
+  });
+});
+
+channel_test('send to and get from queue', function(ch, done) {
+  ch.assertQueue('', {exclusive: true}, function(e, q) {
+    if (e != null) return done(e);
+    var msg = randomString();
+    ch.sendToQueue(q.queue, new Buffer(msg));
+    waitForMessages(ch, q.queue, function(e, _) {
+      if (e != null) return done(e);
+      ch.get(q.queue, {noAck: true}, function(e, m) {
+        if (e != null)
+          return done(e);
+        else if (!m)
+          return done(new Error('Empty (false) not expected'));
+        else if (m.content.toString() == msg)
+          return done();
+        else
+          return done(
+            new Error('Messages do not match: ' +
+                      msg + ' =/= ' + m.content.toString()));
+      });
+    });
+  });
+});
 
 });

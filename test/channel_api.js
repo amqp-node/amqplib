@@ -1,11 +1,11 @@
 'use strict';
 
 var assert = require('assert');
-var crypto = require('crypto');
 var api = require('../channel_api');
 var util = require('./util');
 var succeed = util.succeed, fail = util.fail;
 var schedule = util.schedule;
+var randomString = util.randomString;
 var when = require('when');
 var defer = when.defer;
 
@@ -43,12 +43,6 @@ function ignoreErrors(c) {
 }
 function logErrors(c) {
   c.on('error', console.warn); return c;
-}
-
-function randomString() {
-  var hash = crypto.createHash('sha1');
-  hash.update(crypto.randomBytes(64));
-  return hash.digest('base64');
 }
 
 // Run a test with `name`, given a function that takes an open
