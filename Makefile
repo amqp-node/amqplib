@@ -36,7 +36,7 @@ coverage: $(ISTANBUL) lib/defs.js
 	@echo "HTML report at file://$$(pwd)/coverage/lcov-report/index.html"
 
 bin/amqp-rabbitmq-0.9.1.json:
-	curl $(AMQP_JSON) > $@
+	curl -L $(AMQP_JSON) > $@
 
 $(ISTANBUL):
 	npm install
