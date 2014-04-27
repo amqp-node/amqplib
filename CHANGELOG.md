@@ -10,8 +10,12 @@
 
 ### Enhancements
 
+ * Added a callback-oriented API, parallel to the existing,
+   promise-oriented API.
  * The response to assertExchange now contains the exchange name,
    analagous to assertQueue (issue 49)
+ * The channel method `prefetch` now has a global flag, to be
+   [compatible][rabbitmq-prefetch-global] with newer RabbitMQ
 
 ## Changes in v0.1.3 (since v0.1.2)
 
@@ -95,3 +99,4 @@
 
 [rabbitmq-consumer-cancel]: http://www.rabbitmq.com/consumer-cancel.html
 [rabbitmq-auth-failure]: http://www.rabbitmq.com/auth-notification.html
+[rabbitmq-prefetch-global]: http://www.rabbitmq.com/consumer-prefetch.html
