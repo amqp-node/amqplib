@@ -1,7 +1,8 @@
 # RabbitMQ tutorials
 
 This directory contains the [RabbitMQ tutorials][rabbitmq-tutes],
-ported to amqplib.
+ported to amqplib. The sub-directory `callback_api` has translations
+of the tutorial programs to the callback-oriented API.
 
 ## Preparation
 
