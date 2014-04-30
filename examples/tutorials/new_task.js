@@ -10,7 +10,7 @@ amqp.connect('amqp://localhost').then(function(conn) {
     var ok = ch.assertQueue(q, {durable: true});
     
     return ok.then(function() {
-      var msg = process.argv.slice(2).join(' ') || "Hello World!"
+      var msg = process.argv.slice(2).join(' ') || "Hello World!";
       ch.sendToQueue(q, new Buffer(msg), {deliveryMode: true});
       console.log(" [x] Sent '%s'", msg);
       return ch.close();

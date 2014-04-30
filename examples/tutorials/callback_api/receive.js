@@ -3,12 +3,11 @@
 var amqp = require('amqplib/callback_api');
 
 function on_connect(err, conn) {
-  var q = 'hello';
-
   if (err !== null) return console.error(err);
-
   process.once('SIGINT', function() { conn.close(); });
   
+  var q = 'hello';
+
   function on_channel_open(err, ch) {
     ch.assertQueue(q, {durable: false}, function(err, ok) {
       if (err !== null) return console.error(err);
