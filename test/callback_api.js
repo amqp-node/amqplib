@@ -68,15 +68,19 @@ test('at all', function(done) {
 
 });
 
-function channel_test(name, chfun) {
-  test(name, function(done) {
-    connect(kCallback(function(c) {
-      c.createChannel(kCallback(function(ch) {
-        chfun(ch, done);
+function channel_test_fn(method) {
+  return function(name, chfun) {
+    test(name, function(done) {
+      connect(kCallback(function(c) {
+        c[method](kCallback(function(ch) {
+          chfun(ch, done);
+        }, done));
       }, done));
-    }, done));
-  });
+    });
+  };
 }
+var channel_test = channel_test_fn('createChannel');
+var confirm_channel_test = channel_test_fn('createConfirmChannel');
 
 suite('channel open', function() {
 
@@ -201,6 +205,15 @@ channel_test('send to and get from queue', function(ch, done) {
       });
     });
   });
+});
+
+});
+
+suite('ConfirmChannel', function() {
+
+confirm_channel_test('Receive confirmation', function(ch, done) {
+  ch.publish('amq.topic', 'no.one.bound', new Buffer('foo'),
+             {}, done);
 });
 
 });
