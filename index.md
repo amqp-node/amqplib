@@ -19,26 +19,28 @@ way or that in search of a usable API. In `amqplib` I have tried to
 implement only the necessary machinery of AMQP, in layers as best I
 can, without prejudice to any particular client API.
 
-## Channel API overview
+## Client APIs
 
-The client API included is channel-oriented. This represents the
-protocol fairly directly, as connections and channels (something like
-'sessions'). Most of the operations in the API are accessed by
-creating a channel and calling methods; exchanges and queues are only
-represented insofar as they are named (with strings) in these
-operations.
+There are two client APIs included here, which are really two styles
+of the same API: one uses promises, and one callbacks.
+
+The client APIs are oriented around `Channel` objects (which are
+something like sessions). They expose the protocol fairly directly as
+methods on an object. Exchanges and queues are only represented
+insofar as they are named (with strings) in arguments to these
+methods.
 
 Almost all operations are asynchronous RPCs; these methods on
-`Channel` return promises which can be composed in all the usual
-ways. Some operations (e.g., `#ack`) elicit no response from the
-server, and don't return a promise.
+`Channel` either return promises, or accept callbacks. Some operations
+(e.g., `#ack`) elicit no response from the server, and don't return a
+promise or take a callback.
 
 In general I have made arguments that are mandatory in the protocol
 into method arguments in the API, and coalesced optional arguments,
 properties, and RabbitMQ extensions into a single `options` argument
-which can be omitted altogether.
+which can often be omitted altogether.
 
-The [reference](doc/channel_api.html) has full details.
+The [reference](doc/channel_api.html) has full details of both APIs.
 
 ## Library overview
 

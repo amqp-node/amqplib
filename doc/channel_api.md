@@ -5,26 +5,52 @@ title: Channel API reference
 
 # Channel-oriented API reference
 
-This is the "main" module in the library:
+There are two parallel client APIs available. One uses promises, and
+the other uses callbacks, *mutatis mutandis*. Since they present much
+the same set of objects and methods, you are free to choose which you
+prefer, without missing out on any features. However, they don't mix
+-- a channel from the promises API has only the promise-based methods,
+and likewise the callback API -- so it is best to pick one and stick
+with it.
+
+The promise-based API is the "main" module in the library:
 
 ```javascript
 var amqp = require('amqplib');
 ```
 
-The client API is based closely on the protocol model. The _modus
-operandi_ is to create channels on which to issue commands. Most
-errors in AMQP invalidate just the channel which had problems, so this
-ends up being a fairly natural way to use AMQP. The downside is that
-it doesn't give any guidance on *useful* ways to use AMQP; that is, it
-does little beyond giving access to the various AMQP methods.
+You can access the callback-based API this way:
+
+```javascript
+var amqp = require('amqplib/callback_api');
+```
+
+In the following I use "resolve", "resolving" etc., to refer either to
+resolving a returned promise (usually with a value); or in the
+callback API, invoking a supplied callback with `null` as the first
+argument (and usually some value as the second argument). Likewise,
+"reject" etc., will mean rejecting a promise or calling the callback
+with an `Error` as the first argument (and no value).
+
+## Overview
+
+The client APIs are based closely on the protocol model. The general
+idea is to connect, then create one or more channels on which to issue
+commands, send messages, and so on. Most errors in AMQP invalidate
+just the channel which had problems, so this ends up being a fairly
+natural way to use AMQP. The downside is that it doesn't give any
+guidance on *useful* ways to use AMQP; that is, it does little beyond
+giving access to the various AMQP commands.
 
 Most operations in AMQP are RPCs, synchronous at the channel layer of
-the protocol but asynchronous from the library's point of view;
-accordingly, most methods return promises yielding the server's reply
-(often containing useful information such as generated
-identifiers). RPCs are queued by the channel if it is already waiting
-for a reply -- synchronising on RPCs in this way is implicitly
-required by the protocol specification.
+the protocol but asynchronous from the library's point of
+view. Accordingly, most methods either return promises, or accept
+callbacks, yielding the server's reply (often containing useful
+information such as generated identifiers). RPCs are queued by the
+channel if it is already waiting for a reply -- synchronising on RPCs
+in this way is implicitly required by the protocol specification.
+
+## Dealing with failure
 
 Failed operations will
 
@@ -38,8 +64,8 @@ Failed operations will
 Since the RPCs are effectively synchronised, any such channel error is
 very likely to have been caused by the outstanding RPC. However, it's
 often sufficient to fire off a number of RPCs and check only the
-returned promise for the last, since it'll be rejected if it or any of
-its predecessors fail.
+result for the last, since it'll be rejected if it or any of its
+predecessors fail.
 
 The exception thrown on operations subsequent to a failure *or*
 closure also contains the stack at the point that the channel was
@@ -76,6 +102,12 @@ amqp.connect().then(function(conn) {
 }).then(null, console.warn);
 ```
 
+With callbacks, of course, you are on your own (but there are
+callback-wrangling libraries to suit many and varied tastes, I am
+told).
+
+## Argument handling
+
 Many operations have mandatory arguments as well as optional arguments
 with defaults; in general, the former appear as parameters to the
 method while latter are collected in a single `options` parameter, to
@@ -88,14 +120,14 @@ so a common `options` value can be specialised by e.g., using
 
 Often, AMQP commands have an `arguments` table that can contain
 arbitrary values, usually used by implementation-specific extensions
-like [RabbitMQ's consumer
-priorities][rabbitmq-consumer-priority]. This is accessible as the
-option `arguments`, an object: if an API method does not account for
-an extension in its `options`, you can fall back to using the
-arguments object, though bear in mind that the field name will usually
-be 'x-something', while the options are just 'something'. Values
-passed in `options`, if understood by the API, will override those
-given in `arguments`.
+like
+[RabbitMQ's consumer priorities][rabbitmq-consumer-priority]. This is
+accessible as the option `arguments`, also an object: if an API method
+does not account for an extension in its stated `options`, you can
+fall back to using the `options.arguments` object, though bear in mind
+that the field name will usually be 'x-something', while the options
+are just 'something'. Values passed in `options`, if understood by the
+API, will override those given in `options.arguments`.
 
 ```js
 var common_options = {durable: true, noAck: true};
@@ -120,7 +152,17 @@ ch.consume('bar', console.log, bar_consume_opts);
 // table
 ```
 
-## `connect([url], [socketOptions])`
+## Method reference
+
+### connect
+
+##### Promises
+
+`connect([url, [socketOptions]])`
+
+##### Callbacks
+
+`connect([url, [socketOptions]], function(err, conn) {...})`
 
 Connect to an AMQP 0-9-1 server, optionally given an AMQP URL (see
 [AMQP URI syntax][amqpurl]) and socket options. The protocol part
@@ -159,28 +201,28 @@ URI, e.g., as in `'amqp://localhost?frameMax=0x1000'`. These are:
    default.
 
 The socket options will be passed to the socket library (`net` or
-`tls`). They must be fields set on the object supplied; i.e., not on a
-prototype. This is useful for supplying certificates and so on for an
+`tls`). In an exception to the general rule, *they must be fields set
+on the object supplied*; that is, not in the prototype chain. The
+socket options is useful for supplying certificates and so on for an
 SSL connection; see the [SSL guide][ssl-doc].
 
 The socket options may also include the key `noDelay`, with a boolean
 value. If the value is `true`, this sets
 [`TCP_NODELAY`][wikipedia-nagling] on the underlying socket.
 
-Returns a promise which will either be resolved with an open
-`ChannelModel` or rejected with a sympathetically-worded error (in
-en_US).
+The returned promise, or supplied callback, will either be resolved
+with an object representing an open connection, or rejected with a
+sympathetically-worded error (in en_US).
 
 Supplying a malformed URI will cause `connect()` to throw an
 exception; other problems, including refused and dropped TCP
-connections, will result in a rejected promise.
+connections, will result in a rejection.
 
 RabbitMQ since version 3.2.0 will send a frame to notify the client of
-authentication failures, which results in a rejected promise; RabbitMQ
-before version 3.2.0, per the AMQP specification, will close the
-socket in the case of an authentication failure, making a dropped
-connection ambiguous (it will also wait a few seconds before doing
-so).
+authentication failures, which results in a rejection. RabbitMQ before
+version 3.2.0, per the AMQP specification, will close the socket in
+the case of an authentication failure, making a dropped connection
+ambiguous (it will also wait a few seconds before doing so).
 
 ##### Heartbeating
 
@@ -190,20 +232,28 @@ client fails to read data from the connection for two successive
 intervals, the connection will emit an error and close. It will also
 send heartbeats to the server (in the absence of other data).
 
-## `new ChannelModel(connection)`
+## ChannelModel and CallbackModel
 
-This constructor represents a connection in the channel API. It takes
-as an argument a `connection.Connection`; though it is better to use
-`connect()`, which will open the connection for you. It is exported as
-a potential extension point.
+These constructors represent connections in the channel APIs. They
+take as an argument a `connection.Connection`. It is better to use
+`connect()`, which will open the connection for you. The constructors
+are exported as potential extension points.
 
-### `ChannelModel#close`
+### {Channel,Callback}Model#close
+
+##### Promises
+
+`connection.close()`
+
+##### Callbacks
+
+`connection.close([function(err) {...}])`
 
 Close the connection cleanly. Will immediately invalidate any
 unresolved operations, so it's best to make sure you've done
-everything you need to before calling this. Returns a promise which
-resolves once the connection, and underlying socket, are closed. The
-`ChannelModel` will also emit `'close'` at that point.
+everything you need to before calling this. Will be resolved once the
+connection, and underlying socket, are closed. The model will also
+emit `'close'` at that point.
 
 Although it's not strictly necessary, it will avoid some warnings in
 the server log if you close the connection before exiting:
@@ -217,11 +267,23 @@ open.then(function(conn) {
 ```
 
 Note that I'm synchronising on the return value of
-`doStuffWithConnection()`, presumably a promise, so that I can be sure
-I'm all done.
+`doStuffWithConnection()`, assumed here to be a promise, so that I can
+be sure I'm all done. The callback version looks like this:
+
+```javascript
+amqp.connect(function(err, conn) {
+  if (err !== null) return console.warn(err);
+  doStuffWithConnection(conn, function() {
+    conn.close();
+  });
+});
+```
+
+There it's assumed that doStuffWithConnection invokes its second
+argument once it's all finished.
 
 If your program runs until interrupted, you can hook into the process
-signal to close the connection:
+signal handling to close the connection:
 
 ```javascript
 var open = amqp.connect();
@@ -234,14 +296,16 @@ open.then(function(conn) {
 **NB** it's no good using `process.on('exit', ...)`, since `close()` needs
 to do I/O.
 
-### `ChannelModel#on('close', function() {...})`
+### {Channel,Callback}Model events
+
+`#on('close', function() {...})`
 
 Emitted once the closing handshake initiated by `#close()` has
 completed; or, if server closed the connection, once the client has
 sent the closing handshake; or, if the underlying stream (e.g.,
 socket) has closed.
 
-### `ChannelModel#on('error', function (err) {...})`
+`#on('error', function (err) {...})`
 
 Emitted if the connection closes for any reason other than `#close`
 being called; such reasons include:
@@ -255,7 +319,7 @@ being called; such reasons include:
 
 `'close'` will also be emitted, after `'error'`.
 
-### `ChannelModel#on('blocked', function(reason) {...})`
+`#on('blocked', function(reason) {...})`
 
 Emitted when a RabbitMQ server (after version 3.2.0) decides to block
 the connection. Typically it will do this if there is some resource
@@ -263,33 +327,68 @@ shortage, e.g., memory, and messages are published on the
 connection. See the RabbitMQ [documentation for this
 extension][rabbitmq-connection-blocked] for details.
 
-### `ChannelModel#on('unblocked', function() {...})`
+`#on('unblocked', function() {...})`
 
 Emitted at some time after `'blocked'`, once the resource shortage has
 alleviated.
 
-### `ChannelModel#createChannel()`
+### {Channel,Callback}Model#createChannel
 
-Open a fresh channel. Returns a promise of an open `Channel`. May fail
-if there are no more channels available (i.e., if there are already
-`channelMax` channels open).
+##### Promises
 
-## `new Channel(connection)`
+`#createChannel()`
+
+##### Callbacks
+
+`#createChannel(function(err, channel) {...})`
+
+Resolves to an open `Channel` (The callback version also returns the
+channel; but it is not usable before the callback has been
+invoked). May fail if there are no more channels available (i.e., if
+there are already `channelMax` channels open).
+
+### {Channel,Callback}Model#createConfirmChannel
+
+##### Promises
+
+`#createConfirmChannel()`
+
+##### Callbacks
+
+`#createConfirmChannel(function(err, channel) {...})`
+
+Open a fresh channel, switched to "confirmation mode". See
+`ConfirmChannel` below.
+
+## Channels
+
+There are channel objects in each of the APIs, and these contain most
+of the methods for getting things done.
+
+`new Channel(connection)`
 
 This constructor represents a protocol channel. Channels are
 multiplexed over connections, and represent something like a session,
 in that most operations (and thereby most errors) are scoped to
 channels.
 
-The constructor is exported from the module as an extension
-point. When using the client library in an application, obtain an open
-`Channel` by opening a connection (`connect()` above) and calling
-`#createChannel` or `#createConfirmChannel`.
+The constructor is exported from the API modules as an extension
+point. When using a client API, obtain an open `Channel` by opening a
+connection (`connect()` above) and calling `#createChannel` or
+`#createConfirmChannel`.
 
-### `Channel#close()`
+### Channel#close
 
-Close a channel. Returns a promise which will be resolved once the
-closing handshake is complete.
+##### Promises
+
+`Channel#close()`
+
+##### Callbacks
+
+`Channel#close([function(err) {...}])`
+
+Close a channel. Will be resolved with no value once the closing
+handshake is complete.
 
 There's not usually any reason to close a channel rather than
 continuing to use it until you're ready to close the connection
@@ -298,7 +397,9 @@ channels, and thereby other things such as exclusive locks on queues,
 so it is occasionally worth being deliberate about opening and closing
 channels.
 
-### `Channel#on('close', function() {...})`
+### Channel events 
+
+`#on('close', function() {...})`
 
 A channel will emit `'close'` once the closing handshake (possibly
 initiated by `#close()`) has completed; or, if its connection closes.
@@ -306,7 +407,7 @@ initiated by `#close()`) has completed; or, if its connection closes.
 When a channel closes, any unresolved operations on the channel will
 be abandoned (and the returned promises rejected).
 
-### `Channel#on('error', function(err) {...})`
+`#on('error', function(err) {...})`
 
 A channel will emit `'error'` if the server closes the channel for any
 reason. Such reasons include
@@ -318,7 +419,7 @@ reason. Such reasons include
 A channel will not emit `'error'` if its connection closes with an
 error.
 
-### `Channel#on('return', function(msg) {...})`
+`#on('return', function(msg) {...})`
 
 If a message is published with the `mandatory` flag (it's an option to
 `Channel#publish` in this API), it may be returned to the sending
@@ -326,26 +427,35 @@ channel if it cannot be routed. Whenever this happens, the channel
 will emit `return` with a message object (as described in `#consume`)
 as an argument.
 
-### `Channel#on('drain', function() {...})`
+`#on('drain', function() {...})`
 
 Like a [stream.Writable][nodejs-drain], a channel will emit `'drain'`,
 if it has previously returned `false` from `#publish` or
-`#sendToQueue`, once its write buffer has been emptied (i.e., it is
-ready for writes again).
+`#sendToQueue`, once its write buffer has been emptied (i.e., once it
+is ready for writes again).
 
-### `Channel#assertQueue([queue], [options])`
+### Channel#assertQueue
+
+##### Promises
+
+`#assertQueue([queue, [options]])`
+
+##### Callbacks
+
+`#assertQueue([queue, [options, [function(err, ok) {...}]]])`
 
 Assert a queue into existence. This operation is idempotent given
 identical arguments; however, it will bork the channel if the queue
 already exists but has different properties (values supplied in the
 `arguments` field may or may not count for borking purposes; check the
-broker's documentation).
+borker's, I mean broker's, documentation).
 
 `queue` is a string; if you supply an empty string or other falsey
-value, the server will create a random name for you.
+value (including `null` and `undefined`), the server will create a
+random name for you.
 
-`options` is an object and may also be omitted. The relevant fields in
-options are:
+`options` is an object and may be empty or null, or outright omitted
+if it's the last argument. The relevant fields in options are:
 
  * `exclusive`: if true, scopes the queue to the connection (defaults
   to false)
@@ -361,9 +471,11 @@ options are:
   of broker-specific extension e.g., high availability, TTL.
 
 RabbitMQ extensions can also be supplied as options. These typically
-require non-standard `x-*` keys and values sent in the `arguments`
-table; e.g., `x-expires`. Here, I've removed the `x-` prefix and made
-them options; they will overwrite anything you supply in `arguments`.
+require non-standard `x-*` keys and values, sent in the `arguments`
+table; e.g., `'x-expires'`. When supplied in `options`, the `x-`
+prefix for the key is removed; e.g., `'expires'`. Values supplied in
+`options` will overwrite any analogous field you put in
+`options.arguments`.
 
  * `messageTtl` (0 <= n < 2^32): expires messages arriving in the
   queue after n milliseconds
@@ -377,16 +489,16 @@ them options; they will overwrite anything you supply in `arguments`.
   discarded from the queue will be resent. Use `deadLetterRoutingKey`
   to set a routing key for discarded messages; otherwise, the
   message's routing key (and CC and BCC, if present) will be
-  preserved. A message is discarded when it expires or is rejected, or
-  the queue limit is reached.
+  preserved. A message is discarded when it expires or is rejected or
+  nacked, or the queue limit is reached.
 
  * `maxLength` (positive integer): sets a maximum number of messages
   the queue will hold. Old messages will be discarded (dead-lettered
   if that's set) to make way for new messages.
 
-Returns a promise of the "ok" reply from the server, which includes
-fields for the queue name (important if you let the server name it), a
-recent consumer count, and a recent message count; e.g.,
+Resolves to the "ok" reply from the server, which includes fields for
+the queue name (important if you let the server name it), a recent
+consumer count, and a recent message count; e.g.,
 
 ```javascript
 {
@@ -396,14 +508,30 @@ recent consumer count, and a recent message count; e.g.,
 }
 ```
 
-### `Channel#checkQueue(queue)`
+### Channel#checkQueue
+
+##### Promises
+
+`#checkQueue(queue)`
+
+##### Callbacks
+
+`#checkQueue(queue, [function(err, ok) {...}])`
 
 Check whether a queue exists. This will bork the channel if the named
 queue *doesn't* exist; if it does exist, you go through to the next
 round!  There's no options as with `#assertQueue()`, just the queue
 name. The reply from the server is the same as for `#assertQueue()`.
 
-### `Channel#deleteQueue(queue, [options])`
+### Channel#deleteQueue
+
+##### Promises
+
+`#deleteQueue(queue, [options])`
+
+##### Callbacks
+
+`#deleteQueue(queue, [options, [function(err, ok) {...}]])`
 
 Delete the queue named. Naming a queue that doesn't exist will result
 in the server closing the channel, to teach you a lesson (except in
@@ -426,7 +554,15 @@ queue unconditionally.
 The server reply contains a single field, `messageCount`, with the
 number of messages deleted or dead-lettered along with the queue.
 
-### `Channel#purgeQueue(queue)`
+### Channel#purgeQueue
+
+##### Promises
+
+`#purgeQueue(queue)`
+
+##### Callbacks
+
+`#purgeQueue(queue, function(err, ok) {...})`
 
 Remove all undelivered messages from the `queue` named. Note that this
 won't remove messages that have been delivered but not yet
@@ -437,7 +573,15 @@ closes without acknowledging them).
 The server reply contains a single field, `messageCount`, containing
 the number of messages purged from the queue.
 
-### `Channel#bindQueue(queue, source, pattern, [args])`
+### Channel#bindQueue
+
+##### Promises 
+
+`#bindQueue(queue, source, pattern, [args])`
+
+##### Callbacks
+
+`#bindQueue(queue, source, pattern, [args, [function(err, ok) {...}]])`
 
 Assert a routing path from an exchange to a queue: the exchange named
 by `source` will relay messages to the `queue` named, according to the
@@ -446,13 +590,21 @@ tutorials][rabbitmq-tutes] give a good account of how routing works in
 AMQP.
 
 `args` is an object containing extra arguments that may be required
-for the particular exchange type (for which, see [your server's
-documentation][rabbitmq-docs]). It may be omitted if not needed, which
-is equivalent to an empty object.
+for the particular exchange type (for which, see
+[your server's documentation][rabbitmq-docs]). It may be omitted if
+it's the last argument, which is equivalent to an empty object.
 
 The server reply has no fields.
 
-### `Channel#unbindQueue(queue, source, pattern, [args])`
+### Channel#unbindQueue
+
+##### Promises
+
+`#unbindQueue(queue, source, pattern, [args])`
+
+##### Callbacks
+
+`#unbindQueue(queue, source, pattern, [args, [function(err, ok) {...}]])`
 
 Remove a routing path between the `queue` named and the exchange named
 as `source` with the `pattern` and arguments given. Omitting `args` is
@@ -463,7 +615,15 @@ mistake; RabbitMQ before version 3.2.0 softens this to a channel
 error, and from version 3.2.0, doesn't treat it as an error at
 all[1][rabbitmq-idempotent-delete]. Good ol' RabbitMQ).
 
-### `Channel#assertExchange(exchange, type, [options])`
+### Channel#assertExchange
+
+##### Promises
+
+`#assertExchange(exchange, type, [options])`
+
+##### Callbacks
+
+`#assertExchange(exchange, type, [options, [function(err, ok) {...}]])`
 
 Assert an exchange into existence. As with queues, if the exchange
 exists already and has properties different to those supplied, the
@@ -498,17 +658,33 @@ The options:
 
 The server reply echoes the exchange name, in the field `exchange`.
 
-### `Channel#checkExchange(exchange)`
+### Channel#checkExchange
+
+##### Promises
+
+`#checkExchange(exchange)`
+
+##### Callbacks
+
+`#checkExchange(exchange, [function(err, ok) {...}])`
 
 Check that an exchange exists. If it doesn't exist, the channel will
 be closed with an error. If it does exist, happy days.
 
-### `Channel#deleteExchange(name, [options])`
+### Channel#deleteExchange
+
+##### Promises
+
+`#deleteExchange(name, [options])`
+
+##### Callbacks
+
+`#deleteExchange(name, [options, [function(err, ok) {...}]])`
 
 Delete an exchange. The only meaningful field in `options` is:
 
- * ifUnused (boolean): if true and the exchange has bindings, it will
-  not be deleted and the channel will be closed.
+ * `ifUnused` (boolean): if true and the exchange has bindings, it
+  will not be deleted and the channel will be closed.
 
 If the exchange does not exist, a channel error is raised (RabbitMQ
 version 3.2.0 and after will not raise an
@@ -516,7 +692,15 @@ error[1][rabbitmq-idempotent-delete]).
 
 The server reply has no fields.
 
-### `Channel#bindExchange(destination, source, pattern, [args])`
+### Channel#bindExchange
+
+##### Promises
+
+`#bindExchange(destination, source, pattern, [args])`
+
+##### Callbacks
+
+`#bindExchange(destination, source, pattern, [args, [function(err, ok) {...}]])`
 
 Bind an exchange to another exchange. The exchange named by
 `destination` will receive messages from the exchange named by
@@ -528,7 +712,15 @@ a routing key equal to the pattern.
 
 The server reply has no fields.
 
-### `Channel#unbindExchange(destination, source, pattern, [args])`
+### Channel#unbindExchange
+
+##### Promises
+
+`#unbindExchange(destination, source, pattern, [args])`
+
+##### Callbacks
+
+`#unbindExchange(destination, source, pattern, [args, [function(err, ok) {...}]])`
 
 Remove a binding from an exchange to another exchange. A binding with
 the exact `source` exchange, `destination` exchange, routing key
@@ -537,10 +729,13 @@ exists, it's &ndash; you guessed it &ndash; a channel error, except in
 RabbitMQ >= version 3.2.0, for which it succeeds
 trivially[1][rabbitmq-idempotent-delete].
 
-### `Channel#publish(exchange, routingKey, content, [options])`
+### Channel#publish
 
-Publish a single message to an exchange. The mandatory parameters
-(these go in the publish method itself) are:
+##### Promises or callbacks
+
+`#publish(exchange, routingKey, content, [options])`
+
+Publish a single message to an exchange. The mandatory parameters are:
 
  * `exchange` and `routingKey`: the exchange and routing key, which
  determine where the message goes. A special case is sending `''` as
@@ -643,17 +838,29 @@ Ignored by RabbitMQ (but may be useful for applications):
 its return value; it will return `false` if the channel's write buffer
 is 'full', and `true` otherwise.
 
-### `Channel#sendToQueue(queue, content, [options])`
+### Channel#sendToQueue
+
+##### Promises and callbacks
+
+`#sendToQueue(queue, content, [options])`
 
 Send a single message with the `content` given as a buffer to the
 specific `queue` named, bypassing routing. The options and return
 value are exactly the same as for `#publish`.
 
-### `Channel#consume(queue, callback, [options])`
+### Channel#consume
+
+##### Promises
+
+`#consume(queue, function(msg) {...}, [options])`
+
+##### Callbacks
+
+`#consume(queue, function(msg) {...}, [options, [function(err, ok) {...}]])`
 
 Set up a consumer with a callback to be invoked with each message.
 
-Options (which may be omitted altogether):
+Options (which may be omitted if the last argument):
 
  * `consumerTag` (string): a name which the server will use to
   distinguish message deliveries for the consumer; mustn't be already
@@ -687,8 +894,8 @@ The server reply contains one field, `consumerTag`. It is necessary to
 remember this somewhere if you will later want to cancel this consume
 operation (i.e., to stop getting messages).
 
-The callback supplied will be invoked with message objects of this
-shape:
+The message callback supplied in the second argument will be invoked
+with message objects of this shape:
 
 ```javascript
 {
@@ -702,7 +909,7 @@ The message `content` is a buffer containing the bytes published.
 
 The fields object has a handful of bookkeeping values largely of
 interest only to the library code: `deliveryTag`, a serial number for
-th message; `consumerTag`, identifying the consumer for which the
+the message; `consumerTag`, identifying the consumer for which the
 message is destined; `exchange` and `routingKey` giving the routing
 information with which the message was published; and, `redelivered`,
 which if true indicates that this message has been delivered before
@@ -715,9 +922,17 @@ transmitted. Note that RabbitMQ extensions (just `CC`, presently) are
 sent in the `headers` table so will appear there in deliveries.
 
 If the [consumer is cancelled][rabbitmq-consumer-cancel] by RabbitMQ,
-the callback will be invoked with `null`.
+the message callback will be invoked with `null`.
 
-### `Channel#cancel(consumerTag)`
+### Channel#cancel
+
+##### Promises
+
+`#cancel(consumerTag)`
+
+##### Callbacks
+
+`#cancel(consumerTag, [function(err, ok) {...}])`
 
 This instructs the server to stop sending messages to the consumer
 identified by `consumerTag`. Messages may arrive between sending this
@@ -728,20 +943,33 @@ be invoked.
 The `consumerTag` is the string given in the reply to `#consume`,
 which may have been generated by the server.
 
-### `Channel#get(queue, [options])`
+### Channel#get
 
-Ask a queue for a message, as an RPC. This returns a promise that will
-be resolved with either `false`, if there is no message to be had, or
-a message (in the same shape as detailed in `#consume`).
+##### Promises
+
+`#get(queue, [options])`
+
+##### Callbacks
+
+`#get(queue, [options, [function(err, msgOrFalse) {...}]])`
+
+Ask a queue for a message, as an RPC. This will be resolved with
+either `false`, if there is no message to be had (the queue has no
+messages ready), or a message in the same shape as detailed in
+`#consume`.
 
 Options:
 
- * noAck (boolean): if true, the message will be assumed by the server
+ * `noAck` (boolean): if true, the message will be assumed by the server
    to be acknowledged (i.e., dequeued) as soon as it's been sent over
    the wire. Default is false, that is, you will be expected to
    acknowledge the message.
 
-### `Channel#ack(message, [allUpTo])`
+### Channel#ack
+
+##### Promises and callbacks
+
+`#ack(message, [allUpTo])`
 
 Acknowledge the given message, or all messages up to and including the
 given message.
@@ -760,40 +988,60 @@ acknowledgement, or has already been acknowledged. Doing so will
 errorise the channel. If you want to acknowledge all the messages and
 you don't have a specific message around, use `#ackAll`.
 
-### `Channel#ackAll()`
+### Channel#ackAll
+
+##### Promises and callbacks
+
+`#ackAll()`
 
 Acknowledge all outstanding messages on the channel. This is a "safe"
 operation, in that it won't result in an error even if there are no
 such messages.
 
-### `Channel#nack(message, [allUpTo], [requeue])`
+### Channel#nack
+
+#### Promises and callbacks
+
+`#nack(message, [allUpTo, [requeue]])`
 
 Reject a message. This instructs the server to either requeue the
-message or throw it away (which may mean dead-lettering it).
+message or throw it away (which may result in it being dead-lettered).
 
-If 'allUpTo' is true, all outstanding messages prior to and including
-the given message are rejected. As with `ack`, it's a channel-ganking
-error to use a message that is not outstanding. Defaults to false.
+If `allUpTo` is truthy, all outstanding messages prior to and including
+the given message are rejected. As with `#ack`, it's a channel-ganking
+error to use a message that is not outstanding. Defaults to `false`.
 
-If `requeue` is true, the server will try to put the message or
+If `requeue` is truthy, the server will try to put the message or
 messages back on the queue or queues from which they came. Defaults to
-true if not given, so if you want to make sure messages are
-dead-lettered or discarded, supply false here.
+`true` if not given, so if you want to make sure messages are
+dead-lettered or discarded, supply `false` here.
 
 This and `#nackAll` use a [RabbitMQ-specific
 extension][rabbitmq-nack].
 
-### `Channel#nackAll([requeue])`
+### Channel#nackAll
 
-Reject all messages outstanding on this channel. If `requeue` is true,
-or omitted, the server will try to re-enqueue the messages.
+##### Promises and callbacks
 
-### `Channel#reject(message, [requeue])`
+`#nackAll([requeue])`
+
+Reject all messages outstanding on this channel. If `requeue` is
+truthy, or omitted, the server will try to re-enqueue the messages.
+
+### Channel#reject
+
+##### Promises and callbacks
+
+`#reject(message, [requeue])`
 
 Reject a message. Equivalent to `#nack(message, false, requeue)`, but
-works in older versions of RabbitMQ (< v2.3.0) where `nack` does not.
+works in older versions of RabbitMQ (< v2.3.0) where `#nack` does not.
 
-### `Channel#prefetch(count, [global])`
+### Channel#prefetch
+
+##### Promises and callbacks
+
+`#prefetch(count, [global])`
 
 Set the prefetch count for this channel. The `count` given is the
 maximum number of messages sent over the channel that can be awaiting
@@ -811,25 +1059,31 @@ Use the `global` flag to get the per-channel behaviour. To keep life
 interesting, using the `global` flag with an RabbitMQ older than
 v3.3.0 will bring down the whole connection.
 
-### `Channel#recover()`
+### Channel#recover
 
-Requeue unacknowledged messages on this channel. The returned promise
-will be resolved (with an empty object) once all messages are
-requeued.
+##### Promises
 
-## `ChannelModel#createConfirmChannel()`
+`#recover()`
 
-Create a channel which uses confirmations (a [RabbitMQ
-extension][rabbitmq-confirms]). As with `#createChannel`, the return
-value is a promise that will be resolved with an open channel.
+##### Callbacks
 
-On the resulting channel, each published message is 'acked' or (in
-exceptional circumstances) 'nacked' by the server, thereby indicating
-that it's been dealt with.
+`#recover([function(err, ok) {...}])`
 
-A confirm channel has the same methods as a
-regular channel, except that `#publish` and `#sendToQueue` take a
-callback as an additional argument:
+Requeue unacknowledged messages on this channel. The server will reply
+(with an empty object) once all messages are requeued.
+
+## ConfirmChannel
+
+A channel which uses "confirmation mode" (a
+[RabbitMQ extension][rabbitmq-confirms]).
+
+On a channel in confirmation mode, ach published message is 'acked' or
+(in exceptional circumstances) 'nacked' by the server, thereby
+indicating that it's been dealt with.
+
+A confirm channel has the same methods as a regular channel, except
+that `#publish` and `#sendToQueue` accept a callback as an additional
+argument:
 
 ```javascript
 var open = require('amqplib').connect();
@@ -846,6 +1100,19 @@ open.then(function(c) {
 });
 ```
 
+Or, with the callback API:
+
+```javascript
+require('amqplib/callback_api').connect(function(err, c) {
+  c.createConfirmChannel(function(err, ch) {
+    ch.sendToQueue('foo', new Buffer('foobar'), {}, function(err, ok) {
+      if (err !== null) console.warn('Message nacked!');
+      else console.log('Message acked');
+    });
+  });
+});
+```
+
 In practice this means the `options` argument must be supplied, at
 least as an empty object.
 
@@ -855,7 +1122,7 @@ example by responding to an upstream request. The second is to rate
 limit a publisher by limiting the number of unconfirmed messages it's
 allowed.
 
-## `ConfirmChannel(connection)`
+`new ConfirmChannel(connection)`
 
 This constructor is a channel that uses confirms. It is exported as an
 extension point. To obtain such a channel, use `connect` to get a
