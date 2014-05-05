@@ -11,8 +11,13 @@ function fib(n) {
   return a;
 }
 
+function bail(err, conn) {
+  console.error(err);
+  if (conn) conn.close(function() { process.exit(1); });
+}
+
 function on_connect(err, conn) {
-  if (err !== null) return console.error(err);
+  if (err !== null) return bail(err);
 
   process.once('SIGINT', function() { conn.close(); });
 
@@ -22,7 +27,7 @@ function on_connect(err, conn) {
     ch.assertQueue(q, {durable: false});
     ch.prefetch(1);
     ch.consume(q, reply, {noAck:false}, function(err) {
-      if (err !== null) return console.error(err);
+      if (err !== null) return bail(err, conn);
       console.log(' [x] Awaiting RPC requests');
     });
 

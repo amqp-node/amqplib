@@ -11,21 +11,27 @@ if (severities.length < 1) {
   process.exit(1);
 }
 
+function bail(err, conn) {
+  console.error(err);
+  if (conn) conn.close(function() { process.exit(1); });
+}
+
 function on_connect(err, conn) {
-  if (err !== null) return console.error(err);
+  if (err !== null) return bail(err);
   process.once('SIGINT', function() { conn.close(); });
+
   conn.createChannel(function(err, ch) {
-    if (err !== null) return console.error(err);
+    if (err !== null) return bail(err, conn);
     var ex = 'direct_logs', exopts = {durable: false};
 
     ch.assertExchange(ex, 'direct', exopts);
     ch.assertQueue('', {exclusive: true}, function(err, ok) {
-      if (err !== null) return console.error(err);
+      if (err !== null) return bail(err, conn);
 
       var queue = ok.queue, i = 0;
 
       function sub(err) {
-        if (err !== null) return console.error(err);
+        if (err !== null) return bail(err, conn);
         else if (i < severities.length) {
           ch.bindQueue(queue, ex, severities[i], {}, sub);
           i++;
@@ -33,7 +39,7 @@ function on_connect(err, conn) {
       }
 
       ch.consume(queue, logMessage, {noAck: true}, function(err) {
-        if (err !== null) return console.error(err);
+        if (err !== null) return bail(err, conn);
         console.log(' [*] Waiting for logs. To exit press CTRL+C.');
         sub(null);
       });
