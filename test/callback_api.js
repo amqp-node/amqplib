@@ -212,8 +212,10 @@ channel_test('send to and get from queue', function(ch, done) {
 suite('ConfirmChannel', function() {
 
 confirm_channel_test('Receive confirmation', function(ch, done) {
-  ch.publish('amq.topic', 'no.one.bound', new Buffer('foo'),
-             {}, done);
+  // An unroutable message, on the basis that you're not allowed a
+  // queue with an empty name, and you can't make bindings to the
+  // default exchange. Tricky eh?
+  ch.publish('', '', new Buffer('foo'), {}, done);
 });
 
 });
