@@ -21,6 +21,8 @@ function doneCallback(done) {
   };
 }
 
+function ignore() {}
+
 function twice(done) {
   var first = function(err) {
     if (err == undefined) second = done;
@@ -216,6 +218,52 @@ confirm_channel_test('Receive confirmation', function(ch, done) {
   // queue with an empty name, and you can't make bindings to the
   // default exchange. Tricky eh?
   ch.publish('', '', new Buffer('foo'), {}, done);
+});
+
+});
+
+suite("Error handling", function() {
+
+channel_test('Channel open callback throws an error', function(ch, done) {
+  ch.on('error', failCallback(done));
+  throw new Error('Error in open callback');
+});
+
+channel_test('RPC callback throws error', function(ch, done) {
+  ch.on('error', failCallback(done));
+  ch.prefetch(0, false, function(err, ok) {
+    throw new Error('Spurious callback error');
+  });
+});
+
+channel_test('Get callback throws error', function(ch, done) {
+  ch.on('error', failCallback(done));
+  ch.assertQueue('test.cb.get-with-error', {}, function(err, ok) {
+    ch.get('test.cb.get-with-error', {noAck: true}, function() {
+      throw new Error('Spurious callback error');
+    });
+  });
+});
+
+channel_test('Consume callback throws error', function(ch, done) {
+  ch.on('error', failCallback(done));
+  ch.assertQueue('test.cb.consume-with-error', {}, function(err, ok) {
+    ch.consume('test.cb.consume-with-error', ignore, {noAck: true}, function() {
+      throw new Error('Spurious callback error');
+    });
+  });
+});
+
+channel_test('Get from non-queue invokes error k', function(ch, done) {
+  var both = twice(failCallback(done));
+  ch.on('error', both.first);
+  ch.get('', {}, both.second);
+});
+
+channel_test('Consume from non-queue invokes error k', function(ch, done) {
+  var both = twice(failCallback(done));
+  ch.on('error', both.first);
+  ch.consume('', both.second);
 });
 
 });
