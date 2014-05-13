@@ -13,7 +13,9 @@ function connect(url, options, cb) {
 
   raw_connect(url, options).then(function(c) {
     cb(null, new CallbackModel(c));
-  }, cb);
+  }, cb).then(null, function(err) {
+    setImmediate(function() { throw err; });
+  });;
 };
 
 module.exports.connect = connect;

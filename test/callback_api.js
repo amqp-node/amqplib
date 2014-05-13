@@ -225,6 +225,16 @@ confirm_channel_test('Receive confirmation', function(ch, done) {
 
 suite("Error handling", function() {
 
+test('Throw error in connection open callback', function(done) {
+  var dom = domain.create();
+  dom.on('error', failCallback(done));
+  dom.run(function() {
+    connect(function(err, conn) {
+      throw new Error('Spurious callback error');
+    });
+  });
+});
+
 // TODO: refactor {error_test, channel_test}
 function error_test(name, fun) {
   test(name, function(done) {
