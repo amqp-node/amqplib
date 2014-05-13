@@ -6,6 +6,7 @@ var api = require('../callback_api');
 var util = require('./util');
 var schedule = util.schedule;
 var randomString = util.randomString;
+var domain = require('domain');
 
 var URL = process.env.URL || 'amqp://localhost';
 
@@ -13,7 +14,7 @@ function connect(cb) {
   api.connect(URL, {}, cb);
 }
 
-// Suitable for supplying a `done` value
+// Construct a node-style callback from a `done` function
 function doneCallback(done) {
   return function(err, _) {
     if (err == null) done();
@@ -224,20 +225,39 @@ confirm_channel_test('Receive confirmation', function(ch, done) {
 
 suite("Error handling", function() {
 
-channel_test('Channel open callback throws an error', function(ch, done) {
-  ch.on('error', failCallback(done));
+// TODO: refactor {error_test, channel_test}
+function error_test(name, fun) {
+  test(name, function(done) {
+    var dom = domain.createDomain();
+    dom.run(function() {
+      connect(kCallback(function(c) {
+        // Seems like there were some unironed wrinkles in 0.8's
+        // implementation of domains; explicitly adding the connection
+        // to the domain makes sure any exception thrown in the course
+        // of processing frames is handled by the domain.
+        dom.add(c);
+        c.createChannel(kCallback(function(ch) {
+          fun(ch, done, dom);
+        }, done));
+      }, done));
+    });
+  });
+}
+
+error_test('Channel open callback throws an error', function(ch, done, dom) {
+  dom.on('error', failCallback(done));
   throw new Error('Error in open callback');
 });
 
-channel_test('RPC callback throws error', function(ch, done) {
-  ch.on('error', failCallback(done));
+error_test('RPC callback throws error', function(ch, done, dom) {
+  dom.on('error', failCallback(done));
   ch.prefetch(0, false, function(err, ok) {
     throw new Error('Spurious callback error');
   });
 });
 
-channel_test('Get callback throws error', function(ch, done) {
-  ch.on('error', failCallback(done));
+error_test('Get callback throws error', function(ch, done, dom) {
+  dom.on('error', failCallback(done));
   ch.assertQueue('test.cb.get-with-error', {}, function(err, ok) {
     ch.get('test.cb.get-with-error', {noAck: true}, function() {
       throw new Error('Spurious callback error');
@@ -245,8 +265,8 @@ channel_test('Get callback throws error', function(ch, done) {
   });
 });
 
-channel_test('Consume callback throws error', function(ch, done) {
-  ch.on('error', failCallback(done));
+error_test('Consume callback throws error', function(ch, done, dom) {
+  dom.on('error', failCallback(done));
   ch.assertQueue('test.cb.consume-with-error', {}, function(err, ok) {
     ch.consume('test.cb.consume-with-error', ignore, {noAck: true}, function() {
       throw new Error('Spurious callback error');
@@ -254,15 +274,15 @@ channel_test('Consume callback throws error', function(ch, done) {
   });
 });
 
-channel_test('Get from non-queue invokes error k', function(ch, done) {
+error_test('Get from non-queue invokes error k', function(ch, done, dom) {
   var both = twice(failCallback(done));
-  ch.on('error', both.first);
+  dom.on('error', both.first);
   ch.get('', {}, both.second);
 });
 
-channel_test('Consume from non-queue invokes error k', function(ch, done) {
+error_test('Consume from non-queue invokes error k', function(ch, done, dom) {
   var both = twice(failCallback(done));
-  ch.on('error', both.first);
+  dom.on('error', both.first);
   ch.consume('', both.second);
 });
 
