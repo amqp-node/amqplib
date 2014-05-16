@@ -12,7 +12,7 @@
       "node": "0.8 || 0.9 || 0.10 || 0.11"
   },
   "dependencies": {
-    "bitsyntax": "0.0.3",
+    "bitsyntax": "~0.0.4",
     "buffer-more-ints": "0.0.2",
     "readable-stream": "1.x >=1.1.9",
     "when": "~2.1"
