@@ -52,7 +52,9 @@ in this way is implicitly required by the protocol specification.
 
 ## Dealing with failure
 
-Failed operations will
+Most operations in AMQP act like assertions, failing if the desired
+conditions cannot be met; for example, if a queue being declared
+already exists but with different properties. A failed operation will
 
  * reject the current RPC, if there is one
  * invalidate the channel object, meaning further operations will
@@ -68,8 +70,8 @@ result for the last, since it'll be rejected if it or any of its
 predecessors fail.
 
 The exception thrown on operations subsequent to a failure *or*
-closure also contains the stack at the point that the channel was
-closed, in the field `stackAtStateChange`. This may be useful to
+channel close also contains the stack at the point that the channel
+was closed, in the field `stackAtStateChange`. This may be useful to
 determine what has caused an unexpected closure.
 
 ```js
@@ -83,6 +85,8 @@ connection.createChannel().then(function(ch) {
   }
 });
 ```
+
+### Exceptions and promises
 
 Promises returned from methods are amenable to composition using, for
 example, when.js's functions:
@@ -102,9 +106,53 @@ amqp.connect().then(function(conn) {
 }).then(null, console.warn);
 ```
 
-With callbacks, of course, you are on your own (but there are
-callback-wrangling libraries to suit many and varied tastes, I am
-told).
+If an exception is thrown in a promise continuation, the promise
+library will redirect control to a *following* error continuation:
+
+```js
+amqp.connect().then(function(conn) {
+ // Everything ok, but ..
+ throw new Error('SNAFU');
+}, function(err) {
+ console.error('Connect failed: %s', err);
+}).then(null, function(err) {
+  console.error('Connect succeeded, but error thrown: %s', err);
+});
+```
+
+### Exceptions and callbacks
+
+The callback API expects callbacks that follow the convention
+`function(err, value) {...}`. This library does not attempt to deal
+with exceptions thrown in callbacks, so in general they will trigger
+the last-resort `'uncaughtException'` event of the process.
+
+However, since the connection and channels are `EventEmitter`s, they
+can be bound to a domain:
+
+```js
+var dom = domain.create();
+dom.on('error', gracefullyRestart);
+
+amqp.connect(function(err, conn) {
+ dom.add(conn);
+ //...
+});
+```
+
+Implicit binding works for connections or channels created within a
+`Domain#run`.
+
+```js
+var dom = domain.create();
+dom.on('error', gracefullyRestart);
+
+dom.run(function() {
+  amqp.connect(function(err, conn) {
+      // ...
+  });
+});
+```
 
 ## Argument handling
 
