@@ -8,6 +8,7 @@ var HB_BUF = require('../lib/frame').HEARTBEAT_BUF;
 var util = require('./util');
 var succeed = util.succeed, fail = util.fail, latch = util.latch;
 var completes = util.completes;
+var kCallback = util.kCallback;
 
 var LOG_ERRORS = process.env.LOG_ERRORS;
 
@@ -84,7 +85,7 @@ suite("Connection errors", function() {
     pair.server.on('readable', function() {
       pair.server.end();
     });
-    conn.open({}).then(fail(done), succeed(done));
+    conn.open({}, kCallback(fail(done), succeed(done)));
   });
 
   test("bad frame during open", function(done) {
@@ -93,7 +94,7 @@ suite("Connection errors", function() {
     ss.server.on('readable', function() {
       ss.server.write(new Buffer([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
     });
-    conn.open({}).then(fail(done), succeed(done));
+    conn.open({}, kCallback(fail(done), succeed(done)));
   });
 
 });
@@ -102,7 +103,7 @@ suite("Connection open", function() {
 
 test("happy", connectionTest(
   function(c, done) {
-    c.open(OPEN_OPTS).then(succeed(done), fail(done));
+    c.open(OPEN_OPTS, kCallback(succeed(done), fail(done)));
   },
   function(send, await, done) {
     happy_open(send, await).then(succeed(done), fail(done));
@@ -110,7 +111,7 @@ test("happy", connectionTest(
 
 test("wrong first frame", connectionTest(
   function(c, done) {
-    c.open(OPEN_OPTS).then(fail(done), succeed(done));
+    c.open(OPEN_OPTS, kCallback(fail(done), succeed(done)));
   },
   function(send, await, done) {
     // bad server! bad! whatever were you thinking?
@@ -124,8 +125,7 @@ test("wrong first frame", connectionTest(
 
 test("unexpected socket close", connectionTest(
   function(c, done) {
-    c.open(OPEN_OPTS).then(fail(done),
-                           succeed(done));
+    c.open(OPEN_OPTS, kCallback(fail(done), succeed(done)));
   },
   function(send, await, done, socket) {
     send(defs.ConnectionStart,
@@ -188,9 +188,9 @@ test("unexpected socket close", connectionTest(
     var errorAndClosed = latch(2, done);
     c.on('error', succeed(errorAndClosed));
     c.on('close', succeed(errorAndClosed));
-    c.open(OPEN_OPTS).then(function() {
+    c.open(OPEN_OPTS, kCallback(function() {
       c.sendHeartbeat();
-    }).then(null, fail(errorAndClosed));
+    }, fail(errorAndClosed)));
   },
   function(send, await, done, socket) {
     happy_open(send, await)
@@ -235,9 +235,9 @@ test("happy", connectionTest(
   function(c, done0) {
     var done = latch(2, done0);
     c.on('close', done);
-    c.open(OPEN_OPTS).then(function(_ok) {
-      c.close().then(succeed(done), fail(done));
-    });
+    c.open(OPEN_OPTS, kCallback(function(_ok) {
+      c.close(kCallback(succeed(done), fail(done)));
+    }, function() {}));
   },
   function(send, await, done) {
     happy_open(send, await)
@@ -252,9 +252,9 @@ test("interleaved close frames", connectionTest(
   function(c, done0) {
     var done = latch(2, done0);
     c.on('close', done);
-    c.open(OPEN_OPTS).then(function(_ok) {
-      c.close().then(succeed(done), fail(done));
-    });
+    c.open(OPEN_OPTS, kCallback(function(_ok) {
+      c.close(kCallback(succeed(done), fail(done)));
+    }, done));
   },
   function(send, await, done) {
     happy_open(send, await)
@@ -295,13 +295,14 @@ test("server-initiated close", connectionTest(
 
 test("double close", connectionTest(
   function(c, done) {
-    c.open(OPEN_OPTS).then(function() {
+    c.open(OPEN_OPTS, kCallback(function() {
       c.close();
       // NB no synchronisation, we do this straight away
       assert.throws(function() {
         c.close();
       });
-    }).then(succeed(done), fail(done));
+      done();
+    }, done));
   },
   function(send, await, done) {
     happy_open(send, await)

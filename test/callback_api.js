@@ -6,6 +6,7 @@ var api = require('../callback_api');
 var util = require('./util');
 var schedule = util.schedule;
 var randomString = util.randomString;
+var kCallback = util.kCallback;
 var domain = require('domain');
 
 var URL = process.env.URL || 'amqp://localhost';
@@ -42,15 +43,6 @@ function failCallback(done) {
   return function(err, _) {
     if (err == null) done(new Error('Expected failure, got ' + val));
     else done();
-  };
-}
-
-// Split the callback into separate continuations, handy for exiting
-// early.
-function kCallback(k, ek) {
-  return function(err, val) {
-    if (err == null) k(val);
-    else ek(err);
   };
 }
 
@@ -225,15 +217,28 @@ confirm_channel_test('Receive confirmation', function(ch, done) {
 
 suite("Error handling", function() {
 
-test('Throw error in connection open callback', function(done) {
-  var dom = domain.create();
-  dom.on('error', failCallback(done));
-  dom.run(function() {
-    connect(function(err, conn) {
-      throw new Error('Spurious callback error');
-    });
+/*
+I don't like having to do this, but there appears to be something
+broken about domains in Node.JS v0.8 and mocha. Apparently it has to
+do with how mocha and domains hook into error propogation:
+https://github.com/visionmedia/mocha/issues/513 (summary: domains in
+Node.JS v0.8 don't prevent uncaughtException from firing, and that's
+what mocha uses to detect .. an uncaught exception).
+
+Using domains with amqplib *does* work in practice in Node.JS v0.8:
+that is, it's possible to throw an exception in a callback and deal
+with it in the active domain, and thereby avoid it crashing the
+program.
+ */
+if (util.versionGreaterThan(process.versions.node, '0.8')) {
+  test('Throw error in connection open callback', function(done) {
+    var dom = domain.createDomain();
+    dom.on('error', failCallback(done));
+    connect(dom.bind(function(err, conn) {
+      throw new Error('Spurious connection open callback error');
+    }));
   });
-});
+}
 
 // TODO: refactor {error_test, channel_test}
 function error_test(name, fun) {
@@ -244,7 +249,8 @@ function error_test(name, fun) {
         // Seems like there were some unironed wrinkles in 0.8's
         // implementation of domains; explicitly adding the connection
         // to the domain makes sure any exception thrown in the course
-        // of processing frames is handled by the domain.
+        // of processing frames is handled by the domain. For other
+        // versions of Node.JS, this ends up being belt-and-braces.
         dom.add(c);
         c.createChannel(kCallback(function(ch) {
           fun(ch, done, dom);

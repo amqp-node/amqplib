@@ -23,9 +23,10 @@ function baseChannelTest(client, server) {
 
     if (LOG_ERRORS) c.on('error', console.warn);
 
-    c.open(OPEN_OPTS).then(function() {
-      client(c, bothDone);
-    }, fail(bothDone));
+    c.open(OPEN_OPTS, function(err, ok) {
+      if (err === null) client(c, bothDone);
+      else fail(bothDone);
+    });
 
     pair.server.read(8); // discard the protocol header
     var s = util.runServer(pair.server, function(send, await) {
@@ -186,8 +187,8 @@ suite("channel machinery", function() {
 
 test("RPC", channelTest(
   function(ch, done) {
+    var rpcLatch = latch(3, done);
     open(ch).then(function() {
-      var rpcLatch = latch(3, done);
 
       function wheeboom(err, f) {
         if (err !== null) rpcLatch(err);

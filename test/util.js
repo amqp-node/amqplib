@@ -7,6 +7,7 @@ var PassThrough =
   require('readable-stream/passthrough');
 var defer = require('when').defer;
 var defs = require('../lib/defs');
+var assert = require('assert');
 
 var schedule = (typeof setImmediate === 'function') ?
   setImmediate : process.nextTick;
@@ -147,6 +148,50 @@ function completes(thunk, done) {
   catch (e) { done(e); }
 }
 
+// Construct a Node.JS-style callback from a success continuation and
+// an error continuation
+function kCallback(k, ek) {
+  return function(err, val) {
+    if (err === null) k && k(val);
+    else ek && ek(err);
+  };
+}
+
+// A noddy way to make tests depend on the node version.
+function versionGreaterThan(actual, spec) {
+
+  function int(e) { return parseInt(e); }
+
+  var version = actual.split('.').map(int);
+  var desired = spec.split('.').map(int);
+  for (var i=0; i < desired.length; i++) {
+    var a = version[i], b = desired[i];
+    if (a != b) return a > b;
+  }
+  return false;
+}
+
+suite('versionGreaterThan', function() {
+
+test('full spec', function() {
+  assert(versionGreaterThan('0.8.26', '0.6.12'));
+  assert(versionGreaterThan('0.8.26', '0.8.21'));
+});
+
+test('partial spec', function() {
+  assert(versionGreaterThan('0.9.12', '0.8'));
+});
+
+test('not greater', function() {
+  assert(!versionGreaterThan('0.8.12', '0.8.26'));
+  assert(!versionGreaterThan('0.6.2', '0.6.12'));
+  assert(!versionGreaterThan('0.8.29', '0.8'));
+});
+
+test
+
+});
+
 module.exports = {
   socketPair: socketPair,
   runServer: runServer,
@@ -154,6 +199,8 @@ module.exports = {
   fail: fail,
   latch: latch,
   completes: completes,
+  kCallback: kCallback,
   schedule: schedule,
-  randomString: randomString
+  randomString: randomString,
+  versionGreaterThan: versionGreaterThan
 };

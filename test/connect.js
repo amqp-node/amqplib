@@ -3,15 +3,16 @@
 var connect = require('../lib/connect').connect;
 var assert = require('assert');
 var util = require('./util');
-var fail = util.fail, succeed = util.succeed;
+var fail = util.fail, succeed = util.succeed,
+    kCallback = util.kCallback;
 
 var URL = process.env.URL || 'amqp://localhost';
 
 suite("Connect API", function() {
 
   test("Connection refused", function(done) {
-    var open = connect('amqp://localhost:23450');
-    open.then(fail(done), succeed(done));
+    connect('amqp://localhost:23450', {},
+            kCallback(fail(done), succeed(done)));
   });
   
   // %% this ought to fail the promise, rather than throwing an error
@@ -28,7 +29,7 @@ suite("Connect API", function() {
     q.frameMax = 'NOT A NUMBER';
     parts.query = q;
     var u = url.format(parts);
-    connect(u).then(fail(done), succeed(done));
+    connect(u, {}, kCallback(fail(done), succeed(done)));
   });
-  
+
 });

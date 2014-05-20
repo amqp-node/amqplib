@@ -11,11 +11,10 @@ function connect(url, options, cb) {
   else if (typeof options === 'function')
     cb = options, options = false;
 
-  raw_connect(url, options).then(function(c) {
-    cb(null, new CallbackModel(c));
-  }, cb).then(null, function(err) {
-    setImmediate(function() { throw err; });
-  });;
+  raw_connect(url, options, function(err, c) {
+    if (err === null) cb(null, new CallbackModel(c));
+    else cb(err);
+  });
 };
 
 module.exports.connect = connect;
