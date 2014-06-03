@@ -15,7 +15,7 @@
  * The response to assertExchange now contains the exchange name,
    analagous to assertQueue (issue 49)
  * The channel method `prefetch` now has a global flag, to be
-   [compatible][rabbitmq-prefetch-global] with newer RabbitMQ
+   [compatible with newer RabbitMQ][rabbitmq-prefetch-global].
 
 ## Changes in v0.1.3 (since v0.1.2)
 
