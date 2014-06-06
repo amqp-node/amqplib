@@ -390,7 +390,7 @@ alleviated.
 
 `#createChannel(function(err, channel) {...})`
 
-Resolves to an open `Channel` (The callback version also returns the
+Resolves to an open `Channel` (The callback version returns the
 channel; but it is not usable before the callback has been
 invoked). May fail if there are no more channels available (i.e., if
 there are already `channelMax` channels open).
@@ -610,7 +610,7 @@ number of messages deleted or dead-lettered along with the queue.
 
 ##### Callbacks
 
-`#purgeQueue(queue, function(err, ok) {...})`
+`#purgeQueue(queue, [function(err, ok) {...}])`
 
 Remove all undelivered messages from the `queue` named. Note that this
 won't remove messages that have been delivered but not yet
