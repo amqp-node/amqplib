@@ -62,7 +62,7 @@ sends a log message with a severity, and all `receive_logs_direct`
 processes receive log messages for the severities on which they are
 listening.
 
- * [emit_log_direct.js](emit_log.js)
+ * [emit_log_direct.js](emit_log_direct.js)
  * [receive_logs_direct.js](receive_logs_direct.js)
 
 ## [Tutorial five: Topics][tute-five]
