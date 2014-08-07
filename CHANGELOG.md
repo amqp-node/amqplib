@@ -1,5 +1,12 @@
 # Change log for amqplib
 
+## Changes in v0.2.1 (since v0.2.0)
+
+### Fixes
+
+ * Do tuning negotation properly [PR
+   84](https://github.com/squaremo/amqp.node/pull/84)
+
 ## Changes in v0.2.0 (since v0.1.3)
 
     git log v0.1.3..v0.2.0
