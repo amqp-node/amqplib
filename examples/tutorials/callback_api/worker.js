@@ -16,7 +16,7 @@ function on_connect(err, conn) {
   conn.createChannel(function(err, ch) {
     if (err !== null) return bail(err, conn);
     ch.assertQueue(q, {durable: true}, function(err, _ok) {
-      ch.consume(q, doWork, {no_ack: false});
+      ch.consume(q, doWork, {noAck: false});
       console.log(" [*] Waiting for messages. To exit press CTRL+C");
     });
 
