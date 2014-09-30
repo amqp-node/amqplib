@@ -1,5 +1,12 @@
 # Change log for amqplib
 
+## Changes since v0.2.1
+
+### Enhancements
+
+ * Allow additional client properties to be set for a connection [Issue 98](https://github.com/squaremo/amqp.node/issues/98) and [PR 80](https://github.com/squaremo/amqp.node/pull/80)
+ * New method in channel API to wait for all unconfirmed messages.
+
 ## Changes in v0.2.1 (since v0.2.0)
 
 ### Fixes
