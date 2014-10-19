@@ -32,4 +32,16 @@ suite("Connect API", function() {
     connect(u, {}, kCallback(fail(done), succeed(done)));
   });
 
+  test("using plain credentials", function(done) {
+    var url = require('url');
+    var parts = url.parse(URL, true);
+    var u = 'guest', p = 'guest';
+    if (parts.auth) {
+      var auth = parts.auth.split(":");
+      u = auth[0], p = auth[1];
+    }
+    connect(URL, {credentials: require('../lib/credentials').plain(u, p)},
+            kCallback(succeed(done), fail(done)));
+  });
+
 });

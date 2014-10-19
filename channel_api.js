@@ -12,3 +12,4 @@ function connect(url, connOptions) {
 };
 
 module.exports.connect = connect;
+module.exports.credentials = require('./lib/credentials');
