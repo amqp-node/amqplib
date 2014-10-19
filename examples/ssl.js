@@ -49,7 +49,10 @@ var opts = {
 //     {verify, verify_none},
 //     {fail_if_no_peer_cert,false}
 //
-var opts1 = {  ca: [fs.readFileSync('../etc/testca/cacert.pem')] };
+// var opts = {  ca: [fs.readFileSync('../etc/testca/cacert.pem')] };
+
+// Option to use the SSL client certificate for authentication
+// opts.credentials = amqp.credentials.external();
 
 var open = amqp.connect('amqps://localhost', opts);
 
