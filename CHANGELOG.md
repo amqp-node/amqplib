@@ -4,8 +4,13 @@
 
 ### Enhancements
 
- * Allow additional client properties to be set for a connection [Issue 98](https://github.com/squaremo/amqp.node/issues/98) and [PR 80](https://github.com/squaremo/amqp.node/pull/80)
- * New method in channel API to wait for all unconfirmed messages.
+ * Allow additional client properties to be set for a connection
+   [Issue 98](https://github.com/squaremo/amqp.node/issues/98) and
+   [PR 80](https://github.com/squaremo/amqp.node/pull/80)
+ * New method in channel API to wait for all unconfirmed messages
+   [Issue 89](https://github.com/squaremo/amqp.node/issues/89)
+ * Now supports RabbitMQ's `EXTERNAL` authentication plugin
+   [Issue 105](https://github.com/squaremo/amqp.node/issues/105)
 
 ## Changes in v0.2.1 (since v0.2.0)
 
