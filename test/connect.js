@@ -44,4 +44,13 @@ suite("Connect API", function() {
             kCallback(succeed(done), fail(done)));
   });
 
+  test("using unsupported mechanism", function(done) {
+    var creds = {
+      mechanism: 'UNSUPPORTED',
+      response: function() { return new Buffer(''); }
+    };
+    connect(URL, {credentials: creds},
+            kCallback(fail(done), succeed(done)));
+  });
+
 });
