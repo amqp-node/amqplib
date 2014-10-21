@@ -1,6 +1,6 @@
 # Change log for amqplib
 
-## Changes since v0.2.1
+## Changes in v0.3.0 (since v0.2.1)
 
 ### Enhancements
 
