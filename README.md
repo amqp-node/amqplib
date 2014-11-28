@@ -65,7 +65,7 @@ function consumer(conn) {
   }
 }
 
-require('./callback_api')
+require('amqplib/callback_api')
   .connect('amqp://localhost', function(err, conn) {
     if (err != null) bail(err);
     consumer(conn);
