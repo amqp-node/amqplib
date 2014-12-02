@@ -53,4 +53,8 @@ suite("Connect API", function() {
             kCallback(fail(done), succeed(done)));
   });
 
+  test("uri with trailing slash", function (done) {
+    connect(URL + '/', {}, kCallback(succeed(done), fail(done)));
+  });
+
 });
