@@ -1,6 +1,26 @@
 # Change log for amqplib
 
+## Changes in v0.3.1 (since v0.3.0)
+
+   git log v0.3.0..v0.3.1
+
+### Fixes
+
+ * Fail in the right way when a channel cannot be allocated [issue
+ 129](https://github.com/squaremo/amqp.node/issues/129)
+ * Make `waitForConfirms` work properly in callback API [PR
+   116](https://github.com/squaremo/amqp.node/pull/116)
+
+### Enhancements
+
+ * Two new options while connecting:
+   [timeout](https://github.com/squaremo/amqp.node/pull/118) and [keep
+   alive](https://github.com/squaremo/amqp.node/pull/125) (thanks to
+   @rexxars and @jcrugzz respectively)
+
 ## Changes in v0.3.0 (since v0.2.1)
+
+   git log v0.2.1..v0.3.0
 
 ### Enhancements
 
