@@ -77,6 +77,7 @@ var DELIVER_FIELDS = {
 
 function open(ch) {
   var opened = defer();
+  ch.allocate();
   ch._rpc(defs.ChannelOpen, {outOfBand: ''}, defs.ChannelOpenOk,
           function(err, _) {
             if (err === null) opened.resolve();
