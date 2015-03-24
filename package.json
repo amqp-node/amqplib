@@ -2,14 +2,14 @@
   "name": "amqplib",
   "homepage": "http://squaremo.github.io/amqp.node/",
   "main": "./channel_api.js",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "An AMQP 0-9-1 (e.g., RabbitMQ) library and client.",
   "repository": {
     "type": "git",
     "url": "https://github.com/squaremo/amqp.node.git"
   },
   "engines": {
-    "node": "0.8 || 0.9 || 0.10 || 0.11 || 0.12 || 1.0 || 1.1"
+    "node": ">=0.8 <0.13 || ^1"
   },
   "dependencies": {
     "bitsyntax": "~0.0.4",
