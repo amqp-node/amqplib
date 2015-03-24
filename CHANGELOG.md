@@ -1,5 +1,11 @@
 # Change log for amqplib
 
+## Changes in v0.3.2 (since v0.3.1)
+
+   git log v0.3.1..v0.3.2
+
+ * Make the engine specification more flexible to admit io.js releases
+
 ## Changes in v0.3.1 (since v0.3.0)
 
    git log v0.3.0..v0.3.1
