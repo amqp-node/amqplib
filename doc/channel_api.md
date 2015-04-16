@@ -891,7 +891,7 @@ is 'full', and `true` otherwise. If it returns `false`, it will emit a
 
 ### Channel#sendToQueue
 
-##### Promises and callbacks
+##### Boolean
 
 `#sendToQueue(queue, content, [options])`
 
