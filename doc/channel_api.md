@@ -779,7 +779,7 @@ trivially[1][rabbitmq-idempotent-delete].
 
 ### Channel#publish
 
-##### Promises or callbacks
+##### Boolean
 
 `#publish(exchange, routingKey, content, [options])`
 
