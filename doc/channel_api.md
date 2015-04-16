@@ -779,7 +779,7 @@ trivially[1][rabbitmq-idempotent-delete].
 
 ### Channel#publish
 
-##### Promises or callbacks
+##### Boolean
 
 `#publish(exchange, routingKey, content, [options])`
 
@@ -891,7 +891,7 @@ is 'full', and `true` otherwise. If it returns `false`, it will emit a
 
 ### Channel#sendToQueue
 
-##### Promises and callbacks
+##### Boolean
 
 `#sendToQueue(queue, content, [options])`
 
