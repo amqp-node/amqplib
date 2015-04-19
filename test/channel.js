@@ -128,7 +128,10 @@ test("open, close", channelTest(
 
 test("server close", channelTest(
   function(ch, done) {
-    ch.on('error', succeed(done));
+    ch.on('error', function(error) {
+      assert.strictEqual(504, error.code);
+      succeed(done)();
+    });
     open(ch);
   },
   function(send, await, done, ch) {
@@ -226,7 +229,10 @@ test("Bad RPC", channelTest(
     // We want to see the RPC rejected and the channel closed (with an
     // error)
     var errLatch = latch(2, done);
-    ch.on('error', succeed(errLatch));
+    ch.on('error', function(error) {
+      assert.strictEqual(505, error.code);
+      succeed(errLatch)();
+    });
     
     open(ch)
       .then(function() {
@@ -252,7 +258,10 @@ test("RPC on closed channel", channelTest(
   function(ch, done) {
     open(ch);
     var close = defer(), fail1 = defer(), fail2 = defer();
-    ch.on('error', close.resolve);
+    ch.on('error', function(error) {
+      assert.strictEqual(504, error.code);
+      close.resolve();
+    });
 
     function failureCb(d) {
       return function(err) {
@@ -398,7 +407,10 @@ test("zero byte msg", channelTest(
 test("bad delivery", channelTest(
   function(ch, done) {
     var errorAndClose = latch(2, done);
-    ch.on('error', succeed(errorAndClose));
+    ch.on('error', function(error) {
+      assert.strictEqual(505, error.code);
+      succeed(errorAndClose)();
+    });
     ch.on('close', succeed(errorAndClose));
     open(ch);
   },
@@ -449,7 +461,10 @@ test("bad consumer", channelTest(
     ch.on('delivery', function() {
       throw new Error("I am a bad consumer");
     });
-    ch.on('error', succeed(errorAndClose));
+    ch.on('error', function(error) {
+      assert.strictEqual(541, error.code);
+      succeed(errorAndClose)();
+    });
     ch.on('close', succeed(errorAndClose));
     open(ch);
   },
@@ -465,7 +480,10 @@ test("bad send in consumer", channelTest(
   function(ch, done) {
     var errorAndClose = latch(2, done);
     ch.on('close', succeed(errorAndClose));
-    ch.on('error', succeed(errorAndClose));
+    ch.on('error', function(error) {
+      assert.strictEqual(541, error.code);
+      succeed(errorAndClose)();
+    });
 
     ch.on('delivery', function() {
       ch.sendMessage({routingKey: 'foo',
