@@ -1,5 +1,17 @@
 # Change log for amqplib
 
+## Changes since v0.3.2
+
+   git log v0.3.2..
+
+ * Change meaning of 'b' fields in tables to match RabbitMQ (and AMQP
+   specification)
+ * Can now pass an object in place of connection URL
+   (https://github.com/squaremo/amqp.node/pull/159; thanks to
+   @ben-page)
+ * Operator-initiated connection close no longer results in 'error'
+   event (https://github.com/squaremo/amqp.node/issues/110)
+
 ## Changes in v0.3.2 (since v0.3.1)
 
    git log v0.3.1..v0.3.2
