@@ -158,7 +158,7 @@ test("overlapping channel/server close", channelTest(
       .then(function() {
         send(defs.ConnectionClose, {
           replyText: 'Got there first',
-          replyCode: defs.constants.CONNECTION_FORCED,
+          replyCode: defs.constants.INTERNAL_ERROR,
           classId: 0, methodId: 0
         }, 0);
       })

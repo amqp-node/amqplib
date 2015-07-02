@@ -273,7 +273,7 @@ test("interleaved close frames", connectionTest(
       .then(succeed(done), fail(done));
   }));
 
-test("server-initiated close", connectionTest(
+test("server error close", connectionTest(
   function(c, done0) {
     var done = latch(2, done0);
     c.on('close', succeed(done));
@@ -292,6 +292,26 @@ test("server-initiated close", connectionTest(
       .then(await(defs.ConnectionCloseOk))
       .then(succeed(done), fail(done));
   }));
+
+test("operator-intiated close", connectionTest(
+  function(c, done) {
+    c.on('close', succeed(done));
+    c.on('error', fail(done));
+    c.open(OPEN_OPTS);
+  },
+  function(send, await, done) {
+    happy_open(send, await)
+      .then(function(f) {
+        send(defs.ConnectionClose, {
+          replyText: "Begone",
+          replyCode: defs.constants.CONNECTION_FORCED,
+          methodId: 0, classId: 0
+        });
+      })
+      .then(await(defs.ConnectionCloseOk))
+      .then(succeed(done), fail(done));
+  }));
+
 
 test("double close", connectionTest(
   function(c, done) {
