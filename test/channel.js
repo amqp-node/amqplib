@@ -123,7 +123,7 @@ test("open, close", channelTest(
     return await(defs.ChannelClose)()
       .then(function(close) {
         send(defs.ChannelCloseOk, {}, ch);
-      }).then(succeed(done), fail(done));;
+      }).then(succeed(done), fail(done));
   }));
 
 test("server close", channelTest(
