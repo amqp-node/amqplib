@@ -2,6 +2,7 @@ RABBITMQ_SRC_VERSION=rabbitmq_v3_2_1
 JSON=amqp-rabbitmq-0.9.1.json
 RABBITMQ_CODEGEN=https://raw.githubusercontent.com/rabbitmq/rabbitmq-codegen
 AMQP_JSON=$(RABBITMQ_CODEGEN)/$(RABBITMQ_SRC_VERSION)/$(JSON)
+NODEJS_VERSIONS='0.8' '0.9' '0.10' '0.11' '0.12' '1.6' '2.5' '3.3' '4.0'
 
 MOCHA=./node_modules/.bin/mocha
 _MOCHA=./node_modules/.bin/_mocha
@@ -26,7 +27,7 @@ test: lib/defs.js
 	$(MOCHA) --check-leaks -u tdd test/
 
 test-all-nodejs: lib/defs.js
-	for v in '0.8' '0.9' '0.10' '0.11' '0.12' '1.0' '1.1' '1.2' '1.3' '1.4' '1.5' '1.6'; \
+	for v in $(NODEJS_VERSIONS); \
 		do nave use $$v $(MOCHA) -u tdd -R progress test; \
 		done
 
