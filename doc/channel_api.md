@@ -1185,6 +1185,23 @@ This constructor is a channel that uses confirms. It is exported as an
 extension point. To obtain such a channel, use `connect` to get a
 connection, then call `#createConfirmChannel`.
 
+### ConfirmChannel#waitForConfirms
+
+##### Promises
+
+`#waitForConfirms()`
+
+##### Callbacks
+
+`#waitForConfirms(function(err) {...})`
+
+Resolves the promise, or invokes the callback, when all published
+messages have been confirmed. If any of the messages has been nacked,
+this will result in an error; otherwise the result is no value. Either
+way, the channel is still usable afterwards. It is also possible to
+call waitForConfirms multiple times without waiting for previous
+invocations to complete.
+
 ---------
 
 #### <a name="idempotent-deletes">RabbitMQ and deletion</a>
