@@ -16,3 +16,5 @@ services:
 
 before_install:
   - npm install -g npm@2
+
+sudo: false
