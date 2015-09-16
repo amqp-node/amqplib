@@ -1,16 +1,32 @@
 # Change log for amqplib
 
-## Changes since v0.3.2
+## Changes in v0.4.0
 
-   git log v0.3.2..
+   git log v0.3.2..v0.4.0
 
  * Change meaning of 'b' fields in tables to match RabbitMQ (and AMQP
    specification)
  * Can now pass an object in place of connection URL
-   (https://github.com/squaremo/amqp.node/pull/159; thanks to
-   @ben-page)
+   ([PR 159](https://github.com/squaremo/amqp.node/pull/159); thanks
+   to @ben-page)
  * Operator-initiated connection close no longer results in 'error'
-   event (https://github.com/squaremo/amqp.node/issues/110)
+   event
+   ([issue 110](https://github.com/squaremo/amqp.node/issues/110))
+ * Channel and Connection errors have now a `.code` field with the
+   AMQP reply-code, which may help distinguish error cases
+   ([PR 150](https://github.com/squaremo/amqp.node/pull/150); thanks
+   to @hippich)
+ * Connection.close will resolve to an error if the connection is
+   already closed
+   ([issue 181](https://github.com/squaremo/amqp.node/issues/181))
+ * Connection establishment will resolve with an error if the
+   TCP-level connection or the handshake times out
+   ([PR 169](https://github.com/squaremo/amqp.node/pull/169); thanks
+   to @zweifisch and @RoCat, who both submitted fixes)
+ * Add the `maxPriority` option as an alias for the `'x-max-priority'`
+   queue argument
+   ([PR 180](https://github.com/squaremo/amqp.node/pull/180); thanks
+   to @ebardes)
 
 ## Changes in v0.3.2 (since v0.3.1)
 
