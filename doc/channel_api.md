@@ -544,6 +544,9 @@ prefix for the key is removed; e.g., `'expires'`. Values supplied in
   the queue will hold. Old messages will be discarded (dead-lettered
   if that's set) to make way for new messages.
 
+ * `maxPriority` (positive integer): makes the queue a [priority
+   queue][rabbitmq-priority-queue].
+
 Resolves to the "ok" reply from the server, which includes fields for
 the queue name (important if you let the server name it), a recent
 consumer count, and a recent message count; e.g.,
@@ -863,8 +866,10 @@ Ignored by RabbitMQ (but may be useful for applications):
    for example, 'CC', since these are encoded as message headers; the
    supplied value won't be mutated
 
- * `priority` (0..9): a notional priority for the message; presently
-   ignored by RabbitMQ
+ * `priority` (positive integer): a priority for the message; ignored
+    by versions of RabbitMQ older than 3.5.0, or if the queue is not a
+    [priority queue][rabbitmq-priority-queue] (see `maxPriority`
+    above).
 
  * `correlationId` (string): usually used to match replies to
    requests, or similar
@@ -1206,3 +1211,4 @@ there are messages in the queue.
 [rabbitmq-idempotent-delete]: doc/channel_api.html#idempotent-deletes
 [rabbitmq-prefetch]: http://www.rabbitmq.com/consumer-prefetch.html
 [wikipedia-nagling]: http://en.wikipedia.org/wiki/Nagle%27s_algorithm
+[rabbitmq-priority-queue]: http://www.rabbitmq.com/priority.html
