@@ -3,7 +3,11 @@ layout: default
 title: Channel API reference
 ---
 
-# Channel-oriented API reference
+# <a name="top"/>Channel-oriented API reference
+
+ * [Overview](#overview)
+ * [Method reference](#methods)
+   * [#connect](#method_connect)
 
 There are two parallel client APIs available. One uses promises, and
 the other uses callbacks, *mutatis mutandis*. Since they present much
@@ -32,7 +36,9 @@ argument (and usually some value as the second argument). Likewise,
 "reject" etc., will mean rejecting a promise or calling the callback
 with an `Error` as the first argument (and no value).
 
-## Overview
+[^top](#top)
+
+## <a name="overview"/>Overview
 
 The client APIs are based closely on the protocol model. The general
 idea is to connect, then create one or more channels on which to issue
@@ -49,6 +55,8 @@ callbacks, yielding the server's reply (often containing useful
 information such as generated identifiers). RPCs are queued by the
 channel if it is already waiting for a reply -- synchronising on RPCs
 in this way is implicitly required by the protocol specification.
+
+[^top](#top)
 
 ## Dealing with failure
 
@@ -154,6 +162,8 @@ dom.run(function() {
 });
 ```
 
+[^top](#top)
+
 ## Argument handling
 
 Many operations have mandatory arguments as well as optional arguments
@@ -200,9 +210,11 @@ ch.consume('bar', console.log, bar_consume_opts);
 // table
 ```
 
-## Method reference
+[^top](#top)
 
-### connect
+## <a name="methods"/>Method reference
+
+### <a name="method_connect"/>connect
 
 ##### Promises
 
