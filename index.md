@@ -19,6 +19,8 @@ way or that in search of a usable API. In `amqplib` I have tried to
 implement only the necessary machinery of AMQP, in layers as best I
 can, without prejudice to any particular client API.
 
+[Client API reference](channel_api.html) | [SSL guide](ssl.html)
+
 ## Client APIs
 
 There are two client APIs included here, which are really two styles
@@ -40,7 +42,7 @@ into method arguments in the API, and coalesced optional arguments,
 properties, and RabbitMQ extensions into a single `options` argument
 which can often be omitted altogether.
 
-The [reference](doc/channel_api.html) has full details of both APIs.
+The [reference](channel_api.html) has full details of both APIs.
 
 ## Library overview
 
