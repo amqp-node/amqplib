@@ -922,6 +922,11 @@ Used by RabbitMQ and sent on to consumers:
    parameter. **NB** The property names `CC` and `BCC` are
    case-sensitive.
 
+ * `priority` (positive integer): a priority for the message; ignored
+    by versions of RabbitMQ older than 3.5.0, or if the queue is not a
+    [priority queue][rabbitmq-priority-queue] (see `maxPriority`
+    above).
+
 Used by RabbitMQ but not sent on to consumers:
 
  * `mandatory` (boolean): if true, the message will be returned if it
@@ -959,11 +964,6 @@ Ignored by RabbitMQ (but may be useful for applications):
    by extension-specific fields if they are given in the parameters,
    for example, 'CC', since these are encoded as message headers; the
    supplied value won't be mutated
-
- * `priority` (positive integer): a priority for the message; ignored
-    by versions of RabbitMQ older than 3.5.0, or if the queue is not a
-    [priority queue][rabbitmq-priority-queue] (see `maxPriority`
-    above).
 
  * `correlationId` (string): usually used to match replies to
    requests, or similar
