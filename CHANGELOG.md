@@ -4,6 +4,7 @@
 
    git log v0.3.2..v0.4.0
 
+ * Tested on Node.JS 0.8 through 4.0 (and intervening io.js releases)
  * Change meaning of 'b' fields in tables to match RabbitMQ (and AMQP
    specification)
  * Can now pass an object in place of connection URL
