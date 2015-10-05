@@ -141,7 +141,7 @@ really only useful for checking the kind and formatting of the errors.
     open file://`pwd`/coverage/lcov-report/index.html
 
 [gh-pages]: http://squaremo.github.com/amqp.node/
-[gh-pages-apiref]: http://squaremo.github.com/amqp.node/doc/channel_api.html
+[gh-pages-apiref]: http://squaremo.github.com/amqp.node/channel_api.html
 [nave]: https://github.com/isaacs/nave
 [tutes]: https://github.com/squaremo/amqp.node/tree/master/examples/tutorials
 [rabbitmq-tutes]: http://www.rabbitmq.com/getstarted.html
