@@ -18,6 +18,8 @@ function on_connect(err, conn) {
       if (err !== null) return bail(err, conn);
       var msg = process.argv.slice(2).join(' ') || "Hello World!";
       ch.sendToQueue(q, new Buffer(msg), {persistent: true});
+      // when sendToQueue returns false the buffer is full see the "drain" event
+      // of the channel how to handle this
       console.log(" [x] Sent '%s'", msg);
       ch.close(function() { conn.close(); });
     });

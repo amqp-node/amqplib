@@ -42,6 +42,8 @@ function on_connect(err, conn) {
       ch.sendToQueue('rpc_queue', new Buffer(n.toString()), {
         replyTo: queue, correlationId: correlationId
       });
+      // when sendToQueue returns false the buffer is full see the "drain" event
+      // of the channel how to handle this
     });
   });
 }

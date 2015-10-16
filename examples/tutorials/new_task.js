@@ -12,6 +12,8 @@ amqp.connect('amqp://localhost').then(function(conn) {
     return ok.then(function() {
       var msg = process.argv.slice(2).join(' ') || "Hello World!";
       ch.sendToQueue(q, new Buffer(msg), {deliveryMode: true});
+      // when sendToQueue returns false the buffer is full see the "drain" event
+      // of the channel how to handle this
       console.log(" [x] Sent '%s'", msg);
       return ch.close();
     });

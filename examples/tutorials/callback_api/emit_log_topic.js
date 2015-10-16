@@ -18,6 +18,8 @@ function on_connect(err, conn) {
     ch.assertExchange(ex, 'topic', exopts, function(err, ok) {
       if (err !== null) return bail(err, conn);
       ch.publish(ex, key, new Buffer(message));
+      // when publish returns false the buffer is full see the "drain" event
+      // of the channel how to handle this
       console.log(" [x] Sent %s:'%s'", key, message);
       ch.close(function() { conn.close(); });
     });

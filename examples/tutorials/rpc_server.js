@@ -33,6 +33,8 @@ amqp.connect('amqp://localhost').then(function(conn) {
       ch.sendToQueue(msg.properties.replyTo,
                      new Buffer(response.toString()),
                      {correlationId: msg.properties.correlationId});
+      // when sendToQueue returns false the buffer is full see the "drain" event
+      // of the channel how to handle this
       ch.ack(msg);
     }
   });
