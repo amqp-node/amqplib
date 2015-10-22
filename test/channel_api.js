@@ -362,48 +362,29 @@ chtest("unbind exchange", function(ch) {
     });
 });
 
-// This is a bit convoluted. Sorry.
 chtest("cancel consumer", function(ch) {
-  var q = 'test.consumer-cancel';
-  var recv1 = defer();
-  var ctag;
+  var q = 'test.cancel-consumer';
+  var nullRecv = defer();
 
   doAll(
-    ch.assertQueue(q, QUEUE_OPTS),
+    ch.assertQueue(q),
     ch.purgeQueue(q),
-    // My callback is 'resolve the promise in `arrived`'
-    ch.consume(q, function() { recv1.resolve(); }, {noAck:true})
-      .then(function(ok) {
-        ctag = ok.consumerTag;
-        ch.sendToQueue(q, new Buffer('foo'));
-      }));
-  // A message should arrive because of the consume
-  return recv1.promise.then(function() {
-    // replace the promise resolved by the consume callback
-    recv1 = defer();
-    
-    return doAll(
-      ch.cancel(ctag).then(function() {
-        ch.sendToQueue(q, new Buffer('bar'));
-      }),
-      // but check a message did arrive in the queue
-      waitForMessages(q))
-      .then(function() {
-        ch.get(q, {noAck:true})
-          .then(function(m) {
-            // I'm going to reject it, because I flip succeed/fail
-            // just below
-            if (m.content.toString() === 'bar')
-              recv1.reject();
-          });
-        return expectFail(recv1.promise);
-        // i.e., fail on delivery, succeed on get-ok
+    ch.consume(q, function(msg) {
+      if (msg === null) nullRecv.resolve();
+      else nullRecv.reject(new Error('Message not expected'));
+    }))
+    .then(function(response) {
+      assert(response);
+      ch.cancel(response.consumerTag).then(null, function(err) {
+        assert(err);
+        assert(err.message === 'Channel ended, no reply will be forthcoming');
       });
-  });
+    });
+  return nullRecv.promise;
 });
 
-chtest("cancelled consumer", function(ch) {
-  var q = 'test.cancelled-consumer';
+chtest("deleted queue", function(ch) {
+  var q = 'test.deleted-queue';
   var nullRecv = defer();
   
   doAll(
