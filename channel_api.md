@@ -413,17 +413,28 @@ completed; or, if server closed the connection, once the client has
 sent the closing handshake; or, if the underlying stream (e.g.,
 socket) has closed.
 
+In the case of a server-initiated shutdown _or_ an error, the
+`'close'` handler will be supplied with an error indicating the
+cause. You can ignore this if you don't care why the connection
+closed; or, you can test it with
+`require('amqplib/lib/connection').isFatalError(err)` to see if it was
+a crash-worthy error.
+
 `#on('error', function (err) {...})`
 
-Emitted if the connection closes for any reason other than `#close`
-being called; such reasons include:
+Emitted if the connection closes for a reason other than `#close`
+being called or a graceful server-initiated close; such reasons
+include:
 
  * a protocol transgression the server detected (likely a bug in this
    library)
  * a server error
  * a network error
  * the server thinks the client is dead due to a missed heartbeat
- * a human closed the connection with an admin tool
+
+A graceful close may be initiated by an operator (e.g., with an admin
+tool), or if the server is shutting down; in this case, no `'error'`
+event will be emitted.
 
 `'close'` will also be emitted, after `'error'`.
 
