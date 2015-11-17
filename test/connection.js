@@ -13,21 +13,22 @@ var kCallback = util.kCallback;
 var LOG_ERRORS = process.env.LOG_ERRORS;
 
 var OPEN_OPTS = {
-  // start-ok
-  'clientProperties': {},
-  'mechanism': 'PLAIN',
-  'response': new Buffer(['', 'guest', 'guest'].join(String.fromCharCode(0))),
-  'locale': 'en_US',
-  
-  // tune-ok
-  'channelMax': 0,
-  'frameMax': 0,
-  'heartbeat': 0,
-  
-  // open
-  'virtualHost': '/',
-  'capabilities': '',
-  'insist': 0
+  startOk: {
+    'clientProperties': {},
+    'mechanism': 'PLAIN',
+    'response': new Buffer(['', 'guest', 'guest'].join(String.fromCharCode(0))),
+    'locale': 'en_US'
+  },
+  tuneOk: {
+    'channelMax': 0,
+    'frameMax': 0,
+    'heartbeat': 0
+  },
+  open: {
+    'virtualHost': '/',
+    'capabilities': '',
+    'insist': 0
+  }
 };
 module.exports.OPEN_OPTS = OPEN_OPTS;
 
@@ -85,7 +86,7 @@ suite("Connection errors", function() {
     pair.server.on('readable', function() {
       pair.server.end();
     });
-    conn.open({}, kCallback(fail(done), succeed(done)));
+    conn.open(OPEN_OPTS, kCallback(fail(done), succeed(done)));
   });
 
   test("bad frame during open", function(done) {
@@ -94,7 +95,7 @@ suite("Connection errors", function() {
     ss.server.on('readable', function() {
       ss.server.write(new Buffer([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
     });
-    conn.open({}, kCallback(fail(done), succeed(done)));
+    conn.open(OPEN_OPTS, kCallback(fail(done), succeed(done)));
   });
 
 });
@@ -351,7 +352,7 @@ test("send heartbeat after open", connectionTest(
   function(c, done) {
     completes(function() {
       var opts = Object.create(OPEN_OPTS);
-      opts.heartbeat = 1;
+      opts.tuneOk.heartbeat = 1;
       // Don't leave the error waiting to happen for the next test, this
       // confuses mocha awfully
       c.on('error', function() {});
@@ -377,7 +378,7 @@ test("send heartbeat after open", connectionTest(
 test("detect lack of heartbeats", connectionTest(
   function(c, done) {
     var opts = Object.create(OPEN_OPTS);
-    opts.heartbeat = 1;
+    opts.tuneOk.heartbeat = 1;
     c.on('error', succeed(done));
     c.open(opts);
   },
