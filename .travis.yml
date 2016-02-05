@@ -9,11 +9,12 @@ node_js:
    - "iojs-v3"
    - "4.2"
    - "5.5"
+   - "node"
 
 services:
    - rabbitmq
 
 before_install:
-  - npm install -g npm@2
+   - node --version | (grep  -v 'v5' && npm install -g npm@2) || true
 
 sudo: false
