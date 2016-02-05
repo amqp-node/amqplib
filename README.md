@@ -111,8 +111,18 @@ open.then(function(conn) {
 
     npm test
 
-Best run with a locally-installed RabbitMQ, but you can point it at
-another using the environment variable `URL`; e.g.,
+To run the tests RabbitMQ is required. Either install it with your package
+manager, or use [docker][] to run a RabbitMQ instance.
+
+    docker run -d --name amqp.test -p 5672:5672 rabbitmq
+
+If prefer not to run RabbitMQ locally it is also possible to use a
+instance of RabbitMQ hosted elsewhere. Use the `URL` environment
+variable to configure a different amqp host to connect to. You may
+also need to do this if docker is not on localhost; e.g., if it's
+running in docker-machine.
+
+One public host is dev.rabbitmq.com:
 
     URL=amqp://dev.rabbitmq.com npm test
 
@@ -146,3 +156,4 @@ really only useful for checking the kind and formatting of the errors.
 [tutes]: https://github.com/squaremo/amqp.node/tree/master/examples/tutorials
 [rabbitmq-tutes]: http://www.rabbitmq.com/getstarted.html
 [changelog]: https://github.com/squaremo/amqp.node/blob/master/CHANGELOG.md
+[docker]: https://www.docker.com/
