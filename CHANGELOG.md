@@ -1,5 +1,12 @@
 # Change log for amqplib
 
+## Changes in v0.4.1
+
+   git log v0.4.0..v0.4.1
+
+ * Tested in Node.JS 0.8 through 4.2 and 5.5
+ * Emit an error with the 'close' event if server-initiated
+
 ## Changes in v0.4.0
 
    git log v0.3.2..v0.4.0
