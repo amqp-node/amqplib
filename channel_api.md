@@ -9,6 +9,7 @@ title: Channel API reference
  * [Dealing with failure](#failure)
    * [Exceptions and promises](#failure_promises)
    * [Exceptions and callbacks](#failure_callbacks)
+ * [Flow control](#flowcontrol)
  * [Argument handling](#args)
  * [API reference](#api_reference)
    * [connect](#connect)
@@ -93,6 +94,11 @@ callbacks, yielding the server's reply (often containing useful
 information such as generated identifiers). RPCs are queued by the
 channel if it is already waiting for a reply -- synchronising on RPCs
 in this way is implicitly required by the protocol specification.
+
+Some methods are not RPCs -- they do not have responses from the
+server. These return either nothing (`ack[All]`, `nack[All]`, `reject`) or a
+boolean (`publish` and `sendToQueue`); see [flow
+control](#flowcontrol).
 
 [^top](#top)
 
@@ -205,6 +211,18 @@ dom.run(function() {
 ```
 
 [^top](#top)
+
+## <a name="flowcontrol"></a>Flow control
+
+Channels act like [`stream.Writable`][nodejs-writable] when you call
+`publish` or `sendToQueue`: they return either `true`, meaning "keep
+sending", or `false`, meaning "please wait for a 'drain' event".
+
+Those methods, along with `ack`, `ackAll`, `nack`, `nackAll`, and
+`reject`, do not have responses from the server. This means they *do
+not return a promise* in the promises API. The `ConfirmChannel` _does_
+accept a callback in _both_ APIs, called when the server confirms the
+message; as well as returning a boolean.
 
 ## <a name="args"></a>Argument handling
 
@@ -1358,6 +1376,7 @@ there are messages in the queue.
 [rabbitmq-nack]: http://www.rabbitmq.com/nack.html
 [nodejs-write]: http://nodejs.org/api/stream.html#stream_writable_write_chunk_encoding_callback
 [nodejs-drain]: http://nodejs.org/api/stream.html#stream_event_drain
+[nodejs-writable]: https://nodejs.org/api/stream.html#stream_class_stream_writable
 [rabbitmq-consumer-priority]: http://www.rabbitmq.com/consumer-priority.html
 [rabbitmq-connection-blocked]: http://www.rabbitmq.com/connection-blocked.html
 [rabbitmq-idempotent-delete]: doc/channel_api.html#idempotent-deletes
