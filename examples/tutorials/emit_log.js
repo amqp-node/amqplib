@@ -13,6 +13,8 @@ amqp.connect('amqp://localhost').then(function(conn) {
 
     return ok.then(function() {
       ch.publish(ex, '', new Buffer(message));
+      // when publish returns false the buffer is full see the "drain" event
+      // of the channel how to handle this
       console.log(" [x] Sent '%s'", message);
       return ch.close();
     });

@@ -13,6 +13,8 @@ amqp.connect('amqp://localhost').then(function(conn) {
     var ok = ch.assertExchange(ex, 'topic', {durable: false});
     return ok.then(function() {
       ch.publish(ex, key, new Buffer(message));
+      // when publish returns false the buffer is full see the "drain" event
+      // of the channel how to handle this
       console.log(" [x] Sent %s:'%s'", key, message);
       return ch.close();
     });

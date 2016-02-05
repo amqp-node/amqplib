@@ -37,6 +37,8 @@ function on_connect(err, conn) {
       ch.sendToQueue(msg.properties.replyTo,
                      new Buffer(fib(n).toString()),
                      {correlationId: msg.properties.correlationId});
+      // when sendToQueue returns false the buffer is full see the "drain" event
+      // of the channel how to handle this
       ch.ack(msg);
     }
   });

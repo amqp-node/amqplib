@@ -44,6 +44,8 @@ amqp.connect('amqp://localhost').then(function(conn) {
       ch.sendToQueue('rpc_queue', new Buffer(n.toString()), {
         correlationId: corrId, replyTo: queue
       });
+      // when sendToQueue returns false the buffer is full see the "drain" event
+      // of the channel how to handle this
       return answer.promise;
     });
 

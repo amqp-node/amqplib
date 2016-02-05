@@ -18,6 +18,8 @@ function on_connect(err, conn) {
     ch.assertQueue(q, {durable: false}, function(err, ok) {
       if (err !== null) return bail(err, conn);
       ch.sendToQueue(q, new Buffer(msg));
+      // when sendToQueue returns false the buffer is full see the "drain" event
+      // of the channel how to handle this
       console.log(" [x] Sent '%s'", msg);
       ch.close(function() { conn.close(); });
     });
