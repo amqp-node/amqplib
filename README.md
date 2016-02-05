@@ -70,7 +70,7 @@ require('amqplib/callback_api')
   .connect('amqp://localhost', function(err, conn) {
     if (err != null) bail(err);
     consumer(conn);
-    publisher(conn);        
+    publisher(conn);
   });
 ```
 
