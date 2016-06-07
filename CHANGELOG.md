@@ -1,5 +1,12 @@
 # Change log for amqplib
 
+## Changes in v0.4.2
+
+   git log v0.4.1..v0.4.2
+
+ * Better documentation and examples
+ * Replace uses of ES6 keyword 'await'
+
 ## Changes in v0.4.1
 
    git log v0.4.0..v0.4.1
