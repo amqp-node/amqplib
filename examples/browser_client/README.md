@@ -1,54 +1,31 @@
-# AMQP 0-9-1 browser WebSocket tunnel example
+# Browser Client and WebSocket Tunnel Example
 
-This example demonstrates a browser-based AMQP connection tunneled through a transparent WebSocket proxy. It contains two basic JavaScript components:
+This example demonstrates a browser-based AMQP connection tunneled through a transparent WebSocket proxy. It contains two essential JavaScript components:
 
-  - server.js: The NodeJS tunneling WebSocket server
-  - web/main.js: The browser JavaScript AMQP client (Chrome tested only)
+  - `server.js`: The NodeJS tunneling WebSocket server
+  - `web/main.js`: The browser JavaScript AMQP client (Chrome tested only)
 
 ##Running
-  - Ensure RabbitMQ is installed and running on a well known host
-  - Set the configuration
-
-
-
-
-```javascript
-var q = 'tasks';
-
-function bail(err) {
-  console.error(err);
-  process.exit(1);
-}
-
-// Publisher
-function publisher(conn) {
-  conn.createChannel(on_open);
-  function on_open(err, ch) {
-    if (err != null) bail(err);
-    ch.assertQueue(q);
-    ch.sendToQueue(q, new Buffer('something to do'));
-  }
-}
-
-// Consumer
-function consumer(conn) {
-  var ok = conn.createChannel(on_open);
-  function on_open(err, ch) {
-    if (err != null) bail(err);
-    ch.assertQueue(q);
-    ch.consume(q, function(msg) {
-      if (msg !== null) {
-        console.log(msg.content.toString());
-        ch.ack(msg);
-      }
-    });
-  }
-}
-
-require('amqplib/callback_api')
-  .connect('amqp://localhost', function(err, conn) {
-    if (err != null) bail(err);
-    consumer(conn);
-    publisher(conn);
-  });
-```
+  * Ensure `browserify` is installed on your system
+  * Ensure RabbitMQ is installed and running on a well known host
+  * Run `npm install`
+  * Set the configuration parameters according to your broker configuration in both `web/main.js`:
+    ```javascript
+    var amqpConfig = {
+      tunnelHost: '<The hostname server.js is bound>',
+      tunnelPort: '<The port server.js is boun>',
+      username: '<RabbitMQ client username>',
+      password: '<RabbitMQ client password>'
+    };
+    ```
+    and in `server.js`, for the broker URL:
+    ```javascript
+    var config = {
+      rabbitMqUrl: 'amqp://<broker username>:<broker password>@<broker host>:<broker port>/'
+    };
+    ```
+  * From `web/` run `browserify main.js -o bundle.js`
+    * *Removing the dependency on `browserify` would be awesome!*
+  * Run `node server.js --port <Port to listen on>`
+    * Or without arguments, the default port is `1234`
+  * Navigate to `web/client.html` in a web browser
