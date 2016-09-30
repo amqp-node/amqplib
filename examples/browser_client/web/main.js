@@ -99,8 +99,8 @@ ws.onopen = function() {
         exclusive: true,
         durable: false
       }, function(err, q) {
-        channel.consume(q.queue, onMessage);
-      }, {noAck: true});
+        channel.consume(q.queue, onMessage, {noAck: true});
+      });
     });
   });
 };
