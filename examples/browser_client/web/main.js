@@ -1,8 +1,8 @@
 'use strict';
-var util = require('util');
+var format = require('util').format;
 
-var Connection = require('./../../lib/ws_connection').WebSocketConnection;
-var CallbackModel = require('./../../lib/callback_model').CallbackModel;
+var Connection = require('./../../../lib/ws_connection').WebSocketConnection;
+var CallbackModel = require('./../../../lib/callback_model').CallbackModel;
 
 var correlationIds = {};
 var connection;
@@ -42,8 +42,7 @@ function onMessage(msg) {
   }
   delete correlationIds[msg.properties.correlationId];
   msg.content = JSON.parse(msg.content.toString());
-  var outputMessage = util.format('[ RX ] @ %s \n%s\n\n',
-    new Date().toISOString(),
+  var outputMessage = format('[ RX ] @ %s \n%s\n\n', new Date().toISOString(),
     JSON.stringify(msg, null, '  '));
   console.log(outputMessage);
   outputContainer.appendChild(document.createTextNode(outputMessage));

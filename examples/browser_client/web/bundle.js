@@ -1,10 +1,10 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 (function (Buffer){
 'use strict';
-var util = require('util');
+var format = require('util').format;
 
-var Connection = require('./../../lib/ws_connection').WebSocketConnection;
-var CallbackModel = require('./../../lib/callback_model').CallbackModel;
+var Connection = require('./../../../lib/ws_connection').WebSocketConnection;
+var CallbackModel = require('./../../../lib/callback_model').CallbackModel;
 
 var correlationIds = {};
 var connection;
@@ -44,8 +44,7 @@ function onMessage(msg) {
   }
   delete correlationIds[msg.properties.correlationId];
   msg.content = JSON.parse(msg.content.toString());
-  var outputMessage = util.format('[ RX ] @ %s \n%s\n\n',
-    new Date().toISOString(),
+  var outputMessage = format('[ RX ] @ %s \n%s\n\n', new Date().toISOString(),
     JSON.stringify(msg, null, '  '));
   console.log(outputMessage);
   outputContainer.appendChild(document.createTextNode(outputMessage));
@@ -124,7 +123,7 @@ window.echo = function(msgToEcho) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./../../lib/callback_model":4,"./../../lib/ws_connection":12,"buffer":41,"util":48}],2:[function(require,module,exports){
+},{"./../../../lib/callback_model":4,"./../../../lib/ws_connection":12,"buffer":41,"util":48}],2:[function(require,module,exports){
 //
 //
 //
@@ -6619,8 +6618,11 @@ FRAME_HEADER = constants.FRAME_HEADER,
 FRAME_BODY = constants.FRAME_BODY,
 FRAME_END = constants.FRAME_END;
 
-var ints = require('buffer-more-ints');
 
+////////////////////////////////////////////////////////////////////////////////
+// TODO: For some reason browserify wasn't able to find Buffer without defining
+// these functions in this scope. Obviously, this is no bueno.
+var ints = require('buffer-more-ints');
 function write_int(buf, value, offset, size, bigendian) {
   switch (size) {
   case 1:
@@ -6647,7 +6649,7 @@ function write_int(buf, value, offset, size, bigendian) {
   return size;
 }
 
-var bodyCons2 = function(bindings) {
+function bodyConsFIXME(bindings) {
   var buffersize = 8;
   buffersize += (bindings['size'] * 8) / 8;
   var buf = new Buffer(buffersize);
@@ -6679,15 +6681,18 @@ var bodyCons2 = function(bindings) {
   write_int(buf, val, offset, size, true);
   offset += size;
   return buf;
-};
+}
+////////////////////////////////////////////////////////////////////////////////
 
-var bodyCons = Bits.builder(FRAME_BODY,
-  'channel:16, size:32, payload:size/binary', FRAME_END);
+
+// var bodyCons = Bits.builder(FRAME_BODY,
+//   'channel:16, size:32, payload:size/binary', FRAME_END);
+
 
 // %%% TESTME possibly better to cons the first bit and write the
 // second directly, in the absence of IO lists
 module.exports.makeBodyFrame = function(channel, payload) {
-  return bodyCons2({
+  return bodyConsFIXME({  // FIXME: Hacked the OG bodyCons - see above
     channel: channel,
     size: payload.length,
     payload: payload
