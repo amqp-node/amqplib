@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
 var amqp = require('amqplib');
-var when = require('when');
 
 amqp.connect('amqp://localhost').then(function(conn) {
-  return when(conn.createChannel().then(function(ch) {
+  return conn.createChannel().then(function(ch) {
     var q = 'hello';
     var msg = 'Hello World!';
 
@@ -20,5 +19,5 @@ amqp.connect('amqp://localhost').then(function(conn) {
       console.log(" [x] Sent '%s'", msg);
       return ch.close();
     });
-  })).ensure(function() { conn.close(); });
-}).then(null, console.warn);
+  }).finally(function() { conn.close(); });
+}).catch(console.warn);

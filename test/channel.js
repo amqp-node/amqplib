@@ -3,7 +3,7 @@
 'use strict';
 
 var assert = require('assert');
-var defer = require('when').defer;
+var Promise = require('bluebird');
 var Channel = require('../lib/channel').Channel;
 var Connection = require('../lib/connection').Connection;
 var util = require('./util');
@@ -76,14 +76,12 @@ var DELIVER_FIELDS = {
 };
 
 function open(ch) {
-  var opened = defer();
-  ch.allocate();
-  ch._rpc(defs.ChannelOpen, {outOfBand: ''}, defs.ChannelOpenOk,
-          function(err, _) {
-            if (err === null) opened.resolve();
-            else opened.reject(err);
-          });
-  return opened.promise;
+  return Promise.try(function() {
+    ch.allocate();
+    return Promise.fromCallback(function(cb) {
+      ch._rpc(defs.ChannelOpen, {outOfBand: ''}, defs.ChannelOpenOk, cb);
+    });
+  });
 }
 
 suite("channel open and close", function() {
@@ -112,10 +110,9 @@ test("open, close", channelTest(
   function(ch, done) {
     open(ch)
       .then(function() {
-        var closed = defer();
-        ch.closeBecause("Bye", defs.constants.REPLY_SUCCESS,
-                        closed.resolve);
-        return closed.promise;
+        return new Promise(function(resolve) {
+          ch.closeBecause("Bye", defs.constants.REPLY_SUCCESS, resolve);
+        });
       })
       .then(succeed(done), fail(done));
   },
@@ -204,7 +201,7 @@ test("RPC", channelTest(
         prefetchSize: 0,
         global: false
       };
-      
+
       ch._rpc(defs.BasicQos, fields, defs.BasicQosOk, wheeboom);
       ch._rpc(defs.BasicQos, fields, defs.BasicQosOk, wheeboom);
       ch._rpc(defs.BasicQos, fields, defs.BasicQosOk, wheeboom);
@@ -233,7 +230,7 @@ test("Bad RPC", channelTest(
       assert.strictEqual(505, error.code);
       succeed(errLatch)();
     });
-    
+
     open(ch)
       .then(function() {
         ch._rpc(defs.BasicRecover, {requeue: true}, defs.BasicRecoverOk,
@@ -257,27 +254,34 @@ test("Bad RPC", channelTest(
 test("RPC on closed channel", channelTest(
   function(ch, done) {
     open(ch);
-    var close = defer(), fail1 = defer(), fail2 = defer();
-    ch.on('error', function(error) {
-      assert.strictEqual(504, error.code);
-      close.resolve();
+
+    var close = new Promise(function(resolve) {
+        ch.on('error', function(error) {
+          assert.strictEqual(504, error.code);
+          resolve();
+      });
     });
 
-    function failureCb(d) {
+    function failureCb(resolve, reject) {
       return function(err) {
-        if (err !== null) d.resolve();
-        else d.reject();
+        if (err !== null) resolve();
+        else reject();
       }
     }
 
-    ch._rpc(defs.BasicRecover, {requeue:true}, defs.BasicRecoverOk,
-            failureCb(fail1));
-    ch._rpc(defs.BasicRecover, {requeue:true}, defs.BasicRecoverOk, 
-            failureCb(fail2));
-    close.promise
-      .then(function() { return fail1.promise; })
-      .then(function() { return fail2.promise; })
-      .then(succeed(done), fail(done));
+    var fail1 = new Promise(function(resolve, reject) {
+      return ch._rpc(defs.BasicRecover, {requeue:true}, defs.BasicRecoverOk,
+        failureCb(resolve, reject));
+    });
+
+    var fail2 = new Promise(function(resolve, reject) {
+      return ch._rpc(defs.BasicRecover, {requeue:true}, defs.BasicRecoverOk,
+        failureCb(resolve, reject));
+    });
+
+    Promise.join(close, fail1, fail2)
+      .then(succeed(done))
+      .catch(fail(done));
   },
   function(send, await, done, ch) {
     await(defs.BasicRecover)()
@@ -289,7 +293,8 @@ test("RPC on closed channel", channelTest(
         }, ch);
         return await(defs.ChannelCloseOk);
       })
-      .then(succeed(done), fail(done));
+      .then(succeed(done))
+      .catch(fail(done));
   }));
 
 test("publish all < single chunk threshold", channelTest(
@@ -453,7 +458,7 @@ test("bad properties send", channelTest(
   },
   function(send, await, done, ch) {
     done();
-  }));  
+  }));
 
 test("bad consumer", channelTest(
   function(ch, done) {

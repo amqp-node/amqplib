@@ -9,7 +9,7 @@ of the tutorial programs to the callback-oriented API.
 To run the tutorial code, you need amqplib installed. Assuming you are
 in a clone of the amqplib repository, from the tutorials directory:
 
-    npm install ../..
+    npm install
 
 or to use the latest released version,
 
