@@ -36,4 +36,4 @@ amqp.connect('amqp://localhost').then(function(conn) {
       ch.ack(msg);
     }
   });
-}).then(null, console.warn);
+}).catch(console.warn);

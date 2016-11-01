@@ -4,9 +4,8 @@
   "description": "The RabbitMQ tutorials, ported to amqplib",
   "main": "send.js",
   "dependencies": {
-    "amqplib": "",
-    "when": "",
-    "node-uuid": ""
+    "amqplib": "../..",
+    "node-uuid": "*"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
