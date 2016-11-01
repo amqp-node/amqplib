@@ -1,5 +1,19 @@
 # Change log for amqplib
 
+## Changes in v0.5.0
+
+    git log v0.4.2..v0.5.0
+
+ * Port to use bluebird rather than when.js
+   ([PR 295](https://github.com/squaremo/amqp.node/pull/295); thanks
+   to @nfantone, and special mention to @myndzi for #158)
+ * Fixed a problem with using `channel.get` in the callback model
+   ([PR 283](https://github.com/squaremo/amqp.node/pull/283); good
+   catch, @shanksauce)
+ * Added an example that uses generators (thanks @rudijs)
+ * Fixed a link in the comments relating to heartbeats (thanks
+   @tapickell)
+
 ## Changes in v0.4.2
 
    git log v0.4.1..v0.4.2
