@@ -147,11 +147,16 @@ function waitForQueue(q, condition) {
     return c.createChannel()
       .then(function(ch) {
         return ch.checkQueue(q).then(function(qok) {
-          if (condition(qok)) {
-            c.close();
-            return qok;
+          function check() {
+            return ch.checkQueue(q).then(function(qok) {
+              if (condition(qok)) {
+                c.close();
+                return qok;
+              }
+              else schedule(check);
+            });
           }
-          else schedule(check);
+          return check();
         });
       });
   });
@@ -373,8 +378,9 @@ chtest("cancel consumer", function(ch) {
       .then(function(m) {
         // I'm going to reject it, because I flip succeed/fail
         // just below
-        if (m.content.toString() === 'bar')
+        if (m.content.toString() === 'bar') {
           throw new Error();
+        }
       });
 
       return expectFail(recv2);
