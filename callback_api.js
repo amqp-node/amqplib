@@ -19,3 +19,4 @@ function connect(url, options, cb) {
 
 module.exports.connect = connect;
 module.exports.credentials = require('./lib/credentials');
+module.exports.IllegalOperationError = require('./lib/error').IllegalOperationError;
