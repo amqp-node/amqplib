@@ -16,5 +16,6 @@ services:
 
 before_install:
    - node --version | (grep  -v 'v5' && npm install -g npm@2) || true
+   - npm i @types/bluebird @types/node
 
 sudo: false
