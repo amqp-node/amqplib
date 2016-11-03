@@ -40,7 +40,7 @@ function channel_test(chmethod, name, chfun) {
       c[chmethod]().then(ignoreErrors).then(chfun)
         .then(succeed(done), fail(done))
       // close the connection regardless of what happens with the test
-        .then(function() {c.close();});
+        .finally(function() {c.close();});
     });
   });
 }
@@ -507,6 +507,12 @@ chtest("prefetch", function(ch) {
     .then(function(c) {
       return assert.equal(2, c);
     });
+});
+
+chtest('close', function(ch) {
+  // Resolving promise guarantees
+  // channel is closed
+  return ch.close();
 });
 
 });
