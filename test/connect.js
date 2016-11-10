@@ -5,7 +5,8 @@ var assert = require('assert');
 var util = require('./util');
 var net = require('net');
 var fail = util.fail, succeed = util.succeed,
-    kCallback = util.kCallback;
+    kCallback = util.kCallback,
+    succeedIfAttributeEquals = util.succeedIfAttributeEquals;
 
 var URL = process.env.URL || 'amqp://localhost';
 
@@ -15,7 +16,7 @@ suite("Connect API", function() {
     connect('amqp://localhost:23450', {},
             kCallback(fail(done), succeed(done)));
   });
-  
+
   // %% this ought to fail the promise, rather than throwing an error
   test("bad URL", function() {
     assert.throws(function() {
@@ -31,6 +32,22 @@ suite("Connect API", function() {
     parts.query = q;
     var u = url.format(parts);
     connect(u, {}, kCallback(fail(done), succeed(done)));
+  });
+
+  test("using custom heartbeat option", function(done) {
+    var url = require('url');
+    var parts = url.parse(URL, true);
+    var config = parts.query || {};
+    config.heartbeat = 20;
+    connect(config, {}, kCallback(succeedIfAttributeEquals('heartbeat', 20, done), fail(done)));
+  });
+
+  test("wrongly typed heartbeat option", function(done) {
+    var url = require('url');
+    var parts = url.parse(URL, true);
+    var config = parts.query || {};
+    config.heartbeat = 'NOT A NUMBER';
+    connect(config, {}, kCallback(fail(done), succeed(done)));
   });
 
   test("using plain credentials", function(done) {
