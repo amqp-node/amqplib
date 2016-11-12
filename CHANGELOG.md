@@ -1,5 +1,14 @@
 # Change log for amqplib
 
+## Changes in v0.5.1
+
+    git log v0.5.0..v0.5.1
+
+ * Fix mistake in closeBecause
+   ([PR 298](https://github.com/squaremo/amqp.node/pull/298); thanks
+   to @lholznagel and others who reported the issue, and to @nfantone
+   for the rapid fix)
+
 ## Changes in v0.5.0
 
     git log v0.4.2..v0.5.0
