@@ -107,6 +107,19 @@ function succeed(done) {
   return function() { done(); }
 }
 
+// Produce a callback that will complete the test successfully
+// only if the value is an object, it has the specified
+// attribute, and its value is equals to the expected value
+function succeedIfAttributeEquals(attribute, value, done) {
+  return function(object) {
+    if (object && !(object instanceof Error) && value === object[attribute]) {
+      return done();
+    }
+
+    done(new Error(attribute + " is not equal to " + value));
+  };
+}
+
 // Produce a callback that will fail the test, given either an error
 // (to be used as a failure continuation) or any other value (to be
 // used as a success continuation when failure is expected)
@@ -196,6 +209,7 @@ module.exports = {
   socketPair: socketPair,
   runServer: runServer,
   succeed: succeed,
+  succeedIfAttributeEquals: succeedIfAttributeEquals,
   fail: fail,
   latch: latch,
   completes: completes,
