@@ -68,6 +68,8 @@ function consumer(conn) {
 
 require('amqplib/callback_api')
   .connect('amqp://localhost', function(err, conn) {
+//If you want to use a diferent user, password or hostname
+//.connect({protocol:'amqp',hostname:'hostname',username:'notguest' , password: 'anotherpassword'}, function(err, conn) { 
     if (err != null) bail(err);
     consumer(conn);
     publisher(conn);
@@ -80,7 +82,8 @@ require('amqplib/callback_api')
 var q = 'tasks';
 
 var open = require('amqplib').connect('amqp://localhost');
-
+//If you want to use a diferent user, password or hostname
+//var open = require('amqplib').connect({protocol:'amqp',hostname:'hostname',username:'notguest' , password: 'anotherpassword'});
 // Publisher
 open.then(function(conn) {
   return conn.createChannel();
