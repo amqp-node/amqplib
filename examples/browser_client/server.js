@@ -2,8 +2,7 @@
 var util = require('util');
 var crypto = require('crypto');
 var net = require('net');
-
-var WebSocket = require('wsp');
+var WebSocket = require('./../../../v5/wsp');
 var app = require('express')();
 
 var PORT = 1234;
@@ -58,11 +57,14 @@ var server = app.listen(PORT, function() {
     // Upstream tunnel
     var amqpSocket = net.Socket();
     amqpSocket.setNoDelay(true);
-    amqpSocket.on('error', function() {});
+    amqpSocket.on('error', function(err) {
+      console.log(err);
+    });
     amqpSocket.connect({host: 'localhost', port: 5672}, function(err) {
       if(err) {
         process.stderr.write(err.message + '\n');
       }
+      process.stdout.write('Connected to AMQP broker\n');
       ws.pipe(amqpSocket).pipe(ws);
     });
   });
