@@ -1,0 +1,13 @@
+{
+  "name": "amqplib-browser-client-example",
+  "version": "1.0.0",
+  "description": "Uses amqplib through a browser WebSocket",
+  "main": "index.js",
+  "author": "Ben Shank <ben@shankware.com>",
+  "license": "MIT",
+  "dependencies": {
+    "bson": "^0.5.5",
+    "express": "^4.14.0",
+    "wsp": "0.0.66"
+  }
+}
