@@ -10,14 +10,16 @@ var channel;
 
 var outputContainer;
 
+var r = Math.random().toString();
+
 var amqpConfig = {
   tunnelHost: 'slackware',
   tunnelPort: '1234',
   username: 'admin',
   password: 'admin',
   rpcExchange: 'example.rpc',
-  rpcRequestQueue: 'rpc.request',
-  rpcResponseQueue: 'rpc.response'
+  rpcRequestQueue: 'rpc.request.WEB-' + r,
+  rpcResponseQueue: 'rpc.response.WEB-' + r
 };
 
 var ws = new WebSocket('ws://' + amqpConfig.tunnelHost + ':' +
@@ -31,7 +33,7 @@ function publishMessage(method, payload) {
     method,
     Buffer.from(JSON.stringify(payload)), {
       correlationId: correlationId,
-      replyTo: amqpConfig.rpcResponseQueue + '.WEB'
+      replyTo: amqpConfig.rpcResponseQueue
     }
   );
 }
@@ -89,13 +91,27 @@ ws.onopen = function() {
       return console.error(err.message);
     }
     connection = new CallbackModel(connection);
+
+    connection.createChannel(function(err, ch) {
+      if(err) {
+        return console.log(err);
+      }
+      ch.assertQueue(null, {exclusive: true}, function(err, q) {
+        ch.bindQueue(q.queue, 'amq.rabbitmq.log', '#');
+        ch.bindQueue(q.queue, 'amq.rabbitmq.trace', '#');
+        channel.consume(q.queue, function(msg) {
+          console.log(msg.content.toString());
+        }, {noAck: true});
+      });
+    });
+
     connection.createChannel(function(err, ch) {
       if(err) {
         return console.log(err);
       }
       channel = ch;
       channel.checkExchange(amqpConfig.rpcExchange);
-      channel.assertQueue(amqpConfig.rpcResponseQueue + '.WEB', {
+      channel.assertQueue(amqpConfig.rpcResponseQueue, {
         exclusive: true,
         durable: false
       }, function(err, q) {
