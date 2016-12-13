@@ -1,3 +1,4 @@
+/* global WebSocket, window, document */
 'use strict';
 var format = require('util').format;
 
@@ -52,46 +53,15 @@ function onMessage(msg) {
 }
 
 ws.onopen = function() {
-  connection = new Connection(ws);
-  var username = amqpConfig.username;
-  var password = amqpConfig.password;
-  var openFrames = {
-    // start-ok
-    mechanism: 'PLAIN',
-    response: new Buffer(['', username, password].join(String.fromCharCode(0))),
-    locale: 'en_US',
-    clientProperties: {
-      product: 'amqplib (browser WebSocket client)',
-      version: '0.0.1',
-      platform: 'Chrome',
-      information: 'http://squaremo.github.io/amqp.node',
-      capabilities: {
-        publisher_confirms: true,
-        exchange_exchange_bindings: true,
-        'basic.nack': true,
-        consumer_cancel_notify: true,
-        'connection.blocked': true,
-        authentication_failure_close: true
-      }
-    },
-
-    // tune-ok
-    channelMax: 0,
-    frameMax: 0x1000,
-    heartbeat: 60,
-
-    // open
-    virtualHost: '/',
-    capabilities: '',
-    insist: 0
-  };
-
-  connection.open(openFrames, function(err) {
+  connection = new Connection();
+  connection.open({
+    username: amqpConfig.username,
+    password: amqpConfig.password
+  }, function(err) {
     if(err) {
       return console.error(err.message);
     }
     connection = new CallbackModel(connection);
-
     connection.createChannel(function(err, ch) {
       if(err) {
         return console.log(err);
@@ -104,7 +74,6 @@ ws.onopen = function() {
         }, {noAck: true});
       });
     });
-
     connection.createChannel(function(err, ch) {
       if(err) {
         return console.log(err);

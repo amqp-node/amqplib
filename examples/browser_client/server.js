@@ -79,7 +79,6 @@ EchoController.prototype.echo = function(payload, cb) {
 var controller = new EchoController();
 
 
-
 //// Server-side AMQP Client ///////////////////////////////////////////////////
 var amqp = require('./../../callback_api');
 amqp.connect(config.rabbitMqUrl, function(err, conn) {

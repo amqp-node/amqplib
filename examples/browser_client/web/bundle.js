@@ -6871,28 +6871,25 @@ Heart.prototype.runHeartbeat = function(check, fail) {
 
 },{"events":25,"util":31}],12:[function(require,module,exports){
 (function (Buffer){
-'use strict';
+/* global Uint8Array, FileReader, Blob */
 
+'use strict';
 var EventEmitter = require('events').EventEmitter;
 var inherits = require('util').inherits;
-
 var defs = require('./defs');
 var FRAME_OVERHEAD = defs.FRAME_OVERHEAD;
 var constants = defs.constants;
 var encodeMethod = defs.encodeMethod;
 var encodeProperties = defs.encodeProperties;
-
 var frame = require('./frame');
 var HEARTBEAT = frame.HEARTBEAT;
 var makeBodyFrame = frame.makeBodyFrame;
 var parseFrame = frame.parseFrame;
 var decodeFrame = frame.decodeFrame;
-
 var Heart = require('./heartbeat').Heart;
 var methodName = require('./format').methodName;
 var closeMsg = require('./format').closeMessage;
 var inspect = require('./format').inspect;
-
 var BitSet = require('./bitset').BitSet;
 var fmt = require('util').format;
 var IllegalOperationError = require('./error').IllegalOperationError;
@@ -7290,20 +7287,17 @@ C.sendMessage = function(channel, Method, fields, Properties, props, content) {
   if(!Buffer.isBuffer(content)) {
     throw new TypeError('content is not a buffer');
   }
-
   var mframe = encodeMethod(Method, channel, fields);
   var pframe = encodeProperties(Properties, channel, content.length, props);
-
   var webSocket = this.channels[channel].webSocket;
   this.sentSinceLastCheck = true;
-
   var methodHeaderLen = mframe.length + pframe.length;
   var bodyLen = (content.length > 0) ? content.length + FRAME_OVERHEAD : 0;
   var allLen = methodHeaderLen + bodyLen;
-
+  var offset;
   if(allLen < SINGLE_CHUNK_THRESHOLD) {
     var all = new Buffer(allLen);
-    var offset = mframe.copy(all, 0);
+    offset = mframe.copy(all, 0);
     offset += pframe.copy(all, offset);
     if(bodyLen > 0) {
       makeBodyFrame(channel, content).copy(all, offset);
@@ -7312,7 +7306,7 @@ C.sendMessage = function(channel, Method, fields, Properties, props, content) {
   } else {
     if(methodHeaderLen < SINGLE_CHUNK_THRESHOLD) {
       var both = new Buffer(methodHeaderLen);
-      var offset = mframe.copy(both, 0);
+      offset = mframe.copy(both, 0);
       pframe.copy(both, offset);
       webSocket.send(both);
     } else {
