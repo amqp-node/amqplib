@@ -1,14 +1,56 @@
 'use strict';
 
 var connect = require('../lib/connect').connect;
+var credentialsFromUrl = require('../lib/connect').credentialsFromUrl;
 var assert = require('assert');
 var util = require('./util');
 var net = require('net');
 var fail = util.fail, succeed = util.succeed,
     kCallback = util.kCallback,
     succeedIfAttributeEquals = util.succeedIfAttributeEquals;
+var format = require('util').format;
 
 var URL = process.env.URL || 'amqp://localhost';
+
+suite("Credentials", function() {
+
+  function checkCreds(creds, user, pass, done) {
+    if (creds.mechanism != 'PLAIN') {
+      return done('expected mechanism PLAIN');
+    }
+    if (creds.username != user || creds.password != pass) {
+      return done(format("expected '%s', '%s'; got '%s', '%s'",
+                         user, pass, creds.username, creds.password));
+    }
+    done();
+  }
+
+  test("no creds", function(done) {
+    var parts = {auth: ''};
+    var creds = credentialsFromUrl(parts);
+    checkCreds(creds, 'guest', 'guest', done);
+  });
+  test("usual user:pass", function(done) {
+    var parts = {auth: 'user:pass'};
+    var creds = credentialsFromUrl(parts);
+    checkCreds(creds, 'user', 'pass', done);
+  });
+  test("missing user", function(done) {
+    var parts = {auth: ':password'};
+    var creds = credentialsFromUrl(parts);
+    checkCreds(creds, '', 'password', done);
+  });
+  test("missing password", function(done) {
+    var parts = {auth: 'username'};
+    var creds = credentialsFromUrl(parts);
+    checkCreds(creds, 'username', '', done);
+  });
+  test("colon in password", function(done) {
+    var parts = {auth: 'username:pass:word'};
+    var creds = credentialsFromUrl(parts);
+    checkCreds(creds, 'username', 'pass:word', done);
+  });
+});
 
 suite("Connect API", function() {
 
