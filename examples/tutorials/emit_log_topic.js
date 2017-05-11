@@ -11,7 +11,7 @@ amqp.connect('amqp://localhost').then(function(conn) {
     var ex = 'topic_logs';
     var ok = ch.assertExchange(ex, 'topic', {durable: false});
     return ok.then(function() {
-      ch.publish(ex, key, new Buffer(message));
+      ch.publish(ex, key, Buffer.from(message));
       console.log(" [x] Sent %s:'%s'", key, message);
       return ch.close();
     });

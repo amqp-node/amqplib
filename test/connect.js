@@ -1,6 +1,7 @@
 'use strict';
 
 var connect = require('../lib/connect').connect;
+var Buffer = require('safe-buffer').Buffer
 var credentialsFromUrl = require('../lib/connect').credentialsFromUrl;
 var assert = require('assert');
 var util = require('./util');
@@ -107,7 +108,7 @@ suite("Connect API", function() {
   test("using unsupported mechanism", function(done) {
     var creds = {
       mechanism: 'UNSUPPORTED',
-      response: function() { return new Buffer(''); }
+      response: function() { return Buffer.from(''); }
     };
     connect(URL, {credentials: creds},
             kCallback(fail(done), succeed(done)));

@@ -12,6 +12,7 @@ var completes = util.completes;
 var defs = require('../lib/defs');
 var conn_handshake = require('./connection').connection_handshake;
 var OPEN_OPTS = require('./connection').OPEN_OPTS;
+var Buffer = require('safe-buffer').Buffer;
 
 var LOG_ERRORS = process.env.LOG_ERRORS;
 
@@ -59,7 +60,7 @@ function channel_handshake(send, await) {
   return await(defs.ChannelOpen)()
     .then(function(open) {
       assert.notEqual(0, open.channel);
-      send(defs.ChannelOpenOk, {channelId: new Buffer('')}, open.channel);
+      send(defs.ChannelOpenOk, {channelId: Buffer.from('')}, open.channel);
       return open.channel;
     });
 }
@@ -304,7 +305,7 @@ test("publish all < single chunk threshold", channelTest(
         ch.sendMessage({
           exchange: 'foo', routingKey: 'bar',
           mandatory: false, immediate: false, ticket: 0
-        }, {}, new Buffer('foobar'));
+        }, {}, Buffer.from('foobar'));
       })
       .then(succeed(done), fail(done));
   },
@@ -324,7 +325,7 @@ test("publish content > single chunk threshold", channelTest(
       ch.sendMessage({
         exchange: 'foo', routingKey: 'bar',
         mandatory: false, immediate: false, ticket: 0
-      }, {}, new Buffer(3000));
+      }, {}, Buffer.alloc(3000));
     }, done);
   },
   function(send, await, done, ch) {
@@ -344,8 +345,8 @@ test("publish method & headers > threshold", channelTest(
         exchange: 'foo', routingKey: 'bar',
         mandatory: false, immediate: false, ticket: 0
       }, {
-        headers: {foo: new Buffer(3000)}
-      }, new Buffer('foobar'));
+        headers: {foo: Buffer.alloc(3000)}
+      }, Buffer.from('foobar'));
     }, done);
   },
   function(send, await, done, ch) {
@@ -364,11 +365,11 @@ test("publish zero-length message", channelTest(
       ch.sendMessage({
         exchange: 'foo', routingKey: 'bar',
         mandatory: false, immediate: false, ticket: 0
-      }, {}, new Buffer(0));
+      }, {}, Buffer.alloc(0));
       ch.sendMessage({
         exchange: 'foo', routingKey: 'bar',
         mandatory: false, immediate: false, ticket: 0
-      }, {}, new Buffer(0));
+      }, {}, Buffer.alloc(0));
     }, done);
   },
   function(send, await, done, ch) {
@@ -390,7 +391,7 @@ test("delivery", channelTest(
   },
   function(send, await, done, ch) {
     completes(function() {
-      send(defs.BasicDeliver, DELIVER_FIELDS, ch, new Buffer('barfoo'));
+      send(defs.BasicDeliver, DELIVER_FIELDS, ch, Buffer.from('barfoo'));
     }, done);
   }));
 
@@ -399,13 +400,13 @@ test("zero byte msg", channelTest(
     open(ch);
     ch.on('delivery', function(m) {
       completes(function() {
-        assert.deepEqual(new Buffer(0), m.content);
+        assert.deepEqual(Buffer.alloc(0), m.content);
       }, done);
     });
   },
   function(send, await, done, ch) {
     completes(function() {
-      send(defs.BasicDeliver, DELIVER_FIELDS, ch, new Buffer(''));
+      send(defs.BasicDeliver, DELIVER_FIELDS, ch, Buffer.from(''));
     }, done);
   }));
 
@@ -452,7 +453,7 @@ test("bad properties send", channelTest(
         ch.sendMessage({routingKey: 'foo',
                         exchange: 'amq.direct'},
                        {contentEncoding: 7},
-                       new Buffer('foobar'));
+                       Buffer.from('foobar'));
       });
     }, done);
   },
@@ -474,7 +475,7 @@ test("bad consumer", channelTest(
     open(ch);
   },
   function(send, await, done, ch) {
-    send(defs.BasicDeliver, DELIVER_FIELDS, ch, new Buffer('barfoo'));
+    send(defs.BasicDeliver, DELIVER_FIELDS, ch, Buffer.from('barfoo'));
     return await(defs.ChannelClose)()
       .then(function() {
         send(defs.ChannelCloseOk, {}, ch);
@@ -501,7 +502,7 @@ test("bad send in consumer", channelTest(
   function(send, await, done, ch) {
     completes(function() {
       send(defs.BasicDeliver, DELIVER_FIELDS, ch,
-           new Buffer('barfoo'));
+           Buffer.from('barfoo'));
     }, done);
     return await(defs.ChannelClose)()
       .then(function() {
@@ -520,7 +521,7 @@ test("return", channelTest(
   },
   function(send, await, done, ch) {
     completes(function() {
-      send(defs.BasicReturn, DELIVER_FIELDS, ch, new Buffer('barfoo'));
+      send(defs.BasicReturn, DELIVER_FIELDS, ch, Buffer.from('barfoo'));
     }, done);
   }));
 

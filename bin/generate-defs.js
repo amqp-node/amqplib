@@ -114,14 +114,15 @@ println(
 '*/');
 
 println("'use strict';"); nl();
-
+println('var Buffer = require("safe-buffer").Buffer;');
+nl()
 println('var codec = require("./codec");');
 println('var ints = require("buffer-more-ints");');
 println('var encodeTable = codec.encodeTable;');
 println('var decodeFields = codec.decodeFields;');
 nl();
 
-println('var SCRATCH = new Buffer(4096);');
+println('var SCRATCH = Buffer.alloc(4096);');
 println('var EMPTY_OBJECT = Object.freeze({});');
 
 println('module.exports.constants = %s',
@@ -238,7 +239,7 @@ function typeDesc(t) {
 function defaultValueRepr(arg) {
   switch (arg.type) {
   case 'longstr':
-    return format("new Buffer(%s)", JSON.stringify(arg.default));
+    return format("Buffer.from(%s)", JSON.stringify(arg.default));
   default:
     // assumes no tables as defaults
     return JSON.stringify(arg.default);
@@ -364,7 +365,7 @@ function encoderFn(method) {
     }
   }
 
-  println('var buffer = new Buffer(%d + varyingSize);', fixedSize);
+  println('var buffer = Buffer.alloc(%d + varyingSize);', fixedSize);
 
   println('buffer[0] = %d;', constants.FRAME_METHOD);
   println('buffer.writeUInt16BE(channel, 1);');
@@ -587,7 +588,7 @@ function encodePropsFn(props) {
     println('}');
   }
 
-  println('var buffer = new Buffer(%d + varyingSize);', fixedSize);
+  println('var buffer = Buffer.alloc(%d + varyingSize);', fixedSize);
 
   println('buffer[0] = %d', constants.FRAME_HEADER);
   println('buffer.writeUInt16BE(channel, 1);');

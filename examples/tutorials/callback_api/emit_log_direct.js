@@ -20,7 +20,7 @@ function on_connect(err, conn) {
   function on_channel_open(err, ch) {
     if (err !== null) return bail(err, conn);
     ch.assertExchange(ex, 'direct', exopts, function(err, ok) {
-      ch.publish(ex, severity, new Buffer(message));
+      ch.publish(ex, severity, Buffer.from(message));
       ch.close(function() { conn.close(); });
     });
   }

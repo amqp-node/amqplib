@@ -2,6 +2,7 @@
 
 var assert = require('assert');
 var defs = require('../lib/defs');
+var Buffer = require('safe-buffer').Buffer;
 var Connection = require('../lib/connection').Connection;
 var HEARTBEAT = require('../lib/frame').HEARTBEAT;
 var HB_BUF = require('../lib/frame').HEARTBEAT_BUF;
@@ -16,7 +17,7 @@ var OPEN_OPTS = {
   // start-ok
   'clientProperties': {},
   'mechanism': 'PLAIN',
-  'response': new Buffer(['', 'guest', 'guest'].join(String.fromCharCode(0))),
+  'response': Buffer.from(['', 'guest', 'guest'].join(String.fromCharCode(0))),
   'locale': 'en_US',
   
   // tune-ok
@@ -37,8 +38,8 @@ function happy_open(send, await) {
        {versionMajor: 0,
         versionMinor: 9,
         serverProperties: {},
-        mechanisms: new Buffer('PLAIN'),
-        locales: new Buffer('en_US')});
+        mechanisms: Buffer.from('PLAIN'),
+        locales: Buffer.from('en_US')});
   return await(defs.ConnectionStartOk)()
     .then(function(f) {
       send(defs.ConnectionTune,
@@ -65,7 +66,7 @@ function connectionTest(client, server) {
 
     // NB only not a race here because the writes are synchronous
     var protocolHeader = pair.server.read(8);
-    assert.deepEqual(new Buffer("AMQP" + String.fromCharCode(0,0,9,1)),
+    assert.deepEqual(Buffer.from("AMQP" + String.fromCharCode(0,0,9,1)),
                      protocolHeader);
 
     var s = util.runServer(pair.server, function(send, await) {
@@ -92,7 +93,7 @@ suite("Connection errors", function() {
     var ss = util.socketPair();
     var conn = new (require('../lib/connection').Connection)(ss.client);
     ss.server.on('readable', function() {
-      ss.server.write(new Buffer([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
+      ss.server.write(Buffer.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
     });
     conn.open({}, kCallback(fail(done), succeed(done)));
   });
@@ -132,8 +133,8 @@ test("unexpected socket close", connectionTest(
          {versionMajor: 0,
           versionMinor: 9,
           serverProperties: {},
-          mechanisms: new Buffer('PLAIN'),
-          locales: new Buffer('en_US')});
+          mechanisms: Buffer.from('PLAIN'),
+          locales: Buffer.from('en_US')});
     return await(defs.ConnectionStartOk)()
       .then(function() {
         socket.end();
@@ -156,7 +157,7 @@ test("wrong frame on channel 0", connectionTest(
         // there's actually nothing that would plausibly be sent to a
         // just opened connection, so this is violating more than one
         // rule. Nonetheless.
-        send(defs.ChannelOpenOk, {channelId: new Buffer('')}, 0);
+        send(defs.ChannelOpenOk, {channelId: Buffer.from('')}, 0);
       })
       .then(await(defs.ConnectionClose))
       .then(function(close) {
@@ -175,7 +176,7 @@ test("unopened channel",  connectionTest(
         // there's actually nothing that would plausibly be sent to a
         // just opened connection, so this is violating more than one
         // rule. Nonetheless.
-        send(defs.ChannelOpenOk, {channelId: new Buffer('')}, 3);
+        send(defs.ChannelOpenOk, {channelId: Buffer.from('')}, 3);
       })
       .then(await(defs.ConnectionClose))
       .then(function(close) {

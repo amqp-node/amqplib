@@ -35,7 +35,7 @@ function on_connect(err, conn) {
       var n = parseInt(msg.content.toString());
       console.log(' [.] fib(%d)', n);
       ch.sendToQueue(msg.properties.replyTo,
-                     new Buffer(fib(n).toString()),
+                     Buffer.from(fib(n).toString()),
                      {correlationId: msg.properties.correlationId});
       ch.ack(msg);
     }
