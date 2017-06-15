@@ -21,7 +21,7 @@ co(function* () {
 
     yield channel.assertQueue(q);
 
-    channel.sendToQueue(q, new Buffer(msg));
+    channel.sendToQueue(q, Buffer.from(msg));
 
     // if message has been nacked, this will result in an error (rejected promise);
     yield channel.waitForConfirms();

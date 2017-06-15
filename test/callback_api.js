@@ -8,6 +8,7 @@ var schedule = util.schedule;
 var randomString = util.randomString;
 var kCallback = util.kCallback;
 var domain = require('domain');
+var Buffer = require('safe-buffer').Buffer;
 
 var URL = process.env.URL || 'amqp://localhost';
 
@@ -159,7 +160,7 @@ channel_test('send to queue and consume noAck', function(ch, done) {
       else done(new Error("message content doesn't match:" +
                           msg + " =/= " + m.content.toString()));
     }, {noAck: true, exclusive: true});
-    ch.sendToQueue(q.queue, new Buffer(msg));
+    ch.sendToQueue(q.queue, Buffer.from(msg));
   });
 });
 
@@ -175,7 +176,7 @@ channel_test('send to queue and consume ack', function(ch, done) {
       else done(new Error("message content doesn't match:" +
                           msg + " =/= " + m.content.toString()));
     }, {noAck: false, exclusive: true});
-    ch.sendToQueue(q.queue, new Buffer(msg));
+    ch.sendToQueue(q.queue, Buffer.from(msg));
   });
 });
 
@@ -183,7 +184,7 @@ channel_test('send to and get from queue', function(ch, done) {
   ch.assertQueue('', {exclusive: true}, function(e, q) {
     if (e != null) return done(e);
     var msg = randomString();
-    ch.sendToQueue(q.queue, new Buffer(msg));
+    ch.sendToQueue(q.queue, Buffer.from(msg));
     waitForMessages(ch, q.queue, function(e, _) {
       if (e != null) return done(e);
       ch.get(q.queue, {noAck: true}, function(e, m) {
@@ -210,12 +211,12 @@ confirm_channel_test('Receive confirmation', function(ch, done) {
   // An unroutable message, on the basis that you're not allowed a
   // queue with an empty name, and you can't make bindings to the
   // default exchange. Tricky eh?
-  ch.publish('', '', new Buffer('foo'), {}, done);
+  ch.publish('', '', Buffer.from('foo'), {}, done);
 });
 
 confirm_channel_test('Wait for confirms', function(ch, done) {
   for (var i=0; i < 1000; i++) {
-    ch.publish('', '', new Buffer('foo'), {});
+    ch.publish('', '', Buffer.from('foo'), {});
   }
   ch.waitForConfirms(done);
 });

@@ -9,13 +9,14 @@
     "url": "https://github.com/squaremo/amqp.node.git"
   },
   "engines": {
-    "node": ">=0.8 <6 || ^6"
+    "node": ">=0.8 <7.8"
   },
   "dependencies": {
     "bitsyntax": "~0.0.4",
+    "bluebird": "^3.4.6",
     "buffer-more-ints": "0.0.2",
     "readable-stream": "1.x >=1.1.9",
-    "bluebird": "^3.4.6"
+    "safe-buffer": "^5.0.1"
   },
   "devDependencies": {
     "mocha": "~1",

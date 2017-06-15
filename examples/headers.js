@@ -37,6 +37,6 @@ function bindAndConsume(ch, ex, q) {
 
 function send(ch, ex) {
   // The headers for a message are given as an option to `publish`:
-  ch.publish(ex.exchange, '', new Buffer('hello'), {headers: {baz: 'boo'}});
-  ch.publish(ex.exchange, '', new Buffer('world'), {headers: {foo: 'bar'}});
+  ch.publish(ex.exchange, '', Buffer.from('hello'), {headers: {baz: 'boo'}});
+  ch.publish(ex.exchange, '', Buffer.from('world'), {headers: {foo: 'bar'}});
 }

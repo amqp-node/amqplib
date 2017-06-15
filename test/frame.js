@@ -3,7 +3,7 @@
 var assert = require('assert');
 var succeed = require('./util').succeed;
 var fail = require('./util').fail;
-
+var Buffer = require('safe-buffer').Buffer;
 var connection = require('../lib/connection');
 var Frames = connection.Connection;
 var HEARTBEAT = require('../lib/frame').HEARTBEAT;
@@ -21,7 +21,7 @@ function inputs() {
   return new PassThrough({objectMode: true});
 }
 
-var HB = new Buffer([defs.constants.FRAME_HEARTBEAT,
+var HB = Buffer.from([defs.constants.FRAME_HEARTBEAT,
                      0, 0, // channel 0
                      0, 0, 0, 0, // zero size
                      defs.constants.FRAME_END]);
@@ -51,7 +51,7 @@ suite("Explicit parsing", function() {
       var input = inputs();
       var frames = new Frames(input);
       frames.frameMax = 5; //for the max frame test
-      input.write(new Buffer(bytes));
+      input.write(Buffer.from(bytes));
       frames.step(function(err, frame) {
         if (err != null) done();
         else done(new Error('Was a bogus frame!'));
@@ -166,7 +166,7 @@ var Content = transform(function(args) {
   return {
     method: args[0].fields,
     header: args[1].fields,
-    body: new Buffer(args[2])
+    body: Buffer.from(args[2])
   }
 }, sequence(amqp.methods['BasicDeliver'],
             amqp.properties['BasicProperties'], Body));

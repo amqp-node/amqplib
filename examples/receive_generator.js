@@ -18,7 +18,7 @@ co(function* () {
     const msg = 'Hello World!';
     const channel = yield conn.createChannel();
     yield channel.assertQueue(q);
-    channel.sendToQueue(q, new Buffer(msg));
+    channel.sendToQueue(q, Buffer.from(msg));
     console.log(" [x] Sent '%s'", msg);
     // consume the message
     yield channel.consume(q, myConsumer, { noAck: true });

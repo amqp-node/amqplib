@@ -40,7 +40,7 @@ amqp.connect('amqp://localhost').then(function(conn) {
 
       ok = ok.then(function(queue) {
         console.log(' [x] Requesting fib(%d)', n);
-        ch.sendToQueue('rpc_queue', new Buffer(n.toString()), {
+        ch.sendToQueue('rpc_queue', Buffer.from(n.toString()), {
           correlationId: corrId, replyTo: queue
         });
       });

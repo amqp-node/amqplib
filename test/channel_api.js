@@ -7,6 +7,7 @@ var succeed = util.succeed, fail = util.fail;
 var schedule = util.schedule;
 var randomString = util.randomString;
 var Promise = require('bluebird');
+var Buffer = require('safe-buffer').Buffer;
 
 var URL = process.env.URL || 'amqp://localhost';
 
@@ -23,7 +24,7 @@ function expectFail(promise) {
 
 // I'll rely on operations being rejected, rather than the channel
 // close error, to detect failure.
-function ignore() {}
+function ignore () {}
 function ignoreErrors(c) {
   c.on('error', ignore); return c;
 }
@@ -112,7 +113,7 @@ chtest("fail on reasserting exchange with different type",
 chtest("channel break on publishing to non-exchange", function(ch) {
   return new Promise(function(resolve) {
     ch.on('error', resolve);
-    ch.publish(randomString(), '', new Buffer('foobar'));
+    ch.publish(randomString(), '', Buffer.from('foobar'));
   });
 });
 
@@ -179,7 +180,7 @@ chtest("send to queue and get from queue", function(ch) {
   var msg = randomString();
   return Promise.join(ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
     .then(function() {
-      ch.sendToQueue(q, new Buffer(msg));
+      ch.sendToQueue(q, Buffer.from(msg));
       return waitForMessages(q);
     })
     .then(function() {
@@ -193,7 +194,7 @@ chtest("send to queue and get from queue", function(ch) {
 
 chtest("send (and get) zero content to queue", function(ch) {
   var q = 'test.send-to-q';
-  var msg = new Buffer(0);
+  var msg = Buffer.alloc(0);
   return Promise.join(
     ch.assertQueue(q, QUEUE_OPTS),
     ch.purgeQueue(q))
@@ -224,7 +225,7 @@ chtest("route message", function(ch) {
     ch.purgeQueue(q),
     ch.bindQueue(q, ex, '', {}))
     .then(function() {
-      ch.publish(ex, '', new Buffer(msg));
+      ch.publish(ex, '', Buffer.from(msg));
       return waitForMessages(q);})
     .then(function() {
       return ch.get(q, {noAck: true});})
@@ -239,7 +240,7 @@ chtest("purge queue", function(ch) {
   var q = 'test.purge-queue';
   return ch.assertQueue(q, {durable: false})
     .then(function() {
-      ch.sendToQueue(q, new Buffer('foobar'));
+      ch.sendToQueue(q, Buffer.from('foobar'));
       return waitForMessages(q);})
     .then(function() {
       ch.purgeQueue(q);
@@ -262,7 +263,7 @@ chtest("unbind queue", function(ch) {
     ch.purgeQueue(q),
     ch.bindQueue(q, ex, '', {}))
     .then(function() {
-      ch.publish(ex, '', new Buffer('foobar'));
+      ch.publish(ex, '', Buffer.from('foobar'));
       return waitForMessages(q);})
     .then(function() { // message got through!
       return ch.get(q, {noAck:true})
@@ -271,9 +272,9 @@ chtest("unbind queue", function(ch) {
       return ch.unbindQueue(q, ex, '', {});})
     .then(function() {
       // via the no-longer-existing binding
-      ch.publish(ex, '', new Buffer(viabinding));
+      ch.publish(ex, '', Buffer.from(viabinding));
       // direct to the queue
-      ch.sendToQueue(q, new Buffer(direct));
+      ch.sendToQueue(q, Buffer.from(direct));
       return waitForMessages(q);})
     .then(function() {return ch.get(q)})
     .then(function(m) {
@@ -305,7 +306,7 @@ chtest("consume via exchange-exchange binding", function(ch) {
         }
         ch.consume(q, delivery, {noAck: true})
           .then(function() {
-            ch.publish(ex1, rk, new Buffer(msg));
+            ch.publish(ex1, rk, Buffer.from(msg));
           });
       });
     });
@@ -327,7 +328,7 @@ chtest("unbind exchange", function(ch) {
     ch.bindExchange(dest, source, '', {}),
     ch.bindQueue(q, dest, '', {}))
     .then(function() {
-      ch.publish(source, '', new Buffer('foobar'));
+      ch.publish(source, '', Buffer.from('foobar'));
       return waitForMessages(q);})
     .then(function() { // message got through!
       return ch.get(q, {noAck:true})
@@ -336,9 +337,9 @@ chtest("unbind exchange", function(ch) {
       return ch.unbindExchange(dest, source, '', {});})
     .then(function() {
       // via the no-longer-existing binding
-      ch.publish(source, '', new Buffer(viabinding));
+      ch.publish(source, '', Buffer.from(viabinding));
       // direct to the queue
-      ch.sendToQueue(q, new Buffer(direct));
+      ch.sendToQueue(q, Buffer.from(direct));
       return waitForMessages(q);})
     .then(function() {return ch.get(q)})
     .then(function(m) {
@@ -360,7 +361,7 @@ chtest("cancel consumer", function(ch) {
     ch.consume(q, resolve, {noAck:true})
       .then(function(ok) {
         ctag = ok.consumerTag;
-        ch.sendToQueue(q, new Buffer('foo'));
+        ch.sendToQueue(q, Buffer.from('foo'));
       }));
   });
 
@@ -368,7 +369,7 @@ chtest("cancel consumer", function(ch) {
   return recv1.then(function() {
     var recv2 = Promise.join(
       ch.cancel(ctag).then(function() {
-        return ch.sendToQueue(q, new Buffer('bar'));
+        return ch.sendToQueue(q, Buffer.from('bar'));
       }),
       // but check a message did arrive in the queue
       waitForMessages(q))
@@ -412,8 +413,8 @@ chtest("ack", function(ch) {
     ch.assertQueue(q, QUEUE_OPTS),
     ch.purgeQueue(q))
     .then(function() {
-      ch.sendToQueue(q, new Buffer(msg1));
-      ch.sendToQueue(q, new Buffer(msg2));
+      ch.sendToQueue(q, Buffer.from(msg1));
+      ch.sendToQueue(q, Buffer.from(msg2));
       return waitForMessages(q, 2);
     })
     .then(function() {
@@ -441,7 +442,7 @@ chtest("nack", function(ch) {
   return Promise.join(
     ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
     .then(function() {
-      ch.sendToQueue(q, new Buffer(msg1));
+      ch.sendToQueue(q, Buffer.from(msg1));
       return waitForMessages(q);})
     .then(function() {
       return ch.get(q, {noAck: false})})
@@ -466,7 +467,7 @@ chtest("reject", function(ch) {
   return Promise.join(
     ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
     .then(function() {
-      ch.sendToQueue(q, new Buffer(msg1));
+      ch.sendToQueue(q, Buffer.from(msg1));
       return waitForMessages(q);})
     .then(function() {
       return ch.get(q, {noAck: false})})
@@ -488,8 +489,8 @@ chtest("prefetch", function(ch) {
     ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q),
     ch.prefetch(1))
     .then(function() {
-      ch.sendToQueue(q, new Buffer('foobar'));
-      ch.sendToQueue(q, new Buffer('foobar'));
+      ch.sendToQueue(q, Buffer.from('foobar'));
+      ch.sendToQueue(q, Buffer.from('foobar'));
       return waitForMessages(q, 2);
     })
     .then(function() {
@@ -526,7 +527,7 @@ confirmtest('message is confirmed', function(ch) {
   return Promise.join(
     ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
     .then(function() {
-      return ch.sendToQueue(q, new Buffer('bleep'));
+      return ch.sendToQueue(q, Buffer.from('bleep'));
     });
 });
 
@@ -550,7 +551,7 @@ confirmtest('multiple confirms', function(ch) {
 
         function sendAndPushPromise() {
           var conf = Promise.fromCallback(function(cb) {
-            return ch.sendToQueue(q, new Buffer('bleep'), {}, cb);
+            return ch.sendToQueue(q, Buffer.from('bleep'), {}, cb);
           });
           cs.push(conf);
         }
@@ -575,7 +576,7 @@ confirmtest('multiple confirms', function(ch) {
 
 confirmtest('wait for confirms', function(ch) {
   for (var i=0; i < 1000; i++) {
-    ch.publish('', '', new Buffer('foobar'), {});
+    ch.publish('', '', Buffer.from('foobar'), {});
   }
   return ch.waitForConfirms();
 })

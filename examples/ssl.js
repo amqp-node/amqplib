@@ -59,6 +59,6 @@ var open = amqp.connect('amqps://localhost', opts);
 open.then(function(conn) {
   process.on('SIGINT', conn.close.bind(conn));
   return conn.createChannel().then(function(ch) {
-    ch.sendToQueue('foo', new Buffer('Hello World!'));
+    ch.sendToQueue('foo', Buffer.from('Hello World!'));
   });
 }).then(null, console.warn);

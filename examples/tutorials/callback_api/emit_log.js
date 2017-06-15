@@ -17,7 +17,7 @@ function on_connect(err, conn) {
     ch.assertExchange(ex, 'fanout', {durable: false});
     var msg = process.argv.slice(2).join(' ') ||
       'info: Hello World!';
-    ch.publish(ex, '', new Buffer(msg));
+    ch.publish(ex, '', Buffer.from(msg));
     console.log(" [x] Sent '%s'", msg);
     ch.close(function() { conn.close(); });
   }

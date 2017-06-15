@@ -3,7 +3,7 @@
 'use strict';
 
 var C = require('claire');
-
+var Buffer = require('safe-buffer').Buffer;
 var forAll = C.forAll;
 var arb = C.data;
 var transform = C.transform;
@@ -36,7 +36,7 @@ function rangeInt(name, a, b) {
 }
 
 function toFloat32(i) {
-  var b = new Buffer(4);
+  var b = Buffer.alloc(4);
   b.writeFloatBE(i, 0);
   return b.readFloatBE(0);
 }
@@ -63,7 +63,7 @@ var ShortStr = label('shortstr',
 
 var LongStr = label('longstr',
                     transform(
-                      function(bytes) { return new Buffer(bytes); },
+                      function(bytes) { return Buffer.from(bytes); },
                       repeat(Octet)));
 
 var UShort = rangeInt('short-uint', 0, 0xffff);

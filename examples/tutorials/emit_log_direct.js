@@ -12,7 +12,7 @@ amqp.connect('amqp://localhost').then(function(conn) {
     var ok = ch.assertExchange(ex, 'direct', {durable: false});
 
     return ok.then(function() {
-      ch.publish(ex, severity, new Buffer(message));
+      ch.publish(ex, severity, Buffer.from(message));
       console.log(" [x] Sent %s:'%s'", severity, message);
       return ch.close();
     });

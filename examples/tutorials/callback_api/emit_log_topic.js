@@ -17,7 +17,7 @@ function on_connect(err, conn) {
   conn.createChannel(function(err, ch) {
     ch.assertExchange(ex, 'topic', exopts, function(err, ok) {
       if (err !== null) return bail(err, conn);
-      ch.publish(ex, key, new Buffer(message));
+      ch.publish(ex, key, Buffer.from(message));
       console.log(" [x] Sent %s:'%s'", key, message);
       ch.close(function() { conn.close(); });
     });
