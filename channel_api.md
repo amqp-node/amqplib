@@ -314,7 +314,7 @@ URI, e.g., as in `'amqp://localhost?frameMax=0x1000'`. These are:
    `0`, meaning `2^16 - 1`.
 
  * `heartbeat`: the period of the connection heartbeat, in
-   seconds. Defaults to `0`, meaning no heartbeat. OMG no heartbeat!
+   seconds. Defaults to `0`; see [heartbeating](#heartbeating)
 
  * `locale`: the desired locale for error messages, I
    suppose. RabbitMQ only ever uses `en_US`; which, happily, is the
@@ -351,6 +351,14 @@ parameter, the connection will be monitored for liveness. If the
 client fails to read data from the connection for two successive
 intervals, the connection will emit an error and close. It will also
 send heartbeats to the server (in the absence of other data).
+
+If you supply `0` as the `heartbeat` parameter (or defaults to `0`), the
+server value is used. This means that you can only disable heartbeat if
+the server value is also `0`. See
+[here](https://www.rabbitmq.com/configure.html) for more details.
+
+NOTE: Please consider NOT disabling heartbeats because they exist for a
+[reason](http://www.rabbitmq.com/heartbeats.html).
 
 [^top](#top)
 
