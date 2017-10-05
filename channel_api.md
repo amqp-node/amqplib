@@ -45,6 +45,8 @@ title: Channel API reference
      * [channel.prefetch](#channel_prefetch)
      * [channel.recover](#channel_recover)
    * [ConfirmChannel](#confirmchannel)
+     * [confirmChannel.publish](#confirmchannel_publish)
+     * [confirmChannel.sendToQueue](#confirmchannel_sendToQueue)
      * [confirmChannel.waitForConfirms](#confirmchannel_waitForConfirms)
  * [RabbitMQ and deletion](#idempotent-deletes)
 
@@ -1377,18 +1379,18 @@ indicating that it's been dealt with.
 
 A confirm channel has the same methods as a regular channel, except
 that `#publish` and `#sendToQueue` accept a callback as an additional
-argument:
+argument. See examples and method signature below.
 
 ```javascript
 var open = require('amqplib').connect();
 open.then(function(c) {
   c.createConfirmChannel().then(function(ch) {
     ch.sendToQueue('foo', new Buffer('foobar'), {},
-                   function(err, ok) {
-                     if (err !== null)
-                       console.warn('Message nacked!');
-                     else
-                       console.log('Message acked');
+      function(err, ok) {
+        if (err !== null)
+          console.warn('Message nacked!');
+        else
+          console.log('Message acked');
     });
   });
 });
@@ -1407,9 +1409,6 @@ require('amqplib/callback_api').connect(function(err, c) {
 });
 ```
 
-In practice this means the `options` argument must be supplied, at
-least as an empty object.
-
 There are, broadly speaking, two uses for confirms. The first is to be
 able to act on the information that a message has been accepted, for
 example by responding to an upstream request. The second is to rate
@@ -1421,6 +1420,32 @@ allowed.
 This constructor is a channel that uses confirms. It is exported as an
 extension point. To obtain such a channel, use `connect` to get a
 connection, then call `#createConfirmChannel`.
+
+[^top](#top)
+
+### <a name="confirmchannel_publish"></a>ConfirmChannel#publish
+
+##### Callbacks
+
+`#publish(exchange, routingKey, content, options, function(err, ok) {...})`
+
+`options` argument must be supplied, at least as an empty object.
+
+**NOTE**: Does not return a promise in the promises API; see
+[flow control](#flowcontrol)
+
+[^top](#top)
+
+### <a name="confirmchannel_sendToQueue"></a>ConfirmChannel#sendToQueue
+
+##### Callbacks
+
+`#sendToQueue(queue, content, options, function(err, ok) {...})`
+
+`options` argument must be supplied, at least as an empty object.
+
+**NOTE**: Does not return a promise in the promises API; see
+[flow control](#flowcontrol)
 
 [^top](#top)
 
