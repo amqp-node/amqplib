@@ -10,7 +10,7 @@
  * [Examples from RabbitMQ tutorials][tutes]
 
 A library for making AMQP 0-9-1 clients for Node.JS, and an AMQP 0-9-1
-client for Node.JS v0.8-12, v4.0, and the intervening io.js
+client for Node.JS v0.8-0.12, v4-v9, and the intervening io.js
 releases.
 
 This library does not implement [AMQP
@@ -21,6 +21,7 @@ Project status:
 
  - Expected to work
  - Complete high-level and low-level APIs (i.e., all bits of the protocol)
+ - Stable APIs
  - A fair few tests
  - Measured test coverage
  - Ports of the [RabbitMQ tutorials][rabbitmq-tutes] as [examples][tutes]
@@ -29,7 +30,6 @@ Project status:
 Still working on:
 
  - Getting to 100% (or very close to 100%) test coverage
- - Settling on completely stable APIs
 
 ## Callback API example
 

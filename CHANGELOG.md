@@ -1,5 +1,26 @@
 # Change log for amqplib
 
+## Changes in v0.5.2
+
+    git log v0.5.1..v0.5.2
+
+ * Increase encoding buffer to accommodate large header values
+   ([PR 367](https://github.com/squaremo/amqp.node/pull/367))
+ * Bring code up to date with new Buffer interface
+   ([PR 350](https://github.com/squaremo/amqp.node/pull/350))
+ * Fix dangling connection problem
+   ([PR 340](https://github.com/squaremo/amqp.node/pull/340))
+ * Clear up URL credentials parsing
+   ([PR 330](https://github.com/squaremo/amqp.node/pull/330))
+ * Allow connection params to be suppied in object
+   ([PR 304](https://github.com/squaremo/amqp.node/pull/304))
+ * Support explicit numeric types in field tables (e.g., headers)
+   ([PR 389](https://github.com/squaremo/amqp.node/pull/389), from a
+   suggestion in
+   [issue 358](https://github.com/squaremo/amqp.node/issues/358))
+
+Thank you to all contributors, of PRs, issues and comments.
+
 ## Changes in v0.5.1
 
     git log v0.5.0..v0.5.1
