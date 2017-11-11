@@ -292,6 +292,19 @@ entirely, it will default to `'amqp://localhost'`, which given the
 defaults for missing parts, will connect to a RabbitMQ installation
 with factory settings, on localhost.
 
+###### auth
+
+The auth section (`guest:guest` above) is treated as one section for
+the purpose of default values; if anything appears there, it will
+taken as giving both the username and password (and if either is
+absent, it will be treated as empty i.e., `''`).
+
+The username is everything up to the first colon `':'` _after_ URL
+decoding; be careful using colons in usernames, even if encoded. If
+there is no colon, the username is the whole auth section.
+
+###### vhost
+
 For convenience, an _absent_ path segment (e.g., as in the URLs just
 given) is interpreted as the virtual host named `/`, which is present
 in RabbitMQ out of the box. Per the URI specification, _just a
@@ -300,6 +313,8 @@ host with an empty name, which does not exist unless it's been
 explicitly created. When specifying another virtual host, remember
 that its name must be escaped; so e.g., the virtual host named `/foo`
 is `'%2Ffoo'`; in a full URI, `'amqp://localhost/%2Ffoo'`.
+
+###### tuning parameters
 
 Further AMQP tuning parameters may be given in the query part of the
 URI, e.g., as in `'amqp://localhost?frameMax=0x1000'`. These are:
@@ -320,6 +335,30 @@ URI, e.g., as in `'amqp://localhost?frameMax=0x1000'`. These are:
    suppose. RabbitMQ only ever uses `en_US`; which, happily, is the
    default.
 
+###### Connecting with an object instead of a URL
+
+The URL can also be supplied as an object of the form:
+
+```
+{
+  protocol: 'amqp',
+  hostname: 'localhost',
+  port: 5672,
+  username: 'guest',
+  password: 'guest',
+  locale: 'en_US',
+  frameMax: 0,
+  heartbeat: 0,
+  vhost: '/',
+}
+```
+
+in which case the values discussed above will be taken directly from
+the fields. Absent fields will be given defaults as for a URL supplied
+as a string.
+
+###### Socket options
+
 The socket options will be passed to the socket library (`net` or
 `tls`). In an exception to the general rule, *they must be fields set
 on the object supplied*; that is, not in the prototype chain. The
@@ -329,6 +368,8 @@ SSL connection; see the [SSL guide][ssl-doc].
 The socket options may also include the key `noDelay`, with a boolean
 value. If the value is `true`, this sets
 [`TCP_NODELAY`][wikipedia-nagling] on the underlying socket.
+
+###### Result
 
 The returned promise, or supplied callback, will either be resolved
 with an object representing an open connection, or rejected with a
