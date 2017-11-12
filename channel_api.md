@@ -270,6 +270,48 @@ ch.consume('bar', console.log, bar_consume_opts);
 // table
 ```
 
+### <a name="tables"></a>Field table values
+
+The aforementioned `arguments` option, and the `headers` option of
+`publish` and `sendToQueue`, are both a "field table" value. This is
+an object with more or less arbitrary keys and values.
+
+There are some special kinds of value that may be encoded in tables;
+these are represented in JavaScript using an object, with a field
+`'!'` giving the AMQP type. You can send these, and you may receive
+them.
+
+| Type | Example |
+|------|---------|
+| Timestamp | `{'!': 'timestamp', value: 1510443625620}` |
+| Decimal   | `{'!': 'decimal', value: {digits: 4999, places: 2}}` |
+
+Usually, numbers will be encoded as a double if they have a fractional
+part, and the smallest size of integer necessary, otherwise. For
+example, `12` will be encoded as a byte (int8), and 300 will be
+encoded as a short (int16).
+
+For some purposes (header matching exchanges, for example) you may
+want to give a specific encoding for a number. You can use the `'!'`
+notation above to give the specific encoding; but you will not ever
+receive numbers like this -- you'll just get a number. There are
+aliases for most encodings, as shown in the examples.
+
+| Encoding | Example |
+|----------|---------|
+| signed 8-bit integer  | `{'!': 'int8', value: 64}`   |
+|                       | `{'!': 'byte', value: 64}`   |
+| signed 16-bit integer | `{'!': 'int16', value: 64}`  |
+|                       | `{'!': 'short', value: 64}`  |
+| signed 32-bit integer | `{"!': 'int32', value: 64}`  |
+|                       | `{'!': 'int', value: 64}`    |
+| signed 64-bit integer | `{'!': 'int64', value: 64}`  |
+|                       | `{'!': 'long', value: 64}`   |
+| 32-bit floating point | `{'!': 'float', value: 64}`  |
+| 64-bit floating point | `{'!': 'double', value: 64}` |
+
+NB AMQP only has signed integers in tables.
+
 [^top](#top)
 
 ## <a name="api_reference"></a>API reference
@@ -1041,7 +1083,7 @@ Ignored by RabbitMQ (but may be useful for applications):
    along with the message content. The value as sent may be augmented
    by extension-specific fields if they are given in the parameters,
    for example, 'CC', since these are encoded as message headers; the
-   supplied value won't be mutated
+   supplied value won't be mutated.
 
  * `correlationId` (string): usually used to match replies to
    requests, or similar
