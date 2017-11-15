@@ -13,6 +13,8 @@ var format = require('util').format;
 
 var URL = process.env.URL || 'amqp://localhost';
 
+var urlparse = require('url-parse');
+
 suite("Credentials", function() {
 
   function checkCreds(creds, user, pass, done) {
@@ -27,29 +29,29 @@ suite("Credentials", function() {
   }
 
   test("no creds", function(done) {
-    var parts = {auth: ''};
+    var parts = urlparse('amqp://localhost');
     var creds = credentialsFromUrl(parts);
     checkCreds(creds, 'guest', 'guest', done);
   });
   test("usual user:pass", function(done) {
-    var parts = {auth: 'user:pass'};
+    var parts = urlparse('amqp://user:pass@localhost')
     var creds = credentialsFromUrl(parts);
     checkCreds(creds, 'user', 'pass', done);
   });
   test("missing user", function(done) {
-    var parts = {auth: ':password'};
+    var parts = urlparse('amqps://:password@localhost');
     var creds = credentialsFromUrl(parts);
     checkCreds(creds, '', 'password', done);
   });
   test("missing password", function(done) {
-    var parts = {auth: 'username'};
+    var parts = urlparse('amqps://username:@localhost');
     var creds = credentialsFromUrl(parts);
     checkCreds(creds, 'username', '', done);
   });
-  test("colon in password", function(done) {
-    var parts = {auth: 'username:pass:word'};
+  test("escaped colons", function(done) {
+    var parts = urlparse('amqp://user%3Aname:pass%3Aword@localhost')
     var creds = credentialsFromUrl(parts);
-    checkCreds(creds, 'username', 'pass:word', done);
+    checkCreds(creds, 'user:name', 'pass:word', done);
   });
 });
 
