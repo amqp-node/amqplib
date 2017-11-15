@@ -30,10 +30,10 @@ function baseChannelTest(client, server) {
     });
 
     pair.server.read(8); // discard the protocol header
-    var s = util.runServer(pair.server, function(send, await) {
-      conn_handshake(send, await)
+    var s = util.runServer(pair.server, function(send, wait) {
+      conn_handshake(send, wait)
         .then(function() {
-          server(send, await, bothDone);
+          server(send, wait, bothDone);
         }, fail(bothDone));
     });
   };
@@ -46,18 +46,18 @@ function channelTest(client, server) {
       if (LOG_ERRORS) ch.on('error', console.warn);
       client(ch, done, conn);
     },
-    function(send, await, done) {
-      channel_handshake(send, await)
+    function(send, wait, done) {
+      channel_handshake(send, wait)
       .then(function(ch) {
-        return server(send, await, done, ch);
+        return server(send, wait, done, ch);
       }).then(null, fail(done)); // so you can return a promise to let
                                  // errors bubble out
     }
   );
 };
 
-function channel_handshake(send, await) {
-  return await(defs.ChannelOpen)()
+function channel_handshake(send, wait) {
+  return wait(defs.ChannelOpen)()
     .then(function(open) {
       assert.notEqual(0, open.channel);
       send(defs.ChannelOpenOk, {channelId: Buffer.from('')}, open.channel);
@@ -91,7 +91,7 @@ test("open", channelTest(
   function(ch, done) {
     open(ch).then(succeed(done), fail(done));
   },
-  function(send, await, done) {
+  function(send, wait, done) {
     done();
   }));
 
@@ -100,8 +100,8 @@ test("bad server", baseChannelTest(
     var ch = new Channel(c);
     open(ch).then(fail(done), succeed(done));
   },
-  function(send, await, done) {
-    return await(defs.ChannelOpen)()
+  function(send, wait, done) {
+    return wait(defs.ChannelOpen)()
       .then(function(open) {
         send(defs.ChannelCloseOk, {}, open.channel);
       }).then(succeed(done), fail(done));
@@ -117,8 +117,8 @@ test("open, close", channelTest(
       })
       .then(succeed(done), fail(done));
   },
-  function(send, await, done, ch) {
-    return await(defs.ChannelClose)()
+  function(send, wait, done, ch) {
+    return wait(defs.ChannelClose)()
       .then(function(close) {
         send(defs.ChannelCloseOk, {}, ch);
       }).then(succeed(done), fail(done));
@@ -132,13 +132,13 @@ test("server close", channelTest(
     });
     open(ch);
   },
-  function(send, await, done, ch) {
+  function(send, wait, done, ch) {
     send(defs.ChannelClose, {
       replyText: 'Forced close',
       replyCode: defs.constants.CHANNEL_ERROR,
       classId: 0, methodId: 0
     }, ch);
-    await(defs.ChannelCloseOk)()
+    wait(defs.ChannelCloseOk)()
       .then(succeed(done), fail(done));
   }));
 
@@ -151,8 +151,8 @@ test("overlapping channel/server close", channelTest(
       ch.closeBecause("Bye", defs.constants.REPLY_SUCCESS);
     }, fail(both));
   },
-  function(send, await, done, ch) {
-    await(defs.ChannelClose)()
+  function(send, wait, done, ch) {
+    wait(defs.ChannelClose)()
       .then(function() {
         send(defs.ConnectionClose, {
           replyText: 'Got there first',
@@ -160,7 +160,7 @@ test("overlapping channel/server close", channelTest(
           classId: 0, methodId: 0
         }, 0);
       })
-      .then(await(defs.ConnectionCloseOk))
+      .then(wait(defs.ConnectionCloseOk))
       .then(succeed(done), fail(done));
   }));
 
@@ -174,8 +174,8 @@ test("double close", channelTest(
       });
     }).then(succeed(done), fail(done));
   },
-  function(send, await, done, ch) {
-    await(defs.ChannelClose)()
+  function(send, wait, done, ch) {
+    wait(defs.ChannelClose)()
       .then(function() {
         send(defs.ChannelCloseOk, {
         }, ch);
@@ -208,16 +208,16 @@ test("RPC", channelTest(
       ch._rpc(defs.BasicQos, fields, defs.BasicQosOk, wheeboom);
     }).then(null, fail(rpcLatch));
   },
-  function(send, await, done, ch) {
+  function(send, wait, done, ch) {
     function sendOk(f) {
       send(defs.BasicQosOk, {}, ch);
     }
 
-    return await(defs.BasicQos)()
+    return wait(defs.BasicQos)()
       .then(sendOk)
-      .then(await(defs.BasicQos))
+      .then(wait(defs.BasicQos))
       .then(sendOk)
-      .then(await(defs.BasicQos))
+      .then(wait(defs.BasicQos))
       .then(sendOk)
       .then(succeed(done), fail(done));
   }));
@@ -241,12 +241,12 @@ test("Bad RPC", channelTest(
                 });
       }, fail(errLatch));
   },
-  function(send, await, done, ch) {
-    return await()()
+  function(send, wait, done, ch) {
+    return wait()()
       .then(function() {
         send(defs.BasicGetEmpty, {clusterId: ''}, ch);
       }) // oh wait! that was wrong! expect a channel close
-      .then(await(defs.ChannelClose))
+      .then(wait(defs.ChannelClose))
       .then(function() {
         send(defs.ChannelCloseOk, {}, ch);
       }).then(succeed(done), fail(done));
@@ -284,15 +284,15 @@ test("RPC on closed channel", channelTest(
       .then(succeed(done))
       .catch(fail(done));
   },
-  function(send, await, done, ch) {
-    await(defs.BasicRecover)()
+  function(send, wait, done, ch) {
+    wait(defs.BasicRecover)()
       .then(function() {
         send(defs.ChannelClose, {
           replyText: 'Nuh-uh!',
           replyCode: defs.constants.CHANNEL_ERROR,
           methodId: 0, classId: 0
         }, ch);
-        return await(defs.ChannelCloseOk);
+        return wait(defs.ChannelCloseOk);
       })
       .then(succeed(done))
       .catch(fail(done));
@@ -309,10 +309,10 @@ test("publish all < single chunk threshold", channelTest(
       })
       .then(succeed(done), fail(done));
   },
-  function(send, await, done, ch) {
-    await(defs.BasicPublish)()
-      .then(await(defs.BasicProperties))
-      .then(await(undefined)) // content frame
+  function(send, wait, done, ch) {
+    wait(defs.BasicPublish)()
+      .then(wait(defs.BasicProperties))
+      .then(wait(undefined)) // content frame
       .then(function(f) {
         assert.equal('foobar', f.content.toString());
       }).then(succeed(done), fail(done));
@@ -328,10 +328,10 @@ test("publish content > single chunk threshold", channelTest(
       }, {}, Buffer.alloc(3000));
     }, done);
   },
-  function(send, await, done, ch) {
-    await(defs.BasicPublish)()
-      .then(await(defs.BasicProperties))
-      .then(await(undefined)) // content frame
+  function(send, wait, done, ch) {
+    wait(defs.BasicPublish)()
+      .then(wait(defs.BasicProperties))
+      .then(wait(undefined)) // content frame
       .then(function(f) {
         assert.equal(3000, f.content.length);
       }).then(succeed(done), fail(done));
@@ -349,10 +349,10 @@ test("publish method & headers > threshold", channelTest(
       }, Buffer.from('foobar'));
     }, done);
   },
-  function(send, await, done, ch) {
-    await(defs.BasicPublish)()
-      .then(await(defs.BasicProperties))
-      .then(await(undefined)) // content frame
+  function(send, wait, done, ch) {
+    wait(defs.BasicPublish)()
+      .then(wait(defs.BasicProperties))
+      .then(wait(undefined)) // content frame
       .then(function(f) {
         assert.equal('foobar', f.content.toString());
       }).then(succeed(done), fail(done));
@@ -372,11 +372,11 @@ test("publish zero-length message", channelTest(
       }, {}, Buffer.alloc(0));
     }, done);
   },
-  function(send, await, done, ch) {
-    await(defs.BasicPublish)()
-      .then(await(defs.BasicProperties))
+  function(send, wait, done, ch) {
+    wait(defs.BasicPublish)()
+      .then(wait(defs.BasicProperties))
     // no content frame for a zero-length message
-      .then(await(defs.BasicPublish))
+      .then(wait(defs.BasicPublish))
       .then(succeed(done), fail(done));
   }));
 
@@ -389,7 +389,7 @@ test("delivery", channelTest(
       }, done);
     });
   },
-  function(send, await, done, ch) {
+  function(send, wait, done, ch) {
     completes(function() {
       send(defs.BasicDeliver, DELIVER_FIELDS, ch, Buffer.from('barfoo'));
     }, done);
@@ -404,7 +404,7 @@ test("zero byte msg", channelTest(
       }, done);
     });
   },
-  function(send, await, done, ch) {
+  function(send, wait, done, ch) {
     completes(function() {
       send(defs.BasicDeliver, DELIVER_FIELDS, ch, Buffer.from(''));
     }, done);
@@ -420,11 +420,11 @@ test("bad delivery", channelTest(
     ch.on('close', succeed(errorAndClose));
     open(ch);
   },
-  function(send, await, done, ch) {
+  function(send, wait, done, ch) {
     send(defs.BasicDeliver, DELIVER_FIELDS, ch);
     // now send another deliver without having sent the content
     send(defs.BasicDeliver, DELIVER_FIELDS, ch);
-    return await(defs.ChannelClose)()
+    return wait(defs.ChannelClose)()
       .then(function() {
         send(defs.ChannelCloseOk, {}, ch);
       }).then(succeed(done), fail(done));
@@ -441,7 +441,7 @@ test("bad content send", channelTest(
       });
     }, done);
   },
-  function(send, await, done, ch) {
+  function(send, wait, done, ch) {
     done();
   }));
 
@@ -457,7 +457,7 @@ test("bad properties send", channelTest(
       });
     }, done);
   },
-  function(send, await, done, ch) {
+  function(send, wait, done, ch) {
     done();
   }));
 
@@ -474,9 +474,9 @@ test("bad consumer", channelTest(
     ch.on('close', succeed(errorAndClose));
     open(ch);
   },
-  function(send, await, done, ch) {
+  function(send, wait, done, ch) {
     send(defs.BasicDeliver, DELIVER_FIELDS, ch, Buffer.from('barfoo'));
-    return await(defs.ChannelClose)()
+    return wait(defs.ChannelClose)()
       .then(function() {
         send(defs.ChannelCloseOk, {}, ch);
       }).then(succeed(done), fail(done));
@@ -499,12 +499,12 @@ test("bad send in consumer", channelTest(
 
     open(ch);
   },
-  function(send, await, done, ch) {
+  function(send, wait, done, ch) {
     completes(function() {
       send(defs.BasicDeliver, DELIVER_FIELDS, ch,
            Buffer.from('barfoo'));
     }, done);
-    return await(defs.ChannelClose)()
+    return wait(defs.ChannelClose)()
       .then(function() {
         send(defs.ChannelCloseOk, {}, ch);
       }).then(succeed(done), fail(done));
@@ -519,7 +519,7 @@ test("return", channelTest(
     });
     open(ch);
   },
-  function(send, await, done, ch) {
+  function(send, wait, done, ch) {
     completes(function() {
       send(defs.BasicReturn, DELIVER_FIELDS, ch, Buffer.from('barfoo'));
     }, done);
@@ -534,7 +534,7 @@ test("cancel", channelTest(
     });
     open(ch);
   },
-  function(send, await, done, ch) {
+  function(send, wait, done, ch) {
     completes(function() {
       send(defs.BasicCancel, {
         consumerTag: 'product of society',
@@ -553,7 +553,7 @@ function confirmTest(variety, Method) {
       });
       open(ch);
     },
-    function(send, await, done, ch) {
+    function(send, wait, done, ch) {
       completes(function() {
         send(Method, {
           deliveryTag: 1,
@@ -579,7 +579,7 @@ test("out-of-order acks", channelTest(
     ch.pushConfirmCallback(allConfirms);
     open(ch);
   },
-  function(send, await, done, ch) {
+  function(send, wait, done, ch) {
     completes(function() {
       send(defs.BasicAck, {deliveryTag: 2, multiple: false}, ch);
       send(defs.BasicAck, {deliveryTag: 3, multiple: false}, ch);
@@ -602,7 +602,7 @@ test("not all out-of-order acks", channelTest(
     });
     open(ch);
   },
-  function(send, await, done, ch) {
+  function(send, wait, done, ch) {
     completes(function() {
       send(defs.BasicAck, {deliveryTag: 2, multiple: false}, ch);
       send(defs.BasicAck, {deliveryTag: 1, multiple: false}, ch);

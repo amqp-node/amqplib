@@ -19,12 +19,12 @@ var OPEN_OPTS = {
   'mechanism': 'PLAIN',
   'response': Buffer.from(['', 'guest', 'guest'].join(String.fromCharCode(0))),
   'locale': 'en_US',
-  
+
   // tune-ok
   'channelMax': 0,
   'frameMax': 0,
   'heartbeat': 0,
-  
+
   // open
   'virtualHost': '/',
   'capabilities': '',
@@ -32,7 +32,7 @@ var OPEN_OPTS = {
 };
 module.exports.OPEN_OPTS = OPEN_OPTS;
 
-function happy_open(send, await) {
+function happy_open(send, wait) {
   // kick it off
   send(defs.ConnectionStart,
        {versionMajor: 0,
@@ -40,15 +40,15 @@ function happy_open(send, await) {
         serverProperties: {},
         mechanisms: Buffer.from('PLAIN'),
         locales: Buffer.from('en_US')});
-  return await(defs.ConnectionStartOk)()
+  return wait(defs.ConnectionStartOk)()
     .then(function(f) {
       send(defs.ConnectionTune,
            {channelMax: 0,
             heartbeat: 0,
             frameMax: 0});
     })
-    .then(await(defs.ConnectionTuneOk))
-    .then(await(defs.ConnectionOpen))
+    .then(wait(defs.ConnectionTuneOk))
+    .then(wait(defs.ConnectionOpen))
     .then(function(f) {
       send(defs.ConnectionOpenOk,
            {knownHosts: ''});
@@ -69,8 +69,8 @@ function connectionTest(client, server) {
     assert.deepEqual(Buffer.from("AMQP" + String.fromCharCode(0,0,9,1)),
                      protocolHeader);
 
-    var s = util.runServer(pair.server, function(send, await) {
-      server(send, await, bothDone, pair.server);
+    var s = util.runServer(pair.server, function(send, wait) {
+      server(send, wait, bothDone, pair.server);
     });
   };
 }
@@ -106,15 +106,15 @@ test("happy", connectionTest(
   function(c, done) {
     c.open(OPEN_OPTS, kCallback(succeed(done), fail(done)));
   },
-  function(send, await, done) {
-    happy_open(send, await).then(succeed(done), fail(done));
+  function(send, wait, done) {
+    happy_open(send, wait).then(succeed(done), fail(done));
   }));
 
 test("wrong first frame", connectionTest(
   function(c, done) {
     c.open(OPEN_OPTS, kCallback(fail(done), succeed(done)));
   },
-  function(send, await, done) {
+  function(send, wait, done) {
     // bad server! bad! whatever were you thinking?
     completes(function() {
       send(defs.ConnectionTune,
@@ -128,14 +128,14 @@ test("unexpected socket close", connectionTest(
   function(c, done) {
     c.open(OPEN_OPTS, kCallback(fail(done), succeed(done)));
   },
-  function(send, await, done, socket) {
+  function(send, wait, done, socket) {
     send(defs.ConnectionStart,
          {versionMajor: 0,
           versionMinor: 9,
           serverProperties: {},
           mechanisms: Buffer.from('PLAIN'),
           locales: Buffer.from('en_US')});
-    return await(defs.ConnectionStartOk)()
+    return wait(defs.ConnectionStartOk)()
       .then(function() {
         socket.end();
       })
@@ -151,15 +151,15 @@ test("wrong frame on channel 0", connectionTest(
     c.on('error', succeed(done));
     c.open(OPEN_OPTS);
   },
-  function(send, await, done) {
-    happy_open(send, await)
+  function(send, wait, done) {
+    happy_open(send, wait)
       .then(function() {
         // there's actually nothing that would plausibly be sent to a
         // just opened connection, so this is violating more than one
         // rule. Nonetheless.
         send(defs.ChannelOpenOk, {channelId: Buffer.from('')}, 0);
       })
-      .then(await(defs.ConnectionClose))
+      .then(wait(defs.ConnectionClose))
       .then(function(close) {
         send(defs.ConnectionCloseOk, {}, 0);
       }).then(succeed(done), fail(done));
@@ -170,15 +170,15 @@ test("unopened channel",  connectionTest(
     c.on('error', succeed(done));
     c.open(OPEN_OPTS);
   },
-  function(send, await, done) {
-    happy_open(send, await)
+  function(send, wait, done) {
+    happy_open(send, wait)
       .then(function() {
         // there's actually nothing that would plausibly be sent to a
         // just opened connection, so this is violating more than one
         // rule. Nonetheless.
         send(defs.ChannelOpenOk, {channelId: Buffer.from('')}, 3);
       })
-      .then(await(defs.ConnectionClose))
+      .then(wait(defs.ConnectionClose))
       .then(function(close) {
         send(defs.ConnectionCloseOk, {}, 0);
       }).then(succeed(done), fail(done));
@@ -193,9 +193,9 @@ test("unexpected socket close", connectionTest(
       c.sendHeartbeat();
     }, fail(errorAndClosed)));
   },
-  function(send, await, done, socket) {
-    happy_open(send, await)
-      .then(await())
+  function(send, wait, done, socket) {
+    happy_open(send, wait)
+      .then(wait())
       .then(function() {
         socket.end();
       }).then(succeed(done));
@@ -206,8 +206,8 @@ test("connection.blocked", connectionTest(
     c.on('blocked', succeed(done));
     c.open(OPEN_OPTS);
   },
-  function(send, await, done, socket) {
-    happy_open(send, await)
+  function(send, wait, done, socket) {
+    happy_open(send, wait)
       .then(function() {
         send(defs.ConnectionBlocked, {reason: 'felt like it'}, 0);
       })
@@ -219,8 +219,8 @@ test("connection.unblocked", connectionTest(
     c.on('unblocked', succeed(done));
     c.open(OPEN_OPTS);
   },
-  function(send, await, done, socket) {
-    happy_open(send, await)
+  function(send, wait, done, socket) {
+    happy_open(send, wait)
       .then(function() {
         send(defs.ConnectionUnblocked, {}, 0);
       })
@@ -240,9 +240,9 @@ test("happy", connectionTest(
       c.close(kCallback(succeed(done), fail(done)));
     }, function() {}));
   },
-  function(send, await, done) {
-    happy_open(send, await)
-      .then(await(defs.ConnectionClose))
+  function(send, wait, done) {
+    happy_open(send, wait)
+      .then(wait(defs.ConnectionClose))
       .then(function(close) {
         send(defs.ConnectionCloseOk, {});
       })
@@ -257,9 +257,9 @@ test("interleaved close frames", connectionTest(
       c.close(kCallback(succeed(done), fail(done)));
     }, done));
   },
-  function(send, await, done) {
-    happy_open(send, await)
-      .then(await(defs.ConnectionClose))
+  function(send, wait, done) {
+    happy_open(send, wait)
+      .then(wait(defs.ConnectionClose))
       .then(function(f) {
         send(defs.ConnectionClose, {
           replyText: "Ha!",
@@ -267,7 +267,7 @@ test("interleaved close frames", connectionTest(
           methodId: 0, classId: 0
         });
       })
-      .then(await(defs.ConnectionCloseOk))
+      .then(wait(defs.ConnectionCloseOk))
       .then(function(f) {
         send(defs.ConnectionCloseOk, {});
       })
@@ -281,8 +281,8 @@ test("server error close", connectionTest(
     c.on('error', succeed(done));
     c.open(OPEN_OPTS);
   },
-  function(send, await, done) {
-    happy_open(send, await)
+  function(send, wait, done) {
+    happy_open(send, wait)
       .then(function(f) {
         send(defs.ConnectionClose, {
           replyText: "Begone",
@@ -290,7 +290,7 @@ test("server error close", connectionTest(
           methodId: 0, classId: 0
         });
       })
-      .then(await(defs.ConnectionCloseOk))
+      .then(wait(defs.ConnectionCloseOk))
       .then(succeed(done), fail(done));
   }));
 
@@ -300,8 +300,8 @@ test("operator-intiated close", connectionTest(
     c.on('error', fail(done));
     c.open(OPEN_OPTS);
   },
-  function(send, await, done) {
-    happy_open(send, await)
+  function(send, wait, done) {
+    happy_open(send, wait)
       .then(function(f) {
         send(defs.ConnectionClose, {
           replyText: "Begone",
@@ -309,7 +309,7 @@ test("operator-intiated close", connectionTest(
           methodId: 0, classId: 0
         });
       })
-      .then(await(defs.ConnectionCloseOk))
+      .then(wait(defs.ConnectionCloseOk))
       .then(succeed(done), fail(done));
   }));
 
@@ -325,9 +325,9 @@ test("double close", connectionTest(
       done();
     }, done));
   },
-  function(send, await, done) {
-    happy_open(send, await)
-      .then(await(defs.ConnectionClose))
+  function(send, wait, done) {
+    happy_open(send, wait)
+      .then(wait(defs.ConnectionClose))
       .then(function() {
         send(defs.ConnectionCloseOk, {});
       })
@@ -359,15 +359,15 @@ test("send heartbeat after open", connectionTest(
       c.open(opts);
     }, done);
   },
-  function(send, await, done, socket) {
+  function(send, wait, done, socket) {
     var timer;
-    happy_open(send, await)
+    happy_open(send, wait)
       .then(function() {
         timer = setInterval(function() {
           socket.write(HB_BUF);
         }, heartbeat.UNITS_TO_MS);
       })
-      .then(await())
+      .then(wait())
       .then(function(hb) {
         if (hb === HEARTBEAT) done();
         else done("Next frame after silence not a heartbeat");
@@ -382,8 +382,8 @@ test("detect lack of heartbeats", connectionTest(
     c.on('error', succeed(done));
     c.open(opts);
   },
-  function(send, await, done, socket) {
-    happy_open(send, await)
+  function(send, wait, done, socket) {
+    happy_open(send, wait)
       .then(succeed(done), fail(done));
     // conspicuously not sending anything ...
   }));
