@@ -76,7 +76,7 @@ function runServer(socket, run) {
     }
   }
 
-  function await(method) {
+  function wait(method) {
     return function() {
       return new Promise(function(resolve, reject) {
         if (method) {
@@ -98,7 +98,7 @@ function runServer(socket, run) {
       });
     };
   }
-  run(send, await);
+  run(send, wait);
   return frames;
 }
 
