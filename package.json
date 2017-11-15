@@ -16,7 +16,8 @@
     "bluebird": "^3.4.6",
     "buffer-more-ints": "0.0.2",
     "readable-stream": "1.x >=1.1.9",
-    "safe-buffer": "^5.0.1"
+    "safe-buffer": "^5.0.1",
+    "url-parse": "^1.2.0"
   },
   "devDependencies": {
     "mocha": "~1",
