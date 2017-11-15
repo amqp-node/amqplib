@@ -337,13 +337,12 @@ with factory settings, on localhost.
 ###### auth
 
 The auth section (`guest:guest` above) is treated as one section for
-the purpose of default values; if anything appears there, it will
-taken as giving both the username and password (and if either is
-absent, it will be treated as empty i.e., `''`).
+the purpose of default values. If nothing appears there, the defaults
+will be used. If anything appears there, it will taken as giving both
+the username and password (and if either is absent, it will be treated
+as empty i.e., `''`).
 
-The username is everything up to the first colon `':'` _after_ URL
-decoding; be careful using colons in usernames, even if encoded. If
-there is no colon, the username is the whole auth section.
+Usernames and passwords should be [percent-encoded][].
 
 ###### vhost
 
@@ -1474,3 +1473,4 @@ there are messages in the queue.
 [rabbitmq-prefetch]: http://www.rabbitmq.com/consumer-prefetch.html
 [wikipedia-nagling]: http://en.wikipedia.org/wiki/Nagle%27s_algorithm
 [rabbitmq-priority-queue]: http://www.rabbitmq.com/priority.html
+[percent-encoded]: https://developer.mozilla.org/en-US/docs/Glossary/percent-encoding
