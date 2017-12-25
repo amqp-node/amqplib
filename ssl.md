@@ -85,7 +85,7 @@ you only need to do it once):
 ```javascript
 var opts = {
   cert: fs.readFileSync('clientcert.pem'),
-  key: fs.creadFileSync('clientkey.pem'),
+  key: fs.readFileSync('clientkey.pem'),
   passphrase: 'MySecretPassword',
   ca: [fs.readFileSync('cacert.pem')]
 };
