@@ -550,9 +550,7 @@ confirmtest('multiple confirms', function(ch) {
         var cs = [];
 
         function sendAndPushPromise() {
-          var conf = Promise.fromCallback(function(cb) {
-            return ch.sendToQueue(q, Buffer.from('bleep'), {}, cb);
-          });
+          var conf = ch.sendToQueue(q, Buffer.from('bleep'), {});
           cs.push(conf);
         }
 
