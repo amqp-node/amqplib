@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 var amqp = require('amqplib');
-var all = require('when').all;
+var all = require('bluebird').all;
 var basename = require('path').basename;
 
 var severities = process.argv.slice(2);
@@ -42,4 +42,4 @@ amqp.connect('amqp://localhost').then(function(conn) {
                   msg.content.toString());
     }
   });
-}).then(null, console.warn);
+}).catch(console.warn);

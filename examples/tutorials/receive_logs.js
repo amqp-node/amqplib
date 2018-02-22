@@ -25,4 +25,4 @@ amqp.connect('amqp://localhost').then(function(conn) {
       console.log(" [x] '%s'", msg.content.toString());
     }
   });
-}).then(null, console.warn);
+}).catch(console.warn);

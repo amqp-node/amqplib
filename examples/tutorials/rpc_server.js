@@ -31,9 +31,9 @@ amqp.connect('amqp://localhost').then(function(conn) {
       console.log(' [.] fib(%d)', n);
       var response = fib(n);
       ch.sendToQueue(msg.properties.replyTo,
-                     new Buffer(response.toString()),
+                     Buffer.from(response.toString()),
                      {correlationId: msg.properties.correlationId});
       ch.ack(msg);
     }
   });
-}).then(null, console.warn);
+}).catch(console.warn);

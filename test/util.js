@@ -1,11 +1,11 @@
 'use strict';
 
+var Promise = require('bluebird');
 var crypto = require('crypto');
 var Connection = require('../lib/connection').Connection;
 var PassThrough =
   require('stream').PassThrough ||
   require('readable-stream/passthrough');
-var defer = require('when').defer;
 var defs = require('../lib/defs');
 var assert = require('assert');
 
@@ -76,35 +76,48 @@ function runServer(socket, run) {
     }
   }
 
-  function await(method) {
+  function wait(method) {
     return function() {
-      var d = defer();
-      if (method) {
-        frames.step(function(e, f) {
-          if (e !== null) return d.reject(e);
-          if (f.id === method)
-            d.resolve(f);
-          else
-            d.reject(new Error("Expected method: " + method +
-                               ", got " + f.id));
-        });
-      }
-      else {
-        frames.step(function(e, f) {
-          if (e !== null) return d.reject(e);
-          else d.resolve(f);
-        });
-      }
-      return d.promise;
+      return new Promise(function(resolve, reject) {
+        if (method) {
+          frames.step(function(e, f) {
+            if (e !== null) return reject(e);
+            if (f.id === method)
+              resolve(f);
+            else
+              reject(new Error("Expected method: " + method +
+                                 ", got " + f.id));
+          });
+        }
+        else {
+          frames.step(function(e, f) {
+            if (e !== null) return reject(e);
+            else resolve(f);
+          });
+        }
+      });
     };
   }
-  run(send, await);
+  run(send, wait);
   return frames;
 }
 
 // Produce a callback that will complete the test successfully
 function succeed(done) {
   return function() { done(); }
+}
+
+// Produce a callback that will complete the test successfully
+// only if the value is an object, it has the specified
+// attribute, and its value is equals to the expected value
+function succeedIfAttributeEquals(attribute, value, done) {
+  return function(object) {
+    if (object && !(object instanceof Error) && value === object[attribute]) {
+      return done();
+    }
+
+    done(new Error(attribute + " is not equal to " + value));
+  };
 }
 
 // Produce a callback that will fail the test, given either an error
@@ -196,6 +209,7 @@ module.exports = {
   socketPair: socketPair,
   runServer: runServer,
   succeed: succeed,
+  succeedIfAttributeEquals: succeedIfAttributeEquals,
   fail: fail,
   latch: latch,
   completes: completes,

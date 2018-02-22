@@ -1,5 +1,63 @@
 # Change log for amqplib
 
+## Changes in v0.5.2
+
+    git log v0.5.1..v0.5.2
+
+ * Increase encoding buffer to accommodate large header values
+   ([PR 367](https://github.com/squaremo/amqp.node/pull/367))
+ * Bring code up to date with new Buffer interface
+   ([PR 350](https://github.com/squaremo/amqp.node/pull/350))
+ * Fix dangling connection problem
+   ([PR 340](https://github.com/squaremo/amqp.node/pull/340))
+ * Clear up URL credentials parsing
+   ([PR 330](https://github.com/squaremo/amqp.node/pull/330))
+ * Allow connection params to be suppied in object
+   ([PR 304](https://github.com/squaremo/amqp.node/pull/304))
+ * Support explicit numeric types in field tables (e.g., headers)
+   ([PR 389](https://github.com/squaremo/amqp.node/pull/389), from a
+   suggestion in
+   [issue 358](https://github.com/squaremo/amqp.node/issues/358))
+
+Thank you to all contributors, of PRs, issues and comments.
+
+## Changes in v0.5.1
+
+    git log v0.5.0..v0.5.1
+
+ * Fix mistake in closeBecause
+   ([PR 298](https://github.com/squaremo/amqp.node/pull/298); thanks
+   to @lholznagel and others who reported the issue, and to @nfantone
+   for the rapid fix)
+
+## Changes in v0.5.0
+
+    git log v0.4.2..v0.5.0
+
+ * Port to use bluebird rather than when.js
+   ([PR 295](https://github.com/squaremo/amqp.node/pull/295); thanks
+   to @nfantone, and special mention to @myndzi for #158)
+ * Fixed a problem with using `channel.get` in the callback model
+   ([PR 283](https://github.com/squaremo/amqp.node/pull/283); good
+   catch, @shanksauce)
+ * Added an example that uses generators (thanks @rudijs)
+ * Fixed a link in the comments relating to heartbeats (thanks
+   @tapickell)
+
+## Changes in v0.4.2
+
+   git log v0.4.1..v0.4.2
+
+ * Better documentation and examples
+ * Replace uses of ES6 keyword 'await'
+
+## Changes in v0.4.1
+
+   git log v0.4.0..v0.4.1
+
+ * Tested in Node.JS 0.8 through 4.2 and 5.5
+ * Emit an error with the 'close' event if server-initiated
+
 ## Changes in v0.4.0
 
    git log v0.3.2..v0.4.0

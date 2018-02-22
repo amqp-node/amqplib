@@ -39,7 +39,7 @@ function on_connect(err, conn) {
       var queue = ok.queue;
       ch.consume(queue, maybeAnswer, {noAck:true});
       console.log(' [x] Requesting fib(%d)', n);
-      ch.sendToQueue('rpc_queue', new Buffer(n.toString()), {
+      ch.sendToQueue('rpc_queue', Buffer.from(n.toString()), {
         replyTo: queue, correlationId: correlationId
       });
     });

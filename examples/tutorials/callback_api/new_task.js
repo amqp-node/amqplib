@@ -17,7 +17,7 @@ function on_connect(err, conn) {
     ch.assertQueue(q, {durable: true}, function(err, _ok) {
       if (err !== null) return bail(err, conn);
       var msg = process.argv.slice(2).join(' ') || "Hello World!";
-      ch.sendToQueue(q, new Buffer(msg), {persistent: true});
+      ch.sendToQueue(q, Buffer.from(msg), {persistent: true});
       console.log(" [x] Sent '%s'", msg);
       ch.close(function() { conn.close(); });
     });

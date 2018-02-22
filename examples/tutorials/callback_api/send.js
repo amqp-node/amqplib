@@ -17,7 +17,7 @@ function on_connect(err, conn) {
     if (err !== null) return bail(err, conn);
     ch.assertQueue(q, {durable: false}, function(err, ok) {
       if (err !== null) return bail(err, conn);
-      ch.sendToQueue(q, new Buffer(msg));
+      ch.sendToQueue(q, Buffer.from(msg));
       console.log(" [x] Sent '%s'", msg);
       ch.close(function() { conn.close(); });
     });

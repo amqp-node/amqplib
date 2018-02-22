@@ -25,4 +25,4 @@ amqp.connect('amqp://localhost').then(function(conn) {
       }, secs * 1000);
     }
   });
-}).then(null, console.warn);
+}).catch(console.warn);

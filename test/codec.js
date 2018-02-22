@@ -4,7 +4,7 @@ var codec = require('../lib/codec');
 var defs = require('../lib/defs');
 var assert = require('assert');
 var ints = require('buffer-more-ints');
-
+var Buffer = require('safe-buffer').Buffer
 var C = require('claire');
 var forAll = C.forAll;
 
@@ -31,12 +31,12 @@ var testCases = [
     ['float value', {double: 0.5}, [6,100,111,117,98,108,101,100,63,224,0,0,0,0,0,0]],
     ['negative float value', {double: -0.5}, [6,100,111,117,98,108,101,100,191,224,0,0,0,0,0,0]],
     // %% test some boundaries of precision?
-    
+
     // string
     ['string', {string: "boop"}, [6,115,116,114,105,110,103,83,0,0,0,4,98,111,111,112]],
 
     // buffer -> byte array
-    ['byte array from buffer', {bytes: new Buffer([1,2,3,4])},
+    ['byte array from buffer', {bytes: Buffer.from([1,2,3,4])},
      [5,98,121,116,101,115,120,0,0,0,4,1,2,3,4]],
 
     // boolean, void
@@ -64,12 +64,12 @@ function bufferToArray(b) {
     return Array.prototype.slice.call(b);
 }
 
-suite("Explicit encodings", function() {
+suite("Implicit encodings", function() {
 
   testCases.forEach(function(tc) {
     var name = tc[0], val = tc[1], expect = tc[2];
     test(name, function() {
-      var buffer = new Buffer(1000);
+      var buffer = Buffer.alloc(1000);
       var size = codec.encodeTable(buffer, val, 0);
       var result = buffer.slice(4, size);
       assert.deepEqual(expect, bufferToArray(result));
@@ -82,11 +82,11 @@ suite("Explicit encodings", function() {
 var amqp = require('./data');
 
 function roundtrip_table(t) {
-  var buf = new Buffer(4096);
+  var buf = Buffer.alloc(4096);
   var size = codec.encodeTable(buf, t, 0);
   var decoded = codec.decodeFields(buf.slice(4, size)); // ignore the length-prefix
   try {
-    assert.deepEqual(t, decoded);
+    assert.deepEqual(removeExplicitTypes(t), decoded);
   }
   catch (e) { return false; }
   return true;
@@ -119,6 +119,45 @@ suite("Roundtrip values", function() {
   });
 });
 
+// When encoding, you can supply explicitly-typed fields like `{'!':
+// int32, 50}`. Most of these do not appear in the decoded values, so
+// to compare like-to-like we have to remove them from the input.
+function removeExplicitTypes(input) {
+    switch (typeof input) {
+    case 'object':
+        if (input == null) {
+            return null;
+        }
+        if (Array.isArray(input)) {
+            var newArr = [];
+            for (var i = 0; i < input.length; i++) {
+                newArr[i] = removeExplicitTypes(input[i]);
+            }
+            return newArr;
+        }
+        if (Buffer.isBuffer(input)) {
+            return input;
+        }
+        switch (input['!']) {
+        case 'timestamp':
+        case 'decimal':
+        case 'float':
+            return input;
+        case undefined:
+            var newObj = {}
+            for (var k in input) {
+                newObj[k] = removeExplicitTypes(input[k]);
+            }
+            return newObj;
+        default:
+            return input.value;
+        }
+
+    default:
+        return input;
+    }
+}
+
 // Asserts that the decoded fields are equal to the original fields,
 // or equal to a default where absent in the original. The defaults
 // depend on the type of method or properties.
@@ -141,11 +180,11 @@ function assertEqualModuloDefaults(original, decodedFields) {
         // given as strings rather than buffers, but the decoded values
         // will be buffers.
         assert.deepEqual((arg.type === 'longstr') ?
-                         new Buffer(arg.default) : arg.default,
+                         Buffer.from(arg.default) : arg.default,
                          decodedValue);
       }
       else {
-        assert.deepEqual(originalValue, decodedValue);
+        assert.deepEqual(removeExplicitTypes(originalValue), decodedValue);
       }
     }
     catch (assertionErr) {

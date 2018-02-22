@@ -3,7 +3,7 @@
 'use strict';
 
 var C = require('claire');
-
+var Buffer = require('safe-buffer').Buffer;
 var forAll = C.forAll;
 var arb = C.data;
 var transform = C.transform;
@@ -18,7 +18,7 @@ var Undefined = C.Undefined;
 
 // Stub these out so we can use outside tests
 // if (!suite) var suite = function() {}
-// if (!test) var test = function() {} 
+// if (!test) var test = function() {}
 
 // These aren't exported in claire/index. so I could have to reproduce
 // them I guess.
@@ -36,7 +36,7 @@ function rangeInt(name, a, b) {
 }
 
 function toFloat32(i) {
-  var b = new Buffer(4);
+  var b = Buffer.alloc(4);
   b.writeFloatBE(i, 0);
   return b.readFloatBE(0);
 }
@@ -53,6 +53,12 @@ function floatChooser(maxExp) {
   }
 }
 
+function explicitType(t, underlying) {
+    return label(t, transform(function(n) {
+        return {'!': t, value: n};
+    }, underlying));
+}
+
 // FIXME null, byte array, others?
 
 var Octet = rangeInt('octet', 0, 255);
@@ -63,7 +69,7 @@ var ShortStr = label('shortstr',
 
 var LongStr = label('longstr',
                     transform(
-                      function(bytes) { return new Buffer(bytes); },
+                      function(bytes) { return Buffer.from(bytes); },
                       repeat(Octet)));
 
 var UShort = rangeInt('short-uint', 0, 0xffff);
@@ -85,12 +91,27 @@ var Decimal = label('decimal', transform(
     return {'!': 'decimal', value: {places: args[1], digits: args[0]}};
   }, sequence(arb.UInt, Octet)));
 
+// Signed 8 bit int
+var Byte = rangeInt('byte', -128, 127);
+
+// Explicitly typed values
+var ExByte = explicitType('byte', Byte);
+var ExInt8 = explicitType('int8', Byte);
+var ExShort = explicitType('short', Short);
+var ExInt16 = explicitType('int16', Short);
+var ExInt = explicitType('int', Long);
+var ExInt32 = explicitType('int32', Long);
+var ExLong = explicitType('long', LongLong);
+var ExInt64 = explicitType('int64', LongLong);
+
 var FieldArray = label('field-array', recursive(function() {
   return arb.Array(
     arb.Null,
-    LongStr, ShortStr, Octet,
-    UShort, ULong, ULongLong,
-    Short, Long, LongLong,
+    LongStr, ShortStr,
+    Octet, UShort, ULong, ULongLong,
+    Byte, Short, Long, LongLong,
+    ExByte, ExInt8, ExShort, ExInt16,
+    ExInt, ExInt32, ExLong, ExInt64,
     Bit, Float, Double, FieldTable, FieldArray)
 }));
 
@@ -100,7 +121,9 @@ var FieldTable = label('table', recursive(function() {
                  arb.Null,
                  LongStr, ShortStr, Octet,
                  UShort, ULong, ULongLong,
-                 Short, Long, LongLong,
+                 Byte, Short, Long, LongLong,
+                 ExByte, ExInt8, ExShort, ExInt16,
+                 ExInt, ExInt32, ExLong, ExInt64,
                  Bit, Float, Double, FieldArray, FieldTable))
 }));
 
@@ -184,7 +207,7 @@ function method(info) {
 function properties(info) {
   var types = info.args.map(argtype);
   types.unshift(ULongLong); // size
-  var domain = sequence.apply(null, types); 
+  var domain = sequence.apply(null, types);
   var names = info.args.map(name);
   return label(info.name, transform(function(fieldVals) {
     return {id: info.id,
