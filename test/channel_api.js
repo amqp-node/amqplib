@@ -64,6 +64,7 @@ function createVhost(vhost) {
       if(resp.statusCode === 201){
         on_good();
       } else {
+        console.dir(resp);
         on_error(new Error("Failed to create vhost " + vhost));
       }
     }).end();
@@ -82,9 +83,36 @@ function deleteVhost(vhost) {
       if(resp.statusCode === 204){
         on_good();
       } else {
+        console.dir(resp);
         on_error(new Error("Failed to delete a vhost " + vhost));
       }
     }).end();
+  }
+}
+
+function assertPrefetch(vhost, prefetch) {
+  return function(on_good, on_error) {
+    http.get({
+      headers: {'Authorization': 'Basic Z3Vlc3Q6Z3Vlc3Q='},
+      hostname: 'localhost',
+      port: 15672,
+      path: '/api/vhosts/' + encodeURIComponent(vhost) + '/channels'
+    }, function(res) {
+      // console.log("get respo");
+      let data = '';
+      res.on('data', function(chunk){
+        data += chunk;
+      });
+      res.on('end', function(){
+        var channels = JSON.parse(data);
+        var prefetch_count = JSON.parse(data)[0].prefetch_count;
+        if (prefetch_count === prefetch) {
+          on_good();
+        } else {
+          on_error(new Error("Channel prefetch " + prefetch_count + " does not match expected prefetch " + prefetch));
+        }
+      });
+    });
   }
 }
 
@@ -143,6 +171,50 @@ test("recover connection", function(done){
     return new Promise(closeAllConn(vhost)).then(function(){ return c; });
   }).delay(1000).then(function(c){
     return c.createChannel().then(function(){return c;});
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.recoverOnServerClose = false;
+    return c;
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("recover channel", function(done){
+  this.timeout(15000);
+  var vhost = 'recoverChannel';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect("amqp://localhost/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true});
+  }).then(function(c){
+    return c.createChannel().then(function(ch){ return {c: c, ch: ch}; });
+  }).delay(5000).then(function(cch){
+    return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
+  }).delay(1000).then(function(cch){
+    return cch.ch.prefetch(100).then(function(){ return cch.c; });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.recoverOnServerClose = false;
+    return c;
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("recover prefetch", function(done){
+  this.timeout(15000);
+  var vhost = 'recoverPrefetch';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect("amqp://localhost/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true});
+  }).then(function(c){
+    return c.createChannel().then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    return cch.ch.prefetch(10).then(function(){ return cch; })
+  }).delay(5000).then(function(cch){
+    return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
+  }).delay(5000).then(function(cch){
+    return new Promise(assertPrefetch(vhost, 10)).then(function() { return cch.c; });
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.recoverOnServerClose = false;
