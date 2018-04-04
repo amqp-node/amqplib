@@ -8,11 +8,84 @@ var schedule = util.schedule;
 var randomString = util.randomString;
 var Promise = require('bluebird');
 var Buffer = require('safe-buffer').Buffer;
+var http = require('http');
 
 var URL = process.env.URL || 'amqp://localhost';
+var MGMT_URL = process.env.MGMT_URL || 'http://localhost:15672/api';
 
 function connect() {
   return api.connect(URL);
+}
+
+function closeAllConn(vhost) {
+  return function(on_good, on_error) {
+    // console.log("Call get");
+    http.get({
+      headers: {'Authorization': 'Basic Z3Vlc3Q6Z3Vlc3Q='},
+      hostname: 'localhost',
+      port: 15672,
+      path: '/api/vhosts/' + encodeURIComponent(vhost) + '/connections'
+    }, function(res) {
+      // console.log("get respo");
+      let data = '';
+      res.on('data', function(chunk){
+        data += chunk;
+      });
+      res.on('end', function(){
+        var connections = JSON.parse(data);
+        var conn_name = JSON.parse(data)[0].name;
+        http.request({
+            headers: {'Authorization': 'Basic Z3Vlc3Q6Z3Vlc3Q='},
+            hostname: 'localhost',
+            port: 15672,
+            path: '/api/connections/' + encodeURIComponent(conn_name),
+            method: 'DELETE'
+        }, function(resp){
+          if(resp.statusCode == 204){
+            on_good();
+          } else {
+            on_error(new Error("Failed to close connection"));
+          }
+        }).end();
+      });
+    });
+  }
+}
+
+function createVhost(vhost) {
+  return function(on_good, on_error) {
+    http.request({
+      headers: {'Authorization': 'Basic Z3Vlc3Q6Z3Vlc3Q=', 'content-type': 'application/json'},
+      hostname: 'localhost',
+      port: 15672,
+      path: '/api/vhosts/' + encodeURIComponent(vhost),
+      method: 'PUT'
+    }, function(resp) {
+      if(resp.statusCode === 201){
+        on_good();
+      } else {
+        on_error(new Error("Failed to create vhost " + vhost));
+      }
+    }).end();
+  }
+}
+
+function deleteVhost(vhost) {
+  return function(on_good, on_error) {
+    http.request({
+      headers: {'Authorization': 'Basic Z3Vlc3Q6Z3Vlc3Q=', 'content-type': 'application/json'},
+      hostname: 'localhost',
+      port: 15672,
+      path: '/api/vhosts/' + encodeURIComponent(vhost),
+      method: 'DELETE'
+    }, function(resp) {
+      if(resp.statusCode === 204){
+        on_good();
+      } else {
+        on_error(new Error("Failed to delete a vhost " + vhost));
+      }
+    }).end();
+  }
 }
 
 // Expect this promise to fail, and flip the results accordingly.
@@ -57,6 +130,27 @@ test("at all", function(done) {
 });
 
 chtest("create channel", ignore); // i.e., just don't bork
+
+test("recover connection", function(done){
+  this.timeout(15000);
+  var vhost = 'recoverConnection';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect("amqp://localhost/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true});
+  }).then(function(c){
+    return c;
+  }).delay(5000).then(function(c){
+    return new Promise(closeAllConn(vhost)).then(function(){ return c; });
+  }).delay(1000).then(function(c){
+    return c.createChannel().then(function(){return c;});
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.recoverOnServerClose = false;
+    return c;
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
 
 });
 
