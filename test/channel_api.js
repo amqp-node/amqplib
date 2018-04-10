@@ -12,7 +12,6 @@ var Buffer = require('safe-buffer').Buffer;
 var http = require('http');
 
 var URL = process.env.URL || 'amqp://localhost';
-var MGMT_URL = process.env.MGMT_URL || 'http://localhost:15672/api';
 
 var closeAllConn = mgmt_helpers.closeAllConn,
     createVhost = mgmt_helpers.createVhost,
@@ -20,7 +19,9 @@ var closeAllConn = mgmt_helpers.closeAllConn,
     deleteExchange = mgmt_helpers.deleteExchange,
     deleteQueue = mgmt_helpers.deleteQueue,
     assertPrefetch = mgmt_helpers.assertPrefetch,
-    assertBinding = mgmt_helpers.assertBinding;
+    assertBinding = mgmt_helpers.assertBinding,
+    assertExchangeArguments = mgmt_helpers.assertExchangeArguments,
+    assertQueueArguments = mgmt_helpers.assertQueueArguments;
 
 
 
@@ -606,7 +607,7 @@ test("recover channel", function(done){
   this.timeout(15000);
   var vhost = 'recoverChannel';
   new Promise(createVhost(vhost)).then(function() {
-    return api.connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true});
   }).then(function(c){
     return c.createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -628,7 +629,7 @@ test("recover connection", function(done){
   this.timeout(15000);
   var vhost = 'recoverConnection';
   new Promise(createVhost(vhost)).then(function() {
-    return api.connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true});
   }).then(function(c){
     return c;
@@ -650,7 +651,7 @@ test("recover prefetch", function(done){
   this.timeout(15000);
   var vhost = 'recoverPrefetch';
   new Promise(createVhost(vhost)).then(function() {
-    return api.connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true});
   }).then(function(c){
     return c.createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -674,7 +675,7 @@ test("recover exchange", function(done){
   this.timeout(15000);
   var vhost = 'recoverExchange';
   new Promise(createVhost(vhost)).then(function() {
-    return api.connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverTopology: true});
   }).then(function(c){
     return c.createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -702,7 +703,7 @@ test("recover queue", function(done){
   this.timeout(15000);
   var vhost = 'recoverQueue';
   new Promise(createVhost(vhost)).then(function() {
-    return api.connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverTopology: true});
   }).then(function(c){
     return c.createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -729,7 +730,7 @@ test("recover anonymous queue", function(done){
   this.timeout(15000);
   var vhost = 'recoverAnonymousQueue';
   new Promise(createVhost(vhost)).then(function() {
-    return api.connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverTopology: true});
   }).then(function(c){
     return c.createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -765,7 +766,7 @@ test("recover exchange binding", function(done){
   this.timeout(15000);
   var vhost = 'recoverExchangeBinding';
   new Promise(createVhost(vhost)).then(function() {
-    return api.connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverTopology: true});
   }).then(function(c){
     return c.createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -804,7 +805,7 @@ test("recover queue binding", function(done){
   this.timeout(15000);
   var vhost = 'recoverQueueBinding';
   new Promise(createVhost(vhost)).then(function() {
-    return api.connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverTopology: true});
   }).then(function(c){
     return c.createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -839,11 +840,51 @@ test("recover queue binding", function(done){
   }).then(succeed(done), fail(done));
 });
 
+test("recover queue binding with args", function(done){
+  this.timeout(15000);
+  var vhost = 'recoverQueueBindingWithArgs';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverTopology: true});
+  }).then(function(c){
+    return c.createChannel().then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    return cch.ch.assertExchange('exchange_src', 'direct').then(function(){
+      return cch.ch.assertQueue('queue_dest')
+    }).then(function() {
+      return cch.ch.bindQueue('queue_dest', 'exchange_src', 'route', {"arg": "value"});
+    }).then(function(){ return cch; });
+  }).delay(5000).then(function(cch){
+    return new Promise(deleteExchange(vhost, 'exchange_src')
+    ).then(function(){
+      return new Promise(deleteQueue(vhost, 'queue_dest'));
+    }).then(function(){
+      return new Promise(closeAllConn(vhost));
+    }).then(function(){ return cch; });
+
+  }).delay(5000).then(function(cch){
+    // Check that exchange is there
+    return cch.ch.checkQueue('queue_dest'
+    ).then(function(){
+      return cch.ch.checkExchange('exchange_src');
+    }).then(function(){
+      return new Promise(assertBinding(vhost, 'queue_dest', 'exchange_src', 'route', {"arg": "value"}));
+    }).then(function(){ return cch.c; });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c;
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+
 test("recover anonymous queue binding", function(done){
   this.timeout(15000);
   var vhost = 'recoverAnonymousQueueBinding';
   new Promise(createVhost(vhost)).then(function() {
-    return api.connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverTopology: true});
   }).then(function(c){
     return c.createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -890,7 +931,7 @@ test("recover consumer", function(done){
   this.timeout(15000);
   var vhost = 'recoverConsumer';
   new Promise(createVhost(vhost)).then(function() {
-    return api.connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverTopology: true});
   }).then(function(c){
     return c.createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -918,6 +959,35 @@ test("recover consumer", function(done){
     cch.c.connection.recoverOnServerClose = false;
     return cch.ch.sendToQueue('queue_name', Buffer.from("message"));
   }).catch(fail(done));
+});
+
+
+test("recover arguments", function(done){
+  this.timeout(15000);
+  var vhost = 'recoverArguments';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverTopology: true});
+  }).then(function(c) {
+    return c.createChannel().then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch) {
+    return cch.ch.deleteQueue('queue_name').then(function() {
+      return cch.ch.assertQueue('queue_name', {maxLength: 10})
+    }).then(function(){ return cch; });
+  }).then(function(cch) {
+    return cch.ch.deleteExchange('ex_name').then(function() {
+      return cch.ch.assertExchange('ex_name', 'fanout', {alternateExchange: 'foo'})
+    }).then(function(){ return cch; });
+  }).delay(5000).then(function(cch){
+    // return cch;
+    return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
+  }).delay(5000).then(function(cch){
+    return new Promise(assertExchangeArguments(vhost, 'ex_name', 'fanout', {'alternate-exchange': 'foo'})
+      ).then(function(){ return cch; });
+  }).then(function(cch){
+    return new Promise(assertQueueArguments(vhost, 'queue_name', {'x-max-length': 10})
+      ).then(function(){ return cch; });
+  }).then(succeed(done), fail(done));
 });
 
 });

@@ -12,7 +12,6 @@ var Buffer = require('safe-buffer').Buffer;
 
 var URL = process.env.URL || 'amqp://localhost';
 
-var MGMT_URL = process.env.MGMT_URL || 'http://localhost:15672/api';
 var Promise = require('bluebird');
 var mgmt_helpers = require('./mgmt_helpers');
 var closeAllConn = mgmt_helpers.closeAllConn,
@@ -332,7 +331,7 @@ test("recover channel", function(done){
   var vhost = 'recoverChannel';
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
-    return connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return connect(URL + "/" + encodeURIComponent(vhost),
                    {recover: true, recoverOnServerClose: true});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
@@ -358,7 +357,7 @@ test("recover connection", function(done){
   var vhost = 'recoverConnection';
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
-    return connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return connect(URL + "/" + encodeURIComponent(vhost),
                    {recover: true, recoverOnServerClose: true});
   }).then(function(c){
     return c;
@@ -382,7 +381,7 @@ test("recover prefetch", function(done){
   var vhost = 'recoverPrefetch';
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
-    return connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return connect(URL + "/" + encodeURIComponent(vhost),
                    {recover: true, recoverOnServerClose: true});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
@@ -409,7 +408,7 @@ test("recover exchange", function(done){
   var vhost = 'recoverExchange';
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
-    return connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return connect(URL + "/" + encodeURIComponent(vhost),
                    {recover: true, recoverOnServerClose: true, recoverTopology: true});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
@@ -441,7 +440,7 @@ test("recover queue", function(done){
   var vhost = 'recoverQueue';
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
-    return connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return connect(URL + "/" + encodeURIComponent(vhost),
                    {recover: true, recoverOnServerClose: true, recoverTopology: true});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
@@ -472,7 +471,7 @@ test("recover anonymous queue", function(done){
   var vhost = 'recoverAnonymousQueue';
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
-    return connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return connect(URL + "/" + encodeURIComponent(vhost),
                    {recover: true, recoverOnServerClose: true, recoverTopology: true});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
@@ -512,7 +511,7 @@ test("recover exchange binding", function(done){
   var vhost = 'recoverExchangeBinding';
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
-    return connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return connect(URL + "/" + encodeURIComponent(vhost),
                    {recover: true, recoverOnServerClose: true, recoverTopology: true});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
@@ -556,7 +555,7 @@ test("recover queue binding", function(done){
   var vhost = 'recoverQueueBinding';
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
-    return connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return connect(URL + "/" + encodeURIComponent(vhost),
                    {recover: true, recoverOnServerClose: true, recoverTopology: true});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
@@ -602,7 +601,7 @@ test("recover anonymous queue binding", function(done){
   var vhost = 'recoverAnonymousQueueBinding';
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
-    return connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return connect(URL + "/" + encodeURIComponent(vhost),
                    {recover: true, recoverOnServerClose: true, recoverTopology: true});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
@@ -661,7 +660,7 @@ test("recover consumer", function(done){
   var vhost = 'recoverConsumer';
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
-    return connect("amqp://localhost/" + encodeURIComponent(vhost),
+    return connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverTopology: true});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
