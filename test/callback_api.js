@@ -653,11 +653,9 @@ test("recover anonymous queue binding", function(done){
   }).asCallback(doneCallback(done));
 });
 
-
 function endRecoverConsumer(vhost, done) {
   return new Promise(deleteVhost(vhost)).asCallback(doneCallback(done));
 }
-
 
 test("recover consumer", function(done){
   this.timeout(15000);
