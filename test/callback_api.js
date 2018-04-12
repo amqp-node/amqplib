@@ -263,6 +263,10 @@ if (util.versionGreaterThan(process.versions.node, '0.8')) {
 function error_test(name, fun) {
   test(name, function(done) {
     var dom = domain.createDomain();
+    var done1 = function(result){
+      dom.exit();
+      done(result);
+    }
     dom.run(function() {
       connect(kCallback(function(c) {
         // Seems like there were some unironed wrinkles in 0.8's
@@ -272,9 +276,9 @@ function error_test(name, fun) {
         // versions of Node.JS, this ends up being belt-and-braces.
         dom.add(c);
         c.createChannel(kCallback(function(ch) {
-          fun(ch, done, dom);
-        }, done));
-      }, done));
+          fun(ch, done1, dom);
+        }, done1));
+      }, done1));
     });
   });
 }
@@ -421,7 +425,7 @@ test("recover exchange", function(done){
       return new Promise(closeAllConn(vhost));
     }).then(function(){ return cch; });
 
-  }).delay(5000).then(function(cch){
+  }).delay(1000).then(function(cch){
     var checkExchange = Promise.promisify(function(name, cb){cch.ch.checkExchange(name, cb)});
     // Check that exchange is there
     return checkExchange('exchange_name').then(function(){ return cch.c; });
@@ -453,7 +457,7 @@ test("recover queue", function(done){
       return new Promise(closeAllConn(vhost));
     }).then(function(){ return cch; });
 
-  }).delay(5000).then(function(cch){
+  }).delay(1000).then(function(cch){
     var checkQueue = Promise.promisify(function(name, cb){cch.ch.checkQueue(name, cb)});
     // Check that exchange is there
     return checkQueue('queue_name').then(function(){ return cch.c; });
@@ -487,7 +491,7 @@ test("recover anonymous queue", function(done){
       return new Promise(closeAllConn(vhost));
     }).then(function(){ return cch; });
 
-  }).delay(5000).then(function(cch){
+  }).delay(1000).then(function(cch){
     // Check that exchange is there
     var queues = Object.keys(cch.ch.book.queues);
     var queue_name = queues[0];
@@ -532,7 +536,7 @@ test("recover exchange binding", function(done){
       return new Promise(closeAllConn(vhost));
     }).then(function(){ return cch; });
 
-  }).delay(5000).then(function(cch){
+  }).delay(1000).then(function(cch){
     var checkExchange = Promise.promisify(function(name, cb){cch.ch.checkExchange(name, cb)});
     // Check that exchange is there
     return checkExchange('exchange_dest'
@@ -577,7 +581,7 @@ test("recover queue binding", function(done){
       return new Promise(closeAllConn(vhost));
     }).then(function(){ return cch; });
 
-  }).delay(5000).then(function(cch){
+  }).delay(1000).then(function(cch){
     var checkQueue = Promise.promisify(function(name, cb){cch.ch.checkQueue(name, cb)});
     var checkExchange = Promise.promisify(function(name, cb){cch.ch.checkExchange(name, cb)});
     // Check that exchange is there
@@ -624,7 +628,7 @@ test("recover anonymous queue binding", function(done){
     }).then(function(){
       return new Promise(closeAllConn(vhost));
     }).then(function(){ return cch; });
-  }).delay(5000).then(function(cch){
+  }).delay(1000).then(function(cch){
     // Check that exchange is there
     var queues = Object.keys(cch.ch.book.queues);
     var queue_name = queues[0];
@@ -683,7 +687,7 @@ test("recover consumer", function(done){
     }).then(function(){ return cch; })
   }).delay(5000).then(function(cch){
     return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
-  }).delay(5000).then(function(cch){
+  }).delay(1000).then(function(cch){
     var checkQueue = Promise.promisify(function(name, cb){cch.ch.checkQueue(name, cb)});
     // Check that exchange is there
     return checkQueue('queue_name').then(function(){ return cch; });
