@@ -608,7 +608,7 @@ test("recover channel", function(done){
   var vhost = 'recoverChannel';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true});
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100});
   }).then(function(c){
     return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
   }).delay(5000).then(function(cch){
@@ -630,7 +630,7 @@ test("recover connection", function(done){
   var vhost = 'recoverConnection';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true});
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100});
   }).then(function(c){
     return c;
   }).delay(5000).then(function(c){
@@ -652,7 +652,7 @@ test("recover prefetch", function(done){
   var vhost = 'recoverPrefetch';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true});
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100});
   }).then(function(c){
     return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
   }).then(function(cch){
@@ -676,7 +676,7 @@ test("recover exchange", function(done){
   var vhost = 'recoverExchange';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     // Ignore error event
     c.on("error", function(){});
@@ -714,7 +714,7 @@ test("recover queue", function(done){
   var vhost = 'recoverQueue';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     // Ignore error event
     c.on("error", function(){});
@@ -752,7 +752,7 @@ test("recover anonymous queue", function(done){
   var vhost = 'recoverAnonymousQueue';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     // Ignore error event
     c.on("error", function(){});
@@ -799,7 +799,7 @@ test("recover exchange binding", function(done){
   var vhost = 'recoverExchangeBinding';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
   }).then(function(cch){
@@ -848,7 +848,7 @@ test("not recover exchange binding without the source exchange", function(done){
   var vhost = 'notrecoverExchangeBindingWithoutSrc';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     // Ignore error event
     c.on("error", function(){});
@@ -896,7 +896,7 @@ test("not recover exchange binding without the destination exchange", function(d
   var vhost = 'notrecoverExchangeBindingWithoutSrc';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     // Ignore error event
     c.on("error", function(){});
@@ -943,7 +943,7 @@ test("recover queue binding", function(done){
   var vhost = 'recoverQueueBinding';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
   }).then(function(cch){
@@ -990,7 +990,7 @@ test("not recover queue binding without the source exchange", function(done){
   var vhost = 'recoverQueueBinding';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     c.on("error", function(){});
     return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
@@ -1033,7 +1033,7 @@ test("recover queue binding with args", function(done){
   var vhost = 'recoverQueueBindingWithArgs';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
   }).then(function(cch){
@@ -1073,7 +1073,7 @@ test("recover anonymous queue binding", function(done){
   var vhost = 'recoverAnonymousQueueBinding';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
   }).then(function(cch){
@@ -1120,7 +1120,7 @@ test("recover consumer", function(done){
   var vhost = 'recoverConsumer';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
   }).then(function(cch){
@@ -1155,7 +1155,7 @@ test("recover arguments", function(done){
   var vhost = 'recoverArguments';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c) {
     return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
   }).then(function(cch) {

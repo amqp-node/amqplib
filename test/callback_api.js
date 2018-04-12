@@ -336,7 +336,7 @@ test("recover channel", function(done){
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
     return connect(URL + "/" + encodeURIComponent(vhost),
-                   {recover: true, recoverOnServerClose: true});
+                   {recover: true, recoverOnServerClose: true, recoverAfter: 100});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
     return createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -362,7 +362,7 @@ test("recover connection", function(done){
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
     return connect(URL + "/" + encodeURIComponent(vhost),
-                   {recover: true, recoverOnServerClose: true});
+                   {recover: true, recoverOnServerClose: true, recoverAfter: 100});
   }).then(function(c){
     return c;
   }).delay(5000).then(function(c){
@@ -386,7 +386,7 @@ test("recover prefetch", function(done){
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
     return connect(URL + "/" + encodeURIComponent(vhost),
-                   {recover: true, recoverOnServerClose: true});
+                   {recover: true, recoverOnServerClose: true, recoverAfter: 100});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
     return createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -413,7 +413,7 @@ test("recover exchange", function(done){
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
     return connect(URL + "/" + encodeURIComponent(vhost),
-                   {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                   {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
     return createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -445,7 +445,7 @@ test("recover queue", function(done){
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
     return connect(URL + "/" + encodeURIComponent(vhost),
-                   {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                   {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
     return createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -476,7 +476,7 @@ test("recover anonymous queue", function(done){
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
     return connect(URL + "/" + encodeURIComponent(vhost),
-                   {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                   {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
     return createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -516,7 +516,7 @@ test("recover exchange binding", function(done){
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
     return connect(URL + "/" + encodeURIComponent(vhost),
-                   {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                   {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
     return createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -560,7 +560,7 @@ test("recover queue binding", function(done){
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
     return connect(URL + "/" + encodeURIComponent(vhost),
-                   {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                   {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
     return createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -606,7 +606,7 @@ test("recover anonymous queue binding", function(done){
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
     return connect(URL + "/" + encodeURIComponent(vhost),
-                   {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                   {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
     return createChannel().then(function(ch){ return {c: c, ch: ch}; });
@@ -665,7 +665,7 @@ test("recover consumer", function(done){
   new Promise(createVhost(vhost)).then(function() {
     var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
     return connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true, recoverTopology: true});
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
   }).then(function(c){
     var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
     return createChannel().then(function(ch){ return {c: c, ch: ch}; });
