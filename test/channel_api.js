@@ -12,6 +12,12 @@ var Buffer = require('safe-buffer').Buffer;
 var http = require('http');
 
 var URL = process.env.URL || 'amqp://localhost';
+var URLS;
+if(process.env.URLS){
+  URLS = process.env.URLS.split(";");
+} else {
+  URLS = ['amqp://localhost', 'amqp://127.0.0.1'];
+}
 
 var closeAllConn = mgmt_helpers.closeAllConn,
     createVhost = mgmt_helpers.createVhost,
@@ -603,28 +609,6 @@ function endRecoverConsumer(vhost, done) {
 
 suite("recover", function() {
 
-test("recover channel", function(done){
-  this.timeout(15000);
-  var vhost = 'recoverChannel';
-  new Promise(createVhost(vhost)).then(function() {
-    return api.connect(URL + "/" + encodeURIComponent(vhost),
-                       {recover: true, recoverOnServerClose: true, recoverAfter: 100});
-  }).then(function(c){
-    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
-  }).delay(5000).then(function(cch){
-    return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
-  }).delay(1000).then(function(cch){
-    return cch.ch.prefetch(100).then(function(){ return cch.c; });
-  }).then(function(c){
-    // Disable recovery on vhost deletion
-    c.connection.recoverOnServerClose = false;
-    return c;
-  }).finally(function() {
-    return new Promise(deleteVhost(vhost));
-  }).then(succeed(done), fail(done));
-});
-
-
 test("recover connection", function(done){
   this.timeout(15000);
   var vhost = 'recoverConnection';
@@ -646,6 +630,104 @@ test("recover connection", function(done){
   }).then(succeed(done), fail(done));
 });
 
+test("recover connection with multiple hosts", function(done){
+  this.timeout(15000);
+  var vhost = 'recoverConnectionWithMultipleHosts';
+  new Promise(createVhost(vhost)).then(function() {
+    var urls_w_vhost = URLS.map(function(url){
+      return url + "/" + encodeURIComponent(vhost);
+    });
+    return api.connect(urls_w_vhost,
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100});
+  }).then(function(c){
+    return c;
+  }).delay(5000).then(function(c){
+    return new Promise(closeAllConn(vhost)).then(function(){ return c; });
+  }).delay(1000).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(){return c;});
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c;
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("recover channel", function(done){
+  this.timeout(15000);
+  var vhost = 'recoverChannel';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100});
+  }).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).delay(5000).then(function(cch){
+    return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
+  }).delay(1000).then(function(cch){
+    return cch.ch.prefetch(100).then(function(){ return cch.c; });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c;
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("recover multiple channels", function(done){
+  this.timeout(15000);
+  var vhost = 'recoverMultipleChannels';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100});
+  }).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(ch){
+      return {c: c, ch: ch};
+    });
+  }).then(function(cch){
+    return cch.c.createChannel().then(ignoreErrors).then(function(ch){
+      cch.ch1 = ch;
+      return cch;
+    });
+  }).delay(5000).then(function(cch){
+    return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
+  }).delay(1000).then(function(cch){
+    return cch.ch.prefetch(100).then(function(){
+      return cch.ch1.prefetch(100);
+    }).then(function(){ return cch.c; });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c;
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("recover channel with multiple hosts", function(done){
+  this.timeout(15000);
+  var vhost = 'recoverChannelWithMultipleHosts';
+  new Promise(createVhost(vhost)).then(function() {
+    var urls_w_vhost = URLS.map(function(url){
+      return url + "/" + encodeURIComponent(vhost);
+    });
+    return api.connect(urls_w_vhost,
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100});
+  }).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).delay(5000).then(function(cch){
+    return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
+  }).delay(1000).then(function(cch){
+    return cch.ch.prefetch(100).then(function(){ return cch.c; });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c;
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
 
 test("recover prefetch", function(done){
   this.timeout(15000);
