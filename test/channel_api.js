@@ -1326,4 +1326,52 @@ test("recover arguments", function(done){
   }).then(succeed(done), fail(done));
 });
 
+
+test("drop stale acks", function(done){
+  this.timeout(20000);
+  var vhost = 'dropStaleAcks';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
+  }).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    return cch.ch.prefetch(1).then(function(){ return cch; });
+  }).then(function(cch){
+    return cch.ch.deleteQueue('queue_name').then(function(){
+        return cch.ch.assertQueue('queue_name')
+      }).then(function() {
+        // Test succeed as soon as the first message delivered.
+        return cch.ch.consume('queue_name', function(msg){
+          if(msg.content.toString() === "message"){
+            setTimeout(function(){
+              if(msg.fields.deliveryTag == 2 && msg.incarnation == 1){
+                endRecoverConsumer(vhost, done);
+              } else if (msg.fields.deliveryTag > 2 && msg.incarnation == 1){
+                return;
+              } else {
+                cch.ch.ack(msg);
+              }
+            }, 1000);
+          } else {
+            fail(done);
+          }
+        }, {noAck: false});
+    }).then(function(){ return cch; })
+  }).then(function(cch){
+    for(var i = 0; i < 100; i ++) {
+      cch.ch.sendToQueue('queue_name', Buffer.from("message"), {});
+    }
+    return cch;
+  }).delay(5000).then(function(cch){
+    return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
+  }).delay(1000).then(function(cch){
+    // Check that exchange is there
+    return cch.ch.checkQueue('queue_name').then(function(){ return cch; });
+  }).then(function(cch){
+    // Disable recovery on vhost deletion
+    cch.c.connection.recoverOnServerClose = false;
+  }).catch(fail(done));
+});
+
 });

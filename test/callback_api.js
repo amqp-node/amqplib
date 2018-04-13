@@ -696,4 +696,60 @@ test("recover consumer", function(done){
   }).catch(failCallback(done));
 });
 
+
+test("drop stale acks", function(done){
+  this.timeout(20000);
+  var vhost = 'dropStaleAcks_';
+  new Promise(createVhost(vhost)).then(function() {
+    var connect = Promise.promisify(function(url, opts, cb){api.connect(url, opts, cb)});
+    return connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
+  }).then(function(c){
+    var createChannel = Promise.promisify(function(cb){c.createChannel(cb)});
+    return createChannel().then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    var prefetch = Promise.promisify(function(num, cb){cch.ch.prefetch(num,false,cb)});
+    return prefetch(1).then(function(){ return cch; });
+  }).then(function(cch){
+    var deleteQueue = Promise.promisify(function(name, cb){cch.ch.deleteQueue(name, {}, cb)});
+    var assertQueue = Promise.promisify(function(name, cb){cch.ch.assertQueue(name, {}, cb)});
+    var consume = Promise.promisify(function(queue, callback, opts, cb){cch.ch.consume(queue, callback, opts, cb)});
+    return deleteQueue('queue_name').then(function(){
+        return assertQueue('queue_name')
+      }).then(function() {
+        // Test succeed as soon as the first message delivered.
+        return consume('queue_name', function(msg){
+          if(msg.content.toString() === "message"){
+            setTimeout(function(){
+              if(msg.fields.deliveryTag == 2 && msg.incarnation == 1){
+                endRecoverConsumer(vhost, done);
+              } else if (msg.fields.deliveryTag > 2 && msg.incarnation == 1){
+                return;
+              } else {
+                cch.ch.ack(msg);
+              }
+            }, 1000);
+          } else {
+            fail(done);
+          }
+        }, {noAck: false});
+    }).then(function(){ return cch; })
+  }).then(function(cch){
+    for(var i = 0; i < 100; i ++) {
+      cch.ch.sendToQueue('queue_name', Buffer.from("message"), {});
+    }
+    return cch;
+  }).delay(5000).then(function(cch){
+    return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
+  }).delay(1000).then(function(cch){
+    var checkQueue = Promise.promisify(function(name, cb){cch.ch.checkQueue(name, cb)});
+    // Check that exchange is there
+    return checkQueue('queue_name').then(function(){ return cch; });
+  }).then(function(cch){
+    // Disable recovery on vhost deletion
+    cch.c.connection.recoverOnServerClose = false;
+  }).catch(failCallback(done));
+});
+
+
 });
