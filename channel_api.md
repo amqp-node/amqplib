@@ -540,6 +540,24 @@ in which case the values discussed above will be taken directly from
 the fields. Absent fields will be given defaults as for a URL supplied
 as a string.
 
+###### Configuring multiple hosts to connect to
+
+If you have a cluster of RabbitMQ nodes, you can configure multiple hosts
+in order to recover connections in case of a node failure.
+
+To do that, you should provide an array for the `url` argument instead of a string
+or an object. Each element of the array should be a valid `url` argument
+(e.g. a string or an object)
+
+Every time the client recovers the connection, it will pick the next url in the
+array. You can configure a strategy to select the next url by providing the
+`hostShuffle` configuration in `socketOptions`. Supported strategies are
+`"round-robin"` and `"random"`.
+You can also provide a custom function, which will take an array of urls and
+a current url index and should return a new url index. This function will be
+called on every recover attempt.
+
+
 ###### Socket options
 
 The socket options will be passed to the socket library (`net` or
@@ -570,6 +588,8 @@ The socket options may also include connection recovery options:
  * `recoverOnServerClose`: boolean, false by default, recover if server
    force-closes the connection. **This settitng is for testing only.
    Should not be used in production**
+ * `hostShuffle`: `"round-robin"`, `"random"` or a function, `"round-robin"` by
+   default, a strategy to take a next url if an array of urls is supplied.
 
 ###### Result
 
