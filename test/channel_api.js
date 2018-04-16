@@ -174,7 +174,9 @@ function waitForQueue(q, condition) {
                 c.close();
                 return qok;
               }
-              else schedule(check);
+              else {
+                schedule(check);
+              }
             });
           }
           return check();
