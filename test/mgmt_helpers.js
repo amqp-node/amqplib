@@ -54,7 +54,7 @@ function createVhost(vhost) {
         if(resp.statusCode === 201){
           on_good();
         } else {
-          console.dir(resp);
+          console.dir(resp.statusCode);
           on_error(new Error("Failed to create vhost " + vhost));
         }
       }).end();
@@ -70,7 +70,7 @@ function deleteVhost(vhost) {
       if(resp.statusCode === 204 || resp.statusCode === 404){
         on_good();
       } else {
-        console.dir(resp);
+        console.dir(resp.statusCode);
         on_error(new Error("Failed to delete a vhost " + vhost));
       }
     }).end();
@@ -84,7 +84,7 @@ function deleteExchange(vhost, exchange) {
       if(resp.statusCode === 204){
         on_good();
       } else {
-        console.dir(resp);
+        console.dir(resp.statusCode);
         on_error(new Error("Failed to delete an exchange " + exchange + " on vhost " + vhost));
       }
     }).end();
@@ -98,7 +98,7 @@ function deleteQueue(vhost, queue) {
       if(resp.statusCode === 204){
         on_good();
       } else {
-        console.dir(resp);
+        console.dir(resp.statusCode);
         on_error(new Error("Failed to delete a queue " + queue + " on vhost " + vhost));
       }
     }).end();
