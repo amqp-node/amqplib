@@ -214,6 +214,148 @@ dom.run(function() {
 
 [^top](#top)
 
+### <a name="recovery"></a>Connection recovery
+
+Network connection between clients and RabbitMQ nodes can fail.
+The client supports automatic recovery of connections and topology
+(queues, exchanges, bindings, and consumers).
+The automatic recovery process for many applications follows the following steps:
+
+1. Reconnect
+1. Re-open channels
+1. Restore channel basic.qos setting
+
+Topology recovery includes the following actions, performed for every channel
+
+1. Re-declare exchanges (except for predefined ones)
+1. Re-declare queues
+1. Recover all bindings
+1. Recover all consumers
+
+Connection recovery is disabled by default.
+
+If enabled, connection recovery will start after fixed interval of 5 seconds,
+it can also wait for a random interval, if configured.
+
+To configure connection recovery, you should use the `socketOptions` argument in
+the `connect` function:
+
+```js
+var socketOptions = {
+  recover: true, // Enable connection recovery (false by default)
+  recoverAfter: 1000, // Recover at least after 1000 milliseconds (5000 by default)
+  recoverAfterRandom: 1000 // Maximum duration of a random time added to recoverAfter
+};
+var connection = api.connect(URL, socketOptions);
+```
+
+In this scenario the client will attempt to recover the connection after 1-2 seconds
+after disconnect.
+
+If recovery fails due to an exception (e.g. RabbitMQ node is still not reachable),
+it can be configured to retry after a fixed time interval (default is 5 seconds).
+This can be enabled by setting `recoverRetries` to a non-zero value:
+
+```js
+var socketOptions = {
+  recover: true, // Enable connection recovery (false by default)
+  recoverTimeout: 1000, // Time to wait between retries (5000 by default)
+  recoverRetries: 5 // Retry attempts (0 by default)
+};
+var connection = api.connect(URL, socketOptions);
+```
+
+### <a name="recovery-triggers"></a>When Will Connection Recovery Be Triggered?
+
+Automatic connection recovery, if enabled, will be triggered by socket errors.
+It can be configured to trigger after missed heartbeats and when server
+force-closes the connection:
+
+```js
+var socketOptions = {
+  recover: true, // Enable connection recovery (false by default)
+  recoverOnServerClose: true, // Recover on server-side close (false by default)
+  recoverOnMissedHeartbeat: true // Recover on missed heartbeat (false by default)
+};
+var connection = api.connect(URL, socketOptions);
+```
+
+Channel-level exceptions will not trigger any kind of recovery as they usually
+indicate a semantic issue in the application
+(e.g. an attempt to consume from a non-existent queue).
+
+### <a name="recovery-publishers"></a>Effects on Publishing
+
+Messages that are published using Channel.basicPublish when connectionis down will be lost.
+The client does not enqueue them for delivery after connection has recovered.
+To ensure that published messages reach RabbitMQ applications need to use
+Publisher Confirms and account for connection failures.
+
+### <a name="recovery-topology"></a>Topology Recovery
+
+Topology recovery involves recovery of exchanges, queues, bindings and consumers.
+It is enabled by default when automatic recovery is enabled.
+It can be disabled by setting `recoverTopology` to `false` in `socketOptions`.
+
+### <a name="recovery-limitations"></a>Failure Detection and Recovery Limitations
+
+Automatic connection recovery has a number of limitations and intentional
+design decisions that applications developers need to be aware of.
+
+When a connection is down or lost, it takes time to detect.
+Therefore there is a window of time in which both the library and the
+application are unaware of effective connection failure. Any messages published
+during this time frame are serialised and written to the TCP socket as usual.
+Their delivery to the broker can only be guaranteed via publisher confirms:
+publishing in AMQP 0-9-1 is entirely asynchronous by design.
+
+When a socket or I/O operation error is detected by a connection with automatic
+recovery enabled, recovery begins after a configurable delay, 5 seconds by default.
+This design assumes that even though a lot of network failures are transient
+and generally short lived, they do not go away in an instant.
+Connection recovery attempts will continue at identical time intervals until a
+new connection is successfully opened.
+
+When a connection is in the recovering state, any publishes attempted on its
+channels will be rejected with an exception. The client currently does not perform
+any internal buffering of such outgoing messages. It is an application developer's
+responsibility to keep track of such messages and republish them
+when recovery succeeds. Publisher confirms is a protocol extension that should
+be used by publishers that cannot afford message loss.
+
+Connection recovery will not kick in when a channel is closed due to a
+channel-level exception. Such exceptions often indicate application-level issues.
+The library cannot make an informed decision about when that's the case.
+
+Closed channels won't be recovered even after connection recovery kicks in.
+This includes both explicitly closed channels and the channel-level exception case above.
+
+### <a name="recovery-and-acknowledgements"></a>Manual Acknowledgements and Automatic Recovery
+
+When manual acknowledgements are used, it is possible that network connection
+to RabbitMQ node fails between message delivery and acknowledgement.
+After connection recovery, RabbitMQ will reset delivery tags on all channels.
+This means that basic.ack, basic.nack, and basic.reject with old delivery tags
+will cause a channel exception. To avoid this, the client keeps track of
+channel recoveries and counts channel incarnations as a monotonically increasing
+number. Channel.ack, Channel.nack, and Channel.reject then drop all the messages
+for which incarnation is not equal to the current. Acknowledgements from a stale
+incarnation will not be sent. Applications that use manual acknowledgements
+and automatic recovery must be capable of handling redeliveries.
+
+### <a name="recovery-channel-lifecycle"></a>Channels Lifecycle and Topology Recovery
+
+Automatic connection recovery is meant to be as transparent as possible
+for the application developer, that's why Channel instances remain the same even
+if several connections fail and recover behind the scenes.
+Technically, when automatic recovery is on, Channel instances act as proxies or
+decorators: they delegate the AMQP business to an actual AMQP channel
+implementation and implement some recovery machinery around it.
+That is why you shouldn't close a channel after it has created some resources
+(queues, exchanges, bindings) or topology recovery for those resources will fail
+later, as the channel has been closed. Instead, leave creating channels open
+for the life of the application.
+
 ## <a name="flowcontrol"></a>Flow control
 
 Channels act like [`stream.Writable`][nodejs-writable] when you call
@@ -400,6 +542,24 @@ in which case the values discussed above will be taken directly from
 the fields. Absent fields will be given defaults as for a URL supplied
 as a string.
 
+###### Configuring multiple hosts to connect to
+
+If you have a cluster of RabbitMQ nodes, you can configure multiple hosts
+in order to recover connections in case of a node failure.
+
+To do that, you should provide an array for the `url` argument instead of a string
+or an object. Each element of the array should be a valid `url` argument
+(e.g. a string or an object)
+
+Every time the client recovers the connection, it will pick the next url in the
+array. You can configure a strategy to select the next url by providing the
+`hostShuffle` configuration in `socketOptions`. Supported strategies are
+`"round-robin"` and `"random"`.
+You can also provide a custom function, which will take an array of urls and
+a current url index and should return a new url index. This function will be
+called on every recover attempt.
+
+
 ###### Socket options
 
 The socket options will be passed to the socket library (`net` or
@@ -408,9 +568,30 @@ on the object supplied*; that is, not in the prototype chain. The
 socket options is useful for supplying certificates and so on for an
 SSL connection; see the [SSL guide][ssl-doc].
 
-The socket options may also include the key `noDelay`, with a boolean
+The socket options may include the key `noDelay`, with a boolean
 value. If the value is `true`, this sets
 [`TCP_NODELAY`][wikipedia-nagling] on the underlying socket.
+
+The socket options may also include connection recovery options:
+
+ * `recover`: boolean, false by default, enable/disable recovery
+ * `recoverAfter`: integer, 5000 by default, time in milliseconds
+   to wait before recivery (first time)
+ * `recoverAfterRandom`: integer, 0 by default, boundary for random time to wait
+   before recovery, added to `recoverAfter`
+ * `recoverRetries`: integer, 0 by default, times to retry recovery if connection
+   fails.
+ * `recoverTimeout`: integer, 5000 by default, time in milliseconds
+   to wait between retries
+ * `recoverTopology`: boolean, true by default, recover topology
+   (queues, exchanges, consumers, etc.)
+ * `recoverOnMissedHeartbeat`: boolean, false by default, recover if client detects
+   a missed heartbeat
+ * `recoverOnServerClose`: boolean, false by default, recover if server
+   force-closes the connection. **This settitng is for testing only.
+   Should not be used in production**
+ * `hostShuffle`: `"round-robin"`, `"random"` or a function, `"round-robin"` by
+   default, a strategy to take a next url if an array of urls is supplied.
 
 ###### Result
 
