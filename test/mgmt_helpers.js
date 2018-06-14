@@ -2,11 +2,11 @@
 
 var Promise = require('bluebird');
 var http = require('http');
-const url = require('url');
+var url = require('url');
 
-const MGMT_URL = process.env.MGMT_URL || 'http://localhost:15672/api';
+var MGMT_URL = process.env.MGMT_URL || 'http://localhost:15672/api';
 
-const headers = {'Authorization': 'Basic Z3Vlc3Q6Z3Vlc3Q=', 'content-type': 'application/json'};
+var headers = {'Authorization': 'Basic Z3Vlc3Q6Z3Vlc3Q=', 'content-type': 'application/json'};
 
 
 function make_opts(path, method) {
