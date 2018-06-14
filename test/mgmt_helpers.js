@@ -52,7 +52,7 @@ function createVhost(vhost) {
       var options = make_opts('/vhosts/' + encodeURIComponent(vhost), 'PUT');
       http.request(options, function(resp) {
         if(resp.statusCode === 201){
-          on_good();
+          set_permissions(vhost, on_good, on_error);
         } else {
           console.dir(resp.statusCode);
           on_error(new Error("Failed to create vhost " + vhost));
@@ -75,6 +75,19 @@ function deleteVhost(vhost) {
       }
     }).end();
   }
+}
+
+function set_permissions(vhost, on_good, on_error) {
+  var options = make_opts('/permissions/' + encodeURIComponent(vhost) + '/guest' , 'PUT');
+  var data = '{"configure":".*","write":".*","read":".*"}';
+  http.request(options, function(resp) {
+    if(resp.statusCode === 204){
+      on_good();
+    } else {
+      console.dir(resp.statusCode);
+      on_error(new Error("Failed to set permissions for vhost " + vhost));
+    }
+  }).end(data);
 }
 
 function deleteExchange(vhost, exchange) {
