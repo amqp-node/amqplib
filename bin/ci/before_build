@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+sudo rabbitmq-plugins enable rabbitmq_management
+
