@@ -33,7 +33,7 @@ function closeAllConn(vhost) {
         var conn_name = JSON.parse(data)[0].name;
         var options = make_opts('/connections/' + encodeURIComponent(conn_name), 'DELETE');
         http.request(options, function(resp){
-          if(resp.statusCode == 204){
+          if(Math.floor(resp.statusCode / 100) === 2){
             on_good();
           } else {
             on_error(new Error("Failed to close connection"));
@@ -51,7 +51,7 @@ function createVhost(vhost) {
     delete_vhost(function() {
       var options = make_opts('/vhosts/' + encodeURIComponent(vhost), 'PUT');
       http.request(options, function(resp) {
-        if(resp.statusCode === 201){
+        if(Math.floor(resp.statusCode / 100) === 2){
           set_permissions(vhost, on_good, on_error);
         } else {
           console.dir(resp.statusCode);
@@ -67,7 +67,7 @@ function deleteVhost(vhost) {
   return function(on_good, on_error) {
     var options = make_opts('/vhosts/' + encodeURIComponent(vhost), 'DELETE');
     http.request(options, function(resp) {
-      if(resp.statusCode === 204 || resp.statusCode === 404){
+      if((Math.floor(resp.statusCode / 100) === 2) || resp.statusCode === 404){
         on_good();
       } else {
         console.dir(resp.statusCode);
@@ -81,7 +81,7 @@ function set_permissions(vhost, on_good, on_error) {
   var options = make_opts('/permissions/' + encodeURIComponent(vhost) + '/guest' , 'PUT');
   var data = '{"configure":".*","write":".*","read":".*"}';
   http.request(options, function(resp) {
-    if(resp.statusCode === 204){
+    if(Math.floor(resp.statusCode / 100) === 2){
       on_good();
     } else {
       console.dir(resp.statusCode);
@@ -94,7 +94,7 @@ function deleteExchange(vhost, exchange) {
   return function(on_good, on_error) {
     var options = make_opts('/exchanges/' + encodeURIComponent(vhost) + "/" + encodeURIComponent(exchange), 'DELETE');
     http.request(options, function(resp) {
-      if(resp.statusCode === 204){
+      if(Math.floor(resp.statusCode / 100) === 2){
         on_good();
       } else {
         console.dir(resp.statusCode);
@@ -108,7 +108,7 @@ function deleteQueue(vhost, queue) {
   return function(on_good, on_error) {
     var options = make_opts('/queues/' + encodeURIComponent(vhost) + "/" + encodeURIComponent(queue), 'DELETE');
     http.request(options, function(resp) {
-      if(resp.statusCode === 204){
+      if(Math.floor(resp.statusCode / 100) === 2){
         on_good();
       } else {
         console.dir(resp.statusCode);
