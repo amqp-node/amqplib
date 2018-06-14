@@ -24,7 +24,7 @@ function closeAllConn(vhost) {
     var options = make_opts('/vhosts/' + encodeURIComponent(vhost) + '/connections');
     http.get(options, function(res) {
       // console.log("get respo");
-      let data = '';
+      var data = '';
       res.on('data', function(chunk){
         data += chunk;
       });
@@ -109,7 +109,7 @@ function assertPrefetch(vhost, prefetch) {
   return function(on_good, on_error) {
     var options = make_opts('/vhosts/' + encodeURIComponent(vhost) + '/channels');
     http.get(options, function(res) {
-      let data = '';
+      var data = '';
       res.on('data', function(chunk){
         data += chunk;
       });
@@ -130,7 +130,7 @@ function assertBinding(vhost, dest, source, routing_key, args) {
   return function(on_good, on_error) {
     var options = make_opts('/exchanges/' + encodeURIComponent(vhost) + '/' + encodeURIComponent(source) + '/bindings/source');
     http.get(options, function(res) {
-      let data = '';
+      var data = '';
       res.on('data', function(chunk){
         data += chunk;
       });
@@ -165,7 +165,7 @@ function assertExchangeArguments(vhost, ex_name, type, args) {
   return function(on_good, on_error) {
     var options = make_opts('/exchanges/' + encodeURIComponent(vhost) + '/' + encodeURIComponent(ex_name));
     http.get(options, function(res) {
-      let data = '';
+      var data = '';
       res.on('data', function(chunk){
         data += chunk;
       });
@@ -190,7 +190,7 @@ function assertQueueArguments(vhost, q_name, args) {
   return function(on_good, on_error) {
     var options = make_opts('/queues/' + encodeURIComponent(vhost) + '/' + encodeURIComponent(q_name));
     http.get(options, function(res) {
-      let data = '';
+      var data = '';
       res.on('data', function(chunk){
         data += chunk;
       });
