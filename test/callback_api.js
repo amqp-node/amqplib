@@ -168,7 +168,7 @@ channel_test('send to queue and consume ack', function(ch, done) {
   var msg = randomString();
   ch.assertQueue('', {exclusive: true}, function(e, q) {
     if (e !== null) return done(e);
-    ch.consume(q.queue, function(m) {
+    ch.consume(q.queue, function(m, ch) {
       if (m.content.toString() == msg) {
         ch.ack(m);
         done();

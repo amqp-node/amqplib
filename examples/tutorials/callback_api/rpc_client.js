@@ -26,7 +26,7 @@ function on_connect(err, conn) {
     if (err !== null) return bail(err, conn);
 
     var correlationId = uuid();
-    function maybeAnswer(msg) {
+    function maybeAnswer(msg, ch) {
       if (msg.properties.correlationId === correlationId) {
         console.log(' [.] Got %d', msg.content.toString());
       }

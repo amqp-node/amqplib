@@ -57,7 +57,7 @@ function consumer(conn) {
   function on_open(err, ch) {
     if (err != null) bail(err);
     ch.assertQueue(q);
-    ch.consume(q, function(msg) {
+    ch.consume(q, function(msg, ch) {
       if (msg !== null) {
         console.log(msg.content.toString());
         ch.ack(msg);
@@ -95,7 +95,7 @@ open.then(function(conn) {
   return conn.createChannel();
 }).then(function(ch) {
   return ch.assertQueue(q).then(function(ok) {
-    return ch.consume(q, function(msg) {
+    return ch.consume(q, function(msg, ch) {
       if (msg !== null) {
         console.log(msg.content.toString());
         ch.ack(msg);

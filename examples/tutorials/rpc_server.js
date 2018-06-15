@@ -26,7 +26,7 @@ amqp.connect('amqp://localhost').then(function(conn) {
       console.log(' [x] Awaiting RPC requests');
     });
 
-    function reply(msg) {
+    function reply(msg, ch) {
       var n = parseInt(msg.content.toString());
       console.log(' [.] fib(%d)', n);
       var response = fib(n);

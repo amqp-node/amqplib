@@ -14,7 +14,7 @@ amqp.connect('amqp://localhost').then(function(conn) {
     });
     return ok;
 
-    function doWork(msg) {
+    function doWork(msg, ch) {
       var body = msg.content.toString();
       console.log(" [x] Received '%s'", body);
       var secs = body.split('.').length - 1;

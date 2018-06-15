@@ -10,7 +10,7 @@ function bail(err, conn) {
 function on_connect(err, conn) {
   if (err !== null) return bail(err);
   process.once('SIGINT', function() { conn.close(); });
-  
+
   var q = 'task_queue';
 
   conn.createChannel(function(err, ch) {
@@ -20,7 +20,7 @@ function on_connect(err, conn) {
       console.log(" [*] Waiting for messages. To exit press CTRL+C");
     });
 
-    function doWork(msg) {
+    function doWork(msg, ch) {
       var body = msg.content.toString();
       console.log(" [x] Received '%s'", body);
       var secs = body.split('.').length - 1;

@@ -496,7 +496,7 @@ chtest("prefetch", function(ch) {
     .then(function() {
       return new Promise(function(resolve) {
         var messageCount = 0;
-        function receive(msg) {
+        function receive(msg, ch) {
           ch.ack(msg);
           if (++messageCount > 1) {
             resolve(messageCount);
