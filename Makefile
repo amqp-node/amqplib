@@ -24,7 +24,7 @@ lib/defs.js: $(UGLIFY) bin/generate-defs.js bin/amqp-rabbitmq-0.9.1.json
 		-b 'indent-level=2' 2>&1 | (grep -v 'WARN' || true)
 
 test: lib/defs.js
-	$(MOCHA) --check-leaks -u tdd test/
+	$(MOCHA) --grep "$(TEST_FILTER)" --inspect --check-leaks -u tdd test/$(TEST_FILE)
 
 test-all-nodejs: lib/defs.js
 	for v in $(NODEJS_VERSIONS); \

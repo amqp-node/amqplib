@@ -3,13 +3,33 @@
 var assert = require('assert');
 var api = require('../channel_api');
 var util = require('./util');
+var mgmt_helpers = require('./mgmt_helpers');
 var succeed = util.succeed, fail = util.fail;
 var schedule = util.schedule;
 var randomString = util.randomString;
 var Promise = require('bluebird');
 var Buffer = require('safe-buffer').Buffer;
+var http = require('http');
 
 var URL = process.env.URL || 'amqp://localhost';
+var URLS;
+if(process.env.URLS){
+  URLS = process.env.URLS.split(";");
+} else {
+  URLS = ['amqp://localhost', 'amqp://127.0.0.1'];
+}
+
+var closeAllConn = mgmt_helpers.closeAllConn,
+    createVhost = mgmt_helpers.createVhost,
+    deleteVhost = mgmt_helpers.deleteVhost,
+    deleteExchange = mgmt_helpers.deleteExchange,
+    deleteQueue = mgmt_helpers.deleteQueue,
+    assertPrefetch = mgmt_helpers.assertPrefetch,
+    assertBinding = mgmt_helpers.assertBinding,
+    assertExchangeArguments = mgmt_helpers.assertExchangeArguments,
+    assertQueueArguments = mgmt_helpers.assertQueueArguments;
+
+
 
 function connect() {
   return api.connect(URL);
@@ -154,7 +174,9 @@ function waitForQueue(q, condition) {
                 c.close();
                 return qok;
               }
-              else schedule(check);
+              else {
+                schedule(check);
+              }
             });
           }
           return check();
@@ -580,5 +602,793 @@ confirmtest('wait for confirms', function(ch) {
   }
   return ch.waitForConfirms();
 })
+
+});
+
+function endRecoverConsumer(cch, vhost, done) {
+  return cch.c.close().then(function(){
+    return new Promise(deleteVhost(vhost)).then(succeed(done), fail(done));
+  });
+}
+
+suite("recover", function() {
+
+test("recover connection", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_recoverConnection';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100});
+  }).then(function(c){
+    return c;
+  }).delay(5000).then(function(c){
+    return new Promise(closeAllConn(vhost)).then(function(){ return c; });
+  }).delay(1000).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(){return c;});
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("recover connection with multiple hosts", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_recoverConnectionWithMultipleHosts';
+  new Promise(createVhost(vhost)).then(function() {
+    var urls_w_vhost = URLS.map(function(url){
+      return url + "/" + encodeURIComponent(vhost);
+    });
+    return api.connect(urls_w_vhost,
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100});
+  }).then(function(c){
+    return c;
+  }).delay(5000).then(function(c){
+    return new Promise(closeAllConn(vhost)).then(function(){ return c; });
+  }).delay(1000).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(){return c;});
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("recover channel", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_recoverChannel';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100});
+  }).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).delay(5000).then(function(cch){
+    return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
+  }).delay(1000).then(function(cch){
+    return cch.ch.prefetch(100).then(function(){ return cch.c; });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("recover multiple channels", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_recoverMultipleChannels';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100});
+  }).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(ch){
+      return {c: c, ch: ch};
+    });
+  }).then(function(cch){
+    return cch.c.createChannel().then(ignoreErrors).then(function(ch){
+      cch.ch1 = ch;
+      return cch;
+    });
+  }).delay(5000).then(function(cch){
+    return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
+  }).delay(1000).then(function(cch){
+    return cch.ch.prefetch(100).then(function(){
+      return cch.ch1.prefetch(100);
+    }).then(function(){ return cch.c; });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("recover channel with multiple hosts", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_recoverChannelWithMultipleHosts';
+  new Promise(createVhost(vhost)).then(function() {
+    var urls_w_vhost = URLS.map(function(url){
+      return url + "/" + encodeURIComponent(vhost);
+    });
+    return api.connect(urls_w_vhost,
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100});
+  }).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).delay(5000).then(function(cch){
+    return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
+  }).delay(1000).then(function(cch){
+    return cch.ch.prefetch(100).then(function(){ return cch.c; });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("recover prefetch ch", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_recoverPrefetch';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100});
+  }).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    return cch.ch.prefetch(10).then(function(){ return cch; })
+  }).delay(5000).then(function(cch){
+    console.log("Close all conn");
+    return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
+  }).delay(5000).then(function(cch){
+    console.log("assert prefetch");
+    return new Promise(assertPrefetch(vhost, 10)).then(function() { return cch.c; });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    console.log("Closing connection");
+    return c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+
+test("recover exchange", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_recoverExchange';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
+  }).then(function(c){
+    // Ignore error event
+    c.on("error", function(){});
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    return cch.ch.assertExchange('exchange_name', 'fanout').then(function(){
+      return cch.ch.assertExchange('exchange_name_to_remove', 'fanout');
+    }).then(function(){
+      return cch.ch.deleteExchange('exchange_name_to_remove');
+    }).then(function(){ return cch; });
+  }).delay(5000).then(function(cch){
+    return new Promise(deleteExchange(vhost, 'exchange_name')).then(function(){
+      return new Promise(closeAllConn(vhost));
+    }).then(function(){ return cch; });
+
+  }).delay(1000).then(function(cch){
+    // Check that exchange is there
+    return cch.ch.checkExchange('exchange_name').then(function(){
+      return cch.ch.checkExchange('exchange_name_to_remove').then(fail(done)).catch(function(){
+        return cch;
+      });
+    }).then(function(){ return cch.c; });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+
+test("recover queue", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_recoverQueue';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
+  }).then(function(c){
+    // Ignore error event
+    c.on("error", function(){});
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    return cch.ch.assertQueue('queue_name').then(function(){
+      return cch.ch.assertQueue('queue_name_to_remove');
+    }).then(function(){
+      return cch.ch.deleteQueue('queue_name_to_remove');
+    }).then(function(){ return cch; })
+  }).delay(5000).then(function(cch){
+    return new Promise(deleteQueue(vhost, 'queue_name')).then(function(){
+      return new Promise(closeAllConn(vhost));
+    }).then(function(){ return cch; });
+
+  }).delay(1000).then(function(cch){
+    // Check that exchange is there
+    return cch.ch.checkQueue('queue_name').then(function(){
+      return cch.ch.checkQueue('queue_name_to_remove').then(fail(done)).catch(function(err){
+        // Deleted queue will not be recovered.
+        return cch.c;
+      });
+    });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("recover anonymous queue", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_recoverAnonymousQueue';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
+  }).then(function(c){
+    // Ignore error event
+    c.on("error", function(){});
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    return cch.ch.assertQueue('').then(function(qok){
+      cch.queue = qok.queue;
+      return cch;
+    }).then(function(){
+      return cch.ch.assertQueue('').then(function(qok){
+        cch.queue_removed = qok.queue;
+        return cch;
+      });
+    }).then(function(){
+      return cch.ch.deleteQueue(cch.queue_removed).then(function(){
+        return cch;
+      });
+    });
+  }).delay(5000).then(function(cch){
+    return new Promise(deleteQueue(vhost, cch.queue)).then(function(){
+      return new Promise(closeAllConn(vhost));
+    }).then(function(){ return cch; });
+
+  }).delay(1000).then(function(cch){
+    // Check that exchange is there
+    var queues = Object.keys(cch.ch.book.queues);
+    var queue_name = queues[0];
+    if(queues.length === 1){
+      return cch.ch.checkQueue(queue_name).then(function(){ return cch.c; });
+    } else {
+      return Promise.reject(new Error("There must be only one queue booked. Queues: " + queues.toString()));
+    }
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("recover exchange binding", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_recoverExchangeBinding';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
+  }).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    return cch.ch.assertExchange('exchange_src', 'direct').then(function(){
+      return cch.ch.assertExchange('exchange_dest', 'fanout')
+    }).then(function() {
+      return cch.ch.bindExchange('exchange_dest', 'exchange_src', 'route');
+    }).then(function(){
+      return cch.ch.bindExchange('exchange_dest', 'exchange_src', 'route_to_be_removed');
+    }).then(function(){
+      return cch.ch.unbindExchange('exchange_dest', 'exchange_src', 'route_to_be_removed');
+    }).then(function(){ return cch; });
+  }).delay(5000).then(function(cch){
+    return new Promise(deleteExchange(vhost, 'exchange_src')
+    ).then(function(){
+      return new Promise(deleteExchange(vhost, 'exchange_dest'));
+    }).then(function(){
+      return new Promise(closeAllConn(vhost));
+    }).then(function(){ return cch; });
+
+  }).delay(1000).then(function(cch){
+    // Check that exchange is there
+    return cch.ch.checkExchange('exchange_dest'
+    ).then(function(){
+      return cch.ch.checkExchange('exchange_src');
+    }).then(function(){
+      return new Promise(assertBinding(vhost, 'exchange_dest', 'exchange_src', 'route'));
+    }).then(function(){
+      return new Promise(
+        assertBinding(vhost, 'exchange_dest', 'exchange_src', 'route_to_be_removed')
+      ).then(fail(done)).catch(function(){
+        return;
+      });
+    }).then(function(){ return cch.c; });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("not recover exchange binding without the source exchange", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_notrecoverExchangeBindingWithoutSrc';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
+  }).then(function(c){
+    // Ignore error event
+    c.on("error", function(){});
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    return cch.ch.assertExchange('exchange_src', 'direct').then(function(){
+      return cch.ch.assertExchange('exchange_dest', 'fanout')
+    }).then(function() {
+      return cch.ch.bindExchange('exchange_dest', 'exchange_src', 'route');
+    }).then(function(){
+      return cch.ch.deleteExchange('exchange_src', 'direct');
+    }).then(function(){ return cch; });
+  }).delay(5000).then(function(cch){
+    return new Promise(deleteExchange(vhost, 'exchange_dest')
+    ).then(function(){
+      return new Promise(closeAllConn(vhost));
+    }).then(function(){ return cch; });
+
+  }).delay(1000).then(function(cch){
+    // Check that exchange is there
+    return cch.ch.checkExchange('exchange_dest'
+    ).then(function(){
+      return cch.ch.checkExchange('exchange_src').then(fail(done)).catch(function(err){
+          return cch;
+        });
+    }).then(function(){
+      return new Promise(
+        assertBinding(vhost, 'exchange_dest', 'exchange_src', 'route')
+      ).then(fail(done)).catch(function(){
+        return cch.c;
+      });
+    });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+
+test("not recover exchange binding without the destination exchange", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_notrecoverExchangeBindingWithoutSrc';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
+  }).then(function(c){
+    // Ignore error event
+    c.on("error", function(){});
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    return cch.ch.assertExchange('exchange_src', 'direct').then(function(){
+      return cch.ch.assertExchange('exchange_dest', 'fanout')
+    }).then(function() {
+      return cch.ch.bindExchange('exchange_dest', 'exchange_src', 'route');
+    }).then(function(){
+      return cch.ch.deleteExchange('exchange_dest', 'direct');
+    }).then(function(){ return cch; });
+  }).delay(5000).then(function(cch){
+    return new Promise(deleteExchange(vhost, 'exchange_src')
+    ).then(function(){
+      return new Promise(closeAllConn(vhost));
+    }).then(function(){ return cch; });
+
+  }).delay(1000).then(function(cch){
+    // Check that exchange is there
+    return cch.ch.checkExchange('exchange_src'
+    ).then(function(){
+      return cch.ch.checkExchange('exchange_dest').then(fail(done)).catch(function(err){
+          return cch;
+        });
+    }).then(function(){
+      return new Promise(
+        assertBinding(vhost, 'exchange_dest', 'exchange_src', 'route')
+      ).then(fail(done)).catch(function(){
+        return cch.c;
+      });
+    });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("recover queue binding", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_recoverQueueBinding';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
+  }).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    return cch.ch.assertExchange('exchange_src', 'direct').then(function(){
+      return cch.ch.assertQueue('queue_dest')
+    }).then(function() {
+      return cch.ch.bindQueue('queue_dest', 'exchange_src', 'route');
+    }).then(function(){
+      return cch.ch.bindQueue('queue_dest', 'exchange_src', 'route_to_be_removed');
+    }).then(function(){
+      return cch.ch.unbindQueue('queue_dest', 'exchange_src', 'route_to_be_removed');
+    }).then(function(){ return cch; });
+  }).delay(5000).then(function(cch){
+    return new Promise(deleteExchange(vhost, 'exchange_src')
+    ).then(function(){
+      return new Promise(deleteQueue(vhost, 'queue_dest'));
+    }).then(function(){
+      return new Promise(closeAllConn(vhost));
+    }).then(function(){ return cch; });
+
+  }).delay(1000).then(function(cch){
+    // Check that exchange is there
+    return cch.ch.checkQueue('queue_dest'
+    ).then(function(){
+      return cch.ch.checkExchange('exchange_src');
+    }).then(function(){
+      return new Promise(assertBinding(vhost, 'queue_dest', 'exchange_src', 'route'));
+    }).then(function(){
+      return new Promise(
+        assertBinding(vhost, 'queue_dest', 'exchange_src', 'route')
+      ).then(fail(done)).catch(function(){ return; });
+    }).then(function(){ return cch.c; });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("not recover queue binding without the source exchange", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_recoverQueueBinding';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
+  }).then(function(c){
+    c.on("error", function(){});
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    return cch.ch.assertExchange('exchange_src', 'direct').then(function(){
+      return cch.ch.assertQueue('queue_dest')
+    }).then(function() {
+      return cch.ch.bindQueue('queue_dest', 'exchange_src', 'route');
+    }).then(function(){ return cch; });
+  }).delay(5000).then(function(cch){
+    return cch.ch.deleteExchange('exchange_src').then(function(){
+      return new Promise(deleteQueue(vhost, 'queue_dest'));
+    }).then(function(){
+      return new Promise(closeAllConn(vhost));
+    }).then(function(){ return cch; });
+
+  }).delay(1000).then(function(cch){
+    // Check that exchange is there
+    return cch.ch.checkQueue('queue_dest'
+    ).then(function(){
+      return cch.ch.checkExchange('exchange_src').then(fail(done)).catch(function(err){
+        return cch;
+      });
+    }).then(function(){
+      return new Promise(
+        assertBinding(vhost, 'queue_dest', 'exchange_src', 'route')
+      ).then(fail(done)).catch(function(){ return; });
+    }).then(function(){ return cch.c; });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("recover queue binding with args", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_recoverQueueBindingWithArgs';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
+  }).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    return cch.ch.assertExchange('exchange_src', 'direct').then(function(){
+      return cch.ch.assertQueue('queue_dest')
+    }).then(function() {
+      return cch.ch.bindQueue('queue_dest', 'exchange_src', 'route', {"arg": "value"});
+    }).then(function(){ return cch; });
+  }).delay(5000).then(function(cch){
+    return new Promise(deleteExchange(vhost, 'exchange_src')
+    ).then(function(){
+      return new Promise(deleteQueue(vhost, 'queue_dest'));
+    }).then(function(){
+      return new Promise(closeAllConn(vhost));
+    }).then(function(){ return cch; });
+
+  }).delay(1000).then(function(cch){
+    // Check that exchange is there
+    return cch.ch.checkQueue('queue_dest'
+    ).then(function(){
+      return cch.ch.checkExchange('exchange_src');
+    }).then(function(){
+      return new Promise(assertBinding(vhost, 'queue_dest', 'exchange_src', 'route', {"arg": "value"}));
+    }).then(function(){ return cch.c; });
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+
+test("recover anonymous queue binding", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_recoverAnonymousQueueBinding';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
+  }).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    return cch.ch.assertExchange('exchange_src', 'direct'
+    ).then(function(){
+      return cch.ch.assertQueue('');
+    }).then(function(qok) {
+      cch.queue = qok.queue;
+      return cch.ch.bindQueue(cch.queue, 'exchange_src', 'route');
+    }).then(function(){ return cch; });
+  }).delay(5000).then(function(cch){
+    return new Promise(deleteExchange(vhost, 'exchange_src')
+    ).then(function(){
+      return new Promise(deleteQueue(vhost, cch.queue));
+    }).then(function(){
+      return new Promise(closeAllConn(vhost));
+    }).then(function(){ return cch; });
+  }).delay(1000).then(function(cch){
+    // Check that exchange is there
+    var queues = Object.keys(cch.ch.book.queues);
+    var queue_name = queues[0];
+    if(queues.length === 1){
+      return cch.ch.checkQueue(queue_name
+      ).then(function(){
+        return cch.ch.checkExchange('exchange_src');
+      }).then(function(){
+        return new Promise(assertBinding(vhost, queue_name, 'exchange_src', 'route'));
+      }).then(function(){ return cch.c; });
+    } else {
+      return Promise.reject(new Error("There must be only one queue booked. Queues: " + queues.toString()));
+    }
+  }).then(function(c){
+    // Disable recovery on vhost deletion
+    c.connection.recoverOnServerClose = false;
+    return c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+
+test("recover consumer", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_recoverConsumer';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
+  }).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    return cch.ch.deleteQueue('queue_name').then(function(){
+        return cch.ch.assertQueue('queue_name')
+      }).then(function() {
+        // Test succeed as soon as the first message delivered.
+        return cch.ch.consume('queue_name', function(msg){
+          if(msg.content.toString() === "message"){
+            endRecoverConsumer(cch, vhost, done);
+          } else {
+            fail(done);
+          }
+        }, {noAck: true});
+    }).then(function(){ return cch; })
+  }).delay(5000).then(function(cch){
+    // return cch;
+    return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
+  }).delay(1000).then(function(cch){
+    // Check that exchange is there
+    return cch.ch.checkQueue('queue_name').then(function(){ return cch; });
+  }).then(function(cch){
+    // Disable recovery on vhost deletion
+    cch.c.connection.recoverOnServerClose = false;
+    return cch.ch.sendToQueue('queue_name', Buffer.from("message"));
+  }).catch(fail(done));
+});
+
+
+test("not recover cancelled consumer", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_notRecoverCancelledConsumer';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
+  }).then(function(c) {
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch) {
+    return cch.ch.deleteQueue('queue_name').then(function() {
+      return cch.ch.assertQueue('queue_name')
+    }).then(function() {
+      return cch.ch.deleteQueue('queue_name_2');
+    }).then(function() {
+      return cch.ch.assertQueue('queue_name_2');
+    }).then(function() {
+      return cch.ch.deleteQueue('queue_name_3');
+    }).then(function() {
+      return cch.ch.assertQueue('queue_name_3');
+    }).then(function() {
+      // There should be no messages delivered, only cancel (null)
+      return cch.ch.consume('queue_name', function(msg){
+        if(msg !== null) {
+          fail(done);
+        }
+      }, {noAck: true});
+    }).then(function(consumer) {
+      // Cancel first consumer from the channel
+      return cch.ch.cancel(consumer.consumerTag);
+    }).then(function() {
+      return cch.ch.consume('queue_name_2', function(msg){
+        if(msg !== null) {
+          fail(done);
+        }
+      }, {noAck: true});
+    }).then(function(consumer) {
+      return cch.ch.deleteQueue('queue_name_2');
+    }).then(function() {
+      return cch.ch.consume('queue_name_3', function(msg){
+        if(msg !== null) {
+          fail(done);
+        }
+      }, {noAck: true});
+    }).then(function() { return cch; });
+  }).delay(5000).then(function(cch) {
+    // Delay after queue is removed to let the client remove the consumer
+    return new Promise(deleteQueue(vhost, 'queue_name_3')).delay(500).then(function(){
+      return new Promise(closeAllConn(vhost));
+    }).then(function(){ return cch; });
+  }).delay(1000).then(function(cch) {
+    // Check that exchange is there
+    return cch.ch.checkQueue('queue_name').then(function(){
+      return cch.ch.checkQueue('queue_name_3');
+    }).then(function(){ return cch; });
+  }).then(function(cch) {
+    // Disable recovery on vhost deletion
+    cch.c.connection.recoverOnServerClose = false;
+    cch.ch.sendToQueue('queue_name', Buffer.from("message"));
+    cch.ch.sendToQueue('queue_name_2', Buffer.from("message"));
+    cch.ch.sendToQueue('queue_name_3', Buffer.from("message"));
+    return cch;
+  }).delay(2000).then(function(cch){
+    return cch.c.close();
+  }).finally(function() {
+    return new Promise(deleteVhost(vhost));
+  }).then(succeed(done), fail(done));
+});
+
+test("recover arguments", function(done){
+  this.timeout(15000);
+  var vhost = 'CH_recoverArguments';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
+  }).then(function(c) {
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch) {
+    return cch.ch.deleteQueue('queue_name').then(function() {
+      return cch.ch.assertQueue('queue_name', {maxLength: 10})
+    }).then(function(){ return cch; });
+  }).then(function(cch) {
+    return cch.ch.deleteExchange('ex_name').then(function() {
+      return cch.ch.assertExchange('ex_name', 'fanout', {alternateExchange: 'foo'})
+    }).then(function(){ return cch; });
+  }).delay(5000).then(function(cch){
+    // return cch;
+    return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
+  }).delay(1000).then(function(cch){
+    return new Promise(assertExchangeArguments(vhost, 'ex_name', 'fanout', {'alternate-exchange': 'foo'})
+      ).then(function(){ return cch; });
+  }).then(function(cch){
+    return new Promise(assertQueueArguments(vhost, 'queue_name', {'x-max-length': 10})
+      ).then(function(){ return cch; });
+  }).then(function(cch){
+    cch.c.connection.recoverOnServerClose = false;
+    return cch.c.close();
+  }).then(succeed(done), fail(done));
+});
+
+
+test("drop stale acks", function(done){
+  this.timeout(20000);
+  var vhost = 'CH_dropStaleAcks';
+  new Promise(createVhost(vhost)).then(function() {
+    return api.connect(URL + "/" + encodeURIComponent(vhost),
+                       {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
+  }).then(function(c){
+    return c.createChannel().then(ignoreErrors).then(function(ch){ return {c: c, ch: ch}; });
+  }).then(function(cch){
+    return cch.ch.prefetch(1).then(function(){ return cch; });
+  }).then(function(cch){
+    return cch.ch.deleteQueue('queue_name').then(function(){
+        return cch.ch.assertQueue('queue_name')
+      }).then(function() {
+        // Test succeed as soon as the first message delivered.
+        return cch.ch.consume('queue_name', function(msg){
+          if(msg.content.toString() === "message"){
+            console.dir({tag: msg.fields.deliveryTag, incarnation: msg.incarnation});
+            setTimeout(function(){
+              if(msg.fields.deliveryTag == 2 && msg.incarnation == 1){
+                console.log("endeRecover");
+                endRecoverConsumer(cch, vhost, done);
+              } else if (msg.fields.deliveryTag > 2 && msg.incarnation == 1){
+                return;
+              } else if (msg.fields.deliveryTag == 1){
+                cch.ch.ack(msg);
+              } else if (msg.incarnation == 0) {
+                console.log("ack");
+                cch.ch.ack(msg);
+              }
+            }, 1000);
+          } else {
+            fail(done);
+          }
+        }, {noAck: false});
+    }).then(function(){ return cch; })
+  }).then(function(cch){
+    for(var i = 0; i < 100; i ++) {
+      cch.ch.sendToQueue('queue_name', Buffer.from("message"), {});
+    }
+    return cch;
+  }).delay(5000).then(function(cch){
+    return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
+  }).delay(1000).then(function(cch){
+    // Check that exchange is there
+    return cch.ch.checkQueue('queue_name').then(function(){ return cch; });
+  }).then(function(cch){
+    // Disable recovery on vhost deletion
+    cch.c.connection.recoverOnServerClose = false;
+  }).catch(fail(done));
+});
 
 });
