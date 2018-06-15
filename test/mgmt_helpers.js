@@ -29,16 +29,22 @@ function closeAllConn(vhost) {
         data += chunk;
       });
       res.on('end', function(){
+
         var connections = JSON.parse(data);
-        var conn_name = JSON.parse(data)[0].name;
-        var options = make_opts('/connections/' + encodeURIComponent(conn_name), 'DELETE');
-        http.request(options, function(resp){
-          if(Math.floor(resp.statusCode / 100) === 2){
-            on_good();
-          } else {
-            on_error(new Error("Failed to close connection"));
-          }
-        }).end();
+        // console.dir(connections);
+        if(connections[0] !== undefined) {
+          var conn_name = connections[0].name;
+          var options = make_opts('/connections/' + encodeURIComponent(conn_name), 'DELETE');
+          http.request(options, function(resp){
+            if(Math.floor(resp.statusCode / 100) === 2){
+              on_good();
+            } else {
+              on_error(new Error("Failed to close connection"));
+            }
+          }).end();
+        } else {
+          on_good();
+        }
       });
     });
   }
@@ -94,7 +100,7 @@ function deleteExchange(vhost, exchange) {
   return function(on_good, on_error) {
     var options = make_opts('/exchanges/' + encodeURIComponent(vhost) + "/" + encodeURIComponent(exchange), 'DELETE');
     http.request(options, function(resp) {
-      if(Math.floor(resp.statusCode / 100) === 2){
+      if((Math.floor(resp.statusCode / 100) === 2) || resp.statusCode === 404){
         on_good();
       } else {
         console.dir(resp.statusCode);
@@ -108,7 +114,7 @@ function deleteQueue(vhost, queue) {
   return function(on_good, on_error) {
     var options = make_opts('/queues/' + encodeURIComponent(vhost) + "/" + encodeURIComponent(queue), 'DELETE');
     http.request(options, function(resp) {
-      if(Math.floor(resp.statusCode / 100) === 2){
+      if((Math.floor(resp.statusCode / 100) === 2)  || resp.statusCode === 404){
         on_good();
       } else {
         console.dir(resp.statusCode);

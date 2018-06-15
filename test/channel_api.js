@@ -605,15 +605,17 @@ confirmtest('wait for confirms', function(ch) {
 
 });
 
-function endRecoverConsumer(vhost, done) {
-  return new Promise(deleteVhost(vhost)).then(succeed(done), fail(done));
+function endRecoverConsumer(cch, vhost, done) {
+  return cch.c.close().then(function(){
+    return new Promise(deleteVhost(vhost)).then(succeed(done), fail(done));
+  });
 }
 
 suite("recover", function() {
 
 test("recover connection", function(done){
   this.timeout(15000);
-  var vhost = 'recoverConnection';
+  var vhost = 'CH_recoverConnection';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100});
@@ -626,7 +628,7 @@ test("recover connection", function(done){
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.connection.recoverOnServerClose = false;
-    return c;
+    return c.close();
   }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
@@ -634,7 +636,7 @@ test("recover connection", function(done){
 
 test("recover connection with multiple hosts", function(done){
   this.timeout(15000);
-  var vhost = 'recoverConnectionWithMultipleHosts';
+  var vhost = 'CH_recoverConnectionWithMultipleHosts';
   new Promise(createVhost(vhost)).then(function() {
     var urls_w_vhost = URLS.map(function(url){
       return url + "/" + encodeURIComponent(vhost);
@@ -650,7 +652,7 @@ test("recover connection with multiple hosts", function(done){
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.connection.recoverOnServerClose = false;
-    return c;
+    return c.close();
   }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
@@ -658,7 +660,7 @@ test("recover connection with multiple hosts", function(done){
 
 test("recover channel", function(done){
   this.timeout(15000);
-  var vhost = 'recoverChannel';
+  var vhost = 'CH_recoverChannel';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100});
@@ -671,7 +673,7 @@ test("recover channel", function(done){
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.connection.recoverOnServerClose = false;
-    return c;
+    return c.close();
   }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
@@ -679,7 +681,7 @@ test("recover channel", function(done){
 
 test("recover multiple channels", function(done){
   this.timeout(15000);
-  var vhost = 'recoverMultipleChannels';
+  var vhost = 'CH_recoverMultipleChannels';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100});
@@ -701,7 +703,7 @@ test("recover multiple channels", function(done){
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.connection.recoverOnServerClose = false;
-    return c;
+    return c.close();
   }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
@@ -709,7 +711,7 @@ test("recover multiple channels", function(done){
 
 test("recover channel with multiple hosts", function(done){
   this.timeout(15000);
-  var vhost = 'recoverChannelWithMultipleHosts';
+  var vhost = 'CH_recoverChannelWithMultipleHosts';
   new Promise(createVhost(vhost)).then(function() {
     var urls_w_vhost = URLS.map(function(url){
       return url + "/" + encodeURIComponent(vhost);
@@ -725,15 +727,15 @@ test("recover channel with multiple hosts", function(done){
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.connection.recoverOnServerClose = false;
-    return c;
+    return c.close();
   }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
 });
 
-test("recover prefetch", function(done){
+test("recover prefetch ch", function(done){
   this.timeout(15000);
-  var vhost = 'recoverPrefetch';
+  var vhost = 'CH_recoverPrefetch';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100});
@@ -742,13 +744,16 @@ test("recover prefetch", function(done){
   }).then(function(cch){
     return cch.ch.prefetch(10).then(function(){ return cch; })
   }).delay(5000).then(function(cch){
+    console.log("Close all conn");
     return new Promise(closeAllConn(vhost)).then(function(){ return cch; });
   }).delay(5000).then(function(cch){
+    console.log("assert prefetch");
     return new Promise(assertPrefetch(vhost, 10)).then(function() { return cch.c; });
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.connection.recoverOnServerClose = false;
-    return c;
+    console.log("Closing connection");
+    return c.close();
   }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
@@ -757,7 +762,7 @@ test("recover prefetch", function(done){
 
 test("recover exchange", function(done){
   this.timeout(15000);
-  var vhost = 'recoverExchange';
+  var vhost = 'CH_recoverExchange';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
@@ -786,7 +791,7 @@ test("recover exchange", function(done){
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.connection.recoverOnServerClose = false;
-    return c;
+    return c.close();
   }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
@@ -795,7 +800,7 @@ test("recover exchange", function(done){
 
 test("recover queue", function(done){
   this.timeout(15000);
-  var vhost = 'recoverQueue';
+  var vhost = 'CH_recoverQueue';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
@@ -825,7 +830,7 @@ test("recover queue", function(done){
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.connection.recoverOnServerClose = false;
-    return c;
+    return c.close();
   }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
@@ -833,7 +838,7 @@ test("recover queue", function(done){
 
 test("recover anonymous queue", function(done){
   this.timeout(15000);
-  var vhost = 'recoverAnonymousQueue';
+  var vhost = 'CH_recoverAnonymousQueue';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
@@ -872,7 +877,7 @@ test("recover anonymous queue", function(done){
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.connection.recoverOnServerClose = false;
-    return c;
+    return c.close();
   }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
@@ -880,7 +885,7 @@ test("recover anonymous queue", function(done){
 
 test("recover exchange binding", function(done){
   this.timeout(15000);
-  var vhost = 'recoverExchangeBinding';
+  var vhost = 'CH_recoverExchangeBinding';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
@@ -921,7 +926,7 @@ test("recover exchange binding", function(done){
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.connection.recoverOnServerClose = false;
-    return c;
+    return c.close();
   }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
@@ -929,7 +934,7 @@ test("recover exchange binding", function(done){
 
 test("not recover exchange binding without the source exchange", function(done){
   this.timeout(15000);
-  var vhost = 'notrecoverExchangeBindingWithoutSrc';
+  var vhost = 'CH_notrecoverExchangeBindingWithoutSrc';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
@@ -968,7 +973,7 @@ test("not recover exchange binding without the source exchange", function(done){
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.connection.recoverOnServerClose = false;
-    return c;
+    return c.close();
   }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
@@ -977,7 +982,7 @@ test("not recover exchange binding without the source exchange", function(done){
 
 test("not recover exchange binding without the destination exchange", function(done){
   this.timeout(15000);
-  var vhost = 'notrecoverExchangeBindingWithoutSrc';
+  var vhost = 'CH_notrecoverExchangeBindingWithoutSrc';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
@@ -1016,7 +1021,7 @@ test("not recover exchange binding without the destination exchange", function(d
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.connection.recoverOnServerClose = false;
-    return c;
+    return c.close();
   }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
@@ -1024,7 +1029,7 @@ test("not recover exchange binding without the destination exchange", function(d
 
 test("recover queue binding", function(done){
   this.timeout(15000);
-  var vhost = 'recoverQueueBinding';
+  var vhost = 'CH_recoverQueueBinding';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
@@ -1063,7 +1068,7 @@ test("recover queue binding", function(done){
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.connection.recoverOnServerClose = false;
-    return c;
+    return c.close();
   }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
@@ -1071,7 +1076,7 @@ test("recover queue binding", function(done){
 
 test("not recover queue binding without the source exchange", function(done){
   this.timeout(15000);
-  var vhost = 'recoverQueueBinding';
+  var vhost = 'CH_recoverQueueBinding';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
@@ -1106,7 +1111,7 @@ test("not recover queue binding without the source exchange", function(done){
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.connection.recoverOnServerClose = false;
-    return c;
+    return c.close();
   }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
@@ -1114,7 +1119,7 @@ test("not recover queue binding without the source exchange", function(done){
 
 test("recover queue binding with args", function(done){
   this.timeout(15000);
-  var vhost = 'recoverQueueBindingWithArgs';
+  var vhost = 'CH_recoverQueueBindingWithArgs';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
@@ -1145,7 +1150,7 @@ test("recover queue binding with args", function(done){
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.connection.recoverOnServerClose = false;
-    return c;
+    return c.close();
   }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
@@ -1154,7 +1159,7 @@ test("recover queue binding with args", function(done){
 
 test("recover anonymous queue binding", function(done){
   this.timeout(15000);
-  var vhost = 'recoverAnonymousQueueBinding';
+  var vhost = 'CH_recoverAnonymousQueueBinding';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
@@ -1192,7 +1197,7 @@ test("recover anonymous queue binding", function(done){
   }).then(function(c){
     // Disable recovery on vhost deletion
     c.connection.recoverOnServerClose = false;
-    return c;
+    return c.close();
   }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
@@ -1201,7 +1206,7 @@ test("recover anonymous queue binding", function(done){
 
 test("recover consumer", function(done){
   this.timeout(15000);
-  var vhost = 'recoverConsumer';
+  var vhost = 'CH_recoverConsumer';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
@@ -1214,7 +1219,7 @@ test("recover consumer", function(done){
         // Test succeed as soon as the first message delivered.
         return cch.ch.consume('queue_name', function(msg){
           if(msg.content.toString() === "message"){
-            endRecoverConsumer(vhost, done);
+            endRecoverConsumer(cch, vhost, done);
           } else {
             fail(done);
           }
@@ -1236,7 +1241,7 @@ test("recover consumer", function(done){
 
 test("not recover cancelled consumer", function(done){
   this.timeout(15000);
-  var vhost = 'notRecoverCancelledConsumer';
+  var vhost = 'CH_notRecoverCancelledConsumer';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
@@ -1295,14 +1300,16 @@ test("not recover cancelled consumer", function(done){
     cch.ch.sendToQueue('queue_name_2', Buffer.from("message"));
     cch.ch.sendToQueue('queue_name_3', Buffer.from("message"));
     return cch;
-  }).delay(2000).finally(function() {
+  }).delay(2000).then(function(cch){
+    return cch.c.close();
+  }).finally(function() {
     return new Promise(deleteVhost(vhost));
   }).then(succeed(done), fail(done));
 });
 
 test("recover arguments", function(done){
   this.timeout(15000);
-  var vhost = 'recoverArguments';
+  var vhost = 'CH_recoverArguments';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
@@ -1325,13 +1332,16 @@ test("recover arguments", function(done){
   }).then(function(cch){
     return new Promise(assertQueueArguments(vhost, 'queue_name', {'x-max-length': 10})
       ).then(function(){ return cch; });
+  }).then(function(cch){
+    cch.c.connection.recoverOnServerClose = false;
+    return cch.c.close();
   }).then(succeed(done), fail(done));
 });
 
 
 test("drop stale acks", function(done){
   this.timeout(20000);
-  var vhost = 'dropStaleAcks';
+  var vhost = 'CH_dropStaleAcks';
   new Promise(createVhost(vhost)).then(function() {
     return api.connect(URL + "/" + encodeURIComponent(vhost),
                        {recover: true, recoverOnServerClose: true, recoverAfter: 100, recoverTopology: true});
@@ -1346,12 +1356,17 @@ test("drop stale acks", function(done){
         // Test succeed as soon as the first message delivered.
         return cch.ch.consume('queue_name', function(msg){
           if(msg.content.toString() === "message"){
+            console.dir({tag: msg.fields.deliveryTag, incarnation: msg.incarnation});
             setTimeout(function(){
               if(msg.fields.deliveryTag == 2 && msg.incarnation == 1){
-                endRecoverConsumer(vhost, done);
+                console.log("endeRecover");
+                endRecoverConsumer(cch, vhost, done);
               } else if (msg.fields.deliveryTag > 2 && msg.incarnation == 1){
                 return;
-              } else {
+              } else if (msg.fields.deliveryTag == 1){
+                cch.ch.ack(msg);
+              } else if (msg.incarnation == 0) {
+                console.log("ack");
                 cch.ch.ack(msg);
               }
             }, 1000);
