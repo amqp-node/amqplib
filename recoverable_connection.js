@@ -25,13 +25,14 @@ function shouldRecover(error, recover_forced) {
     }
 }
 
-function recoverableConnection(url, conn_options, reconnect_options, callback) {
+function recoverableConnection(urls, conn_options, reconnect_options, callback) {
     var recover_forced = reconnect_options && (reconnect_options.recover_forced === true);
     var timeout = (reconnect_options && reconnect_options.timeout) || 2000;
     var retries = (reconnect_options && reconnect_options.retries) || 5;
     var api = (reconnect_options && reconnect_options.api) || 'channel_api';
 
     var retries_current = retries;
+    var next_url = 0;
 
     // Connection OK handler
     var onConnectionOK;
@@ -79,13 +80,23 @@ function recoverableConnection(url, conn_options, reconnect_options, callback) {
     };
 
     reconnect = function(){
+        var url_used;
+        if(Array.isArray(urls)){
+            if(urls[next_url] === undefined){
+                next_url = 0;
+            }
+            url_used = urls[next_url];
+            next_url++;
+        } else {
+            url_used = urls;
+        }
         switch(api) {
         case 'callback_api':
-            return connectCallbackApi(url, conn_options,
+            return connectCallbackApi(url_used, conn_options,
                                       onConnectionOK, onConnectionFailed);
             break;
         default:
-            return connectChannelApi(url, conn_options,
+            return connectChannelApi(url_used, conn_options,
                                      onConnectionOK, onConnectionFailed);
             break;
         }

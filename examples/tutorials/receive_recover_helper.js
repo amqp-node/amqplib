@@ -4,8 +4,8 @@ var recoverable = require('amqplib/recoverable_connection');
 // This function should supply a normal callback
 // It cannot be promisified, because the callback
 // might be called multiple times during recovery
-recoverable.recoverableConnection('amqp://localhost', {},
-                                  {recover_forced: true},
+recoverable.recoverableConnection(['amqp://localhost', 'amqp://localhost:5673'],
+                                  {}, {},
   function(err, conn){
     if(err) {
       console.warn(err);

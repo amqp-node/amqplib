@@ -26,7 +26,7 @@ function on_connect(err, conn) {
   conn.createChannel(on_channel_open);
 }
 
-
-recoverable.recoverableConnection('amqp://localhost', {},
-                                  {api: 'callback_api',
-                                   recover_forced: true}, on_connect);
+recoverable.recoverableConnection(['amqp://localhost', 'amqp://localhost:5673'],
+                                  {},
+                                  {api: 'callback_api'},
+                                  on_connect);
