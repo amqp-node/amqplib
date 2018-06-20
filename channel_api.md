@@ -9,6 +9,7 @@ title: Channel API reference
  * [Dealing with failure](#failure)
    * [Exceptions and promises](#failure_promises)
    * [Exceptions and callbacks](#failure_callbacks)
+   * [Automatic connection recovery](#connection_recovery)
  * [Flow control](#flowcontrol)
  * [Argument handling](#args)
  * [API reference](#api_reference)
@@ -211,6 +212,101 @@ dom.run(function() {
 ```
 
 [^top](#top)
+
+## <a name="connection_recovery"></a>Automatic connection recovery
+
+Long-running applications should be able to deal with arbitrary
+TCP connection failures.
+Such failures can be operator-initiated, e.g. restart during upgrade,
+or be a result of hardware or software failures and heartbeat timeouts.
+
+To handle TCP failures, the connection should be terminated and new connection
+established.
+
+You can use `EventEmitter` API to listen to connection close events
+and reconnect if there is a TCP error.
+
+Connection close event will have an error argument, from which you can
+determine a type of error. It's not recommended to reconnect on channel errors,
+since it usually indicates a semantic issue in the application
+(e.g. an attempt to consume from a non-existent queue).
+
+A typical reconnection handler may look like this:
+```js
+function connect(connectOkCallback) {
+  amqp.connect('amqp://localhost').then(function(conn){
+    conn.on('error', function(error) {
+      if(isRecoverable(error)) {
+        // Reconnect after 2 seconds
+        setTimeout(function() {connect(connectOkCallback);}, 2000);
+      } else {
+        throw error;
+      }
+    });
+    connectOkCallback(conn);
+  });
+}
+```
+
+More examples can be found in `examples/tutorials/receive_recover.js`
+
+### Connection recovery helper function
+
+You can use a helper function to set up a recoverable connection.
+This function is exported by `recoverable_connection` module and accepts
+connection parameters, recovery parameters and a callback function.
+
+```js
+recoverConnection(url, socketOptions, recoverOptions, function(err, conn){...})
+```
+
+All arguments are required.
+
+`recoverOptions` should be an object with following optional keys:
+
+###### api
+
+The API to use for the connection. Can be either `callback_api` or `channel_api`.
+Default value is `channel_api`.
+
+###### timeout
+
+A timeout in milliseconds to wait before recovering connection.
+Default value is 2000
+
+###### retries
+
+Times to retry connection attempt, when unable to connect.
+Default value is 5.
+
+###### recover_forced
+
+Try to recover connections, closed by the server.
+This setting should be used for testing purposes only.
+Defailt value is false.
+
+```js
+var recoverable = require('amqplib/recoverable_connection');
+
+recoverable.recoverableConnection('amqp://localhost', socketOptions, recoverOptions,
+  function(err, conn){
+    if(err) {
+      console.warn(err);
+      throw err;
+    } else {
+      return conn.createChannel().then(function(ch) {
+        // Channel ops
+      });
+    }
+});
+```
+
+This function can be used with both channel and callback API, but cannot be
+made into promise, because the callback function can be called multiple times
+asynchronously from the erorr event handler.
+
+Complete example can be found in `examples/tutorials/receive_recover_helper.js`
+and `examples/tutorials/callback_api/receive_recover_helper.js`
 
 ## <a name="flowcontrol"></a>Flow control
 
