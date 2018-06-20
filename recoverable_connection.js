@@ -25,8 +25,14 @@ function shouldRecover(error, recover_forced) {
     }
 }
 
+function reconnectAfter(reconnect, timeout, randomised_delay) {
+    var actual_timeout = timeout + Math.floor(Math.random() * randomised_delay);
+    setTimeout(reconnect, actual_timeout);
+}
+
 function recoverableConnection(urls, conn_options, reconnect_options, callback) {
     var recover_forced = reconnect_options && (reconnect_options.recover_forced === true);
+    var randomised_delay = (reconnect_options && reconnect_options.randomised_delay) || 0;
     var timeout = (reconnect_options && reconnect_options.timeout) || 2000;
     var retries = (reconnect_options && reconnect_options.retries) || 5;
     var api = (reconnect_options && reconnect_options.api) || 'channel_api';
@@ -48,7 +54,7 @@ function recoverableConnection(urls, conn_options, reconnect_options, callback) 
     onConnectionError = function(error) {
         // Do not recover on protocol errors
         if(! connection.isProtocolError(error)) {
-            setTimeout(reconnect, timeout);
+            reconnectAfter(reconnect, timeout, randomised_delay)
         } else {
             return callback(error);
         }
@@ -56,7 +62,7 @@ function recoverableConnection(urls, conn_options, reconnect_options, callback) 
 
     onConnectionClosed = function(error) {
         if(connection.isConnectionForced(error) && recover_forced) {
-            setTimeout(reconnect, timeout);
+            reconnectAfter(reconnect, timeout, randomised_delay)
         } else {
             return;
         }
@@ -75,7 +81,7 @@ function recoverableConnection(urls, conn_options, reconnect_options, callback) 
             return callback(error);
         } else {
             retries_current--;
-            setTimeout(reconnect, timeout);
+            reconnectAfter(reconnect, timeout, randomised_delay)
         }
     };
 
