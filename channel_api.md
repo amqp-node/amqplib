@@ -283,11 +283,19 @@ Default value is 2000
 Times to retry connection attempt, when unable to connect.
 Default value is 5.
 
+###### randomised_delay
+
+An upper bound of a randomised fraction of time to wait between reconnects.
+Added to the static `timeout` fraction.
+Default value is 0 - there will not be a randomised fraction.
+
 ###### recover_forced
 
 Try to recover connections, closed by the server.
 This setting should be used for testing purposes only.
 Defailt value is false.
+
+
 
 ```js
 var recoverable = require('amqplib/recoverable_connection');
