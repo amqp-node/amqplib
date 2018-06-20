@@ -18,7 +18,6 @@ function connectCallbackApi(url, conn_options, connOk, connFailed) {
 
 function shouldRecover(error, recover_forced) {
     if(connection.isProtocolError(error)){
-        console.dir({recover: recover_forced, forced: connection.isConnectionForced(error)});
         return recover_forced && connection.isConnectionForced(error);
     } else {
         return true;
@@ -52,7 +51,6 @@ function recoverableConnection(urls, conn_options, reconnect_options, callback) 
     var reconnect;
 
     onConnectionError = function(error) {
-        console.log("onConnectionError");
         // Do not recover on protocol errors
         if(! connection.isProtocolError(error)) {
             reconnectAfter(reconnect, timeout, randomised_delay)
@@ -62,7 +60,6 @@ function recoverableConnection(urls, conn_options, reconnect_options, callback) 
     };
 
     onConnectionClosed = function(error) {
-        console.log("onConnectionClosed");
         if(connection.isConnectionForced(error) && recover_forced) {
             reconnectAfter(reconnect, timeout, randomised_delay)
         } else {
@@ -79,7 +76,6 @@ function recoverableConnection(urls, conn_options, reconnect_options, callback) 
     };
 
     onConnectionFailed = function(error) {
-        console.log("onConnectionFailed");
         attempts_current--;
         if(attempts_current <= 0) {
             return callback(error);
