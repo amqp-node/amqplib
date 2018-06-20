@@ -278,7 +278,7 @@ Default value is `channel_api`.
 A timeout in milliseconds to wait before recovering connection.
 Default value is 2000
 
-###### retries
+###### attempts
 
 Times to retry connection attempt, when unable to connect.
 Default value is 5.
@@ -294,8 +294,6 @@ Default value is 0 - there will not be a randomised fraction.
 Try to recover connections, closed by the server.
 This setting should be used for testing purposes only.
 Defailt value is false.
-
-
 
 ```js
 var recoverable = require('amqplib/recoverable_connection');
