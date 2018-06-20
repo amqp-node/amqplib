@@ -15,6 +15,14 @@ var headers = {'Authorization': 'Basic Z3Vlc3Q6Z3Vlc3Q=', 'content-type': 'appli
 var util = require('./util');
 var succeed = util.succeed, fail = util.fail, latch = util.latch;
 
+function finish(vhost, done, err) {
+  var delete_vhost = deleteVhost(vhost);
+  var cb = function(){
+    return done(err);
+  }
+  delete_vhost(cb, cb);
+}
+
 suite("Connection recovery", function() {
 
     test("recovers connection", function(done) {
@@ -27,12 +35,12 @@ suite("Connection recovery", function() {
                 {}, {recover_forced: true, timeout: 100},
                 function(err, conn){
                     if(err) {
-                      return done(err);
+                      return finish(vhost, done, err);
                     } else {
                       connects++;
                       if(connects > 1) {
                         conn.close();
-                        return done(err);
+                        return finish(vhost, done, err);
                       }
                     }
                 }).delay(5000).then(function(){
@@ -44,32 +52,34 @@ suite("Connection recovery", function() {
     test("recovers callback api connection", function(done) {
         this.timeout(15000);
         var connects = 0;
-        var vhost = 'recover_connection';
+        var vhost = 'recover_connection_callback';
         new Promise(createVhost(vhost)).then(function() {
             return recoverable.recoverableConnection(
                 'amqp://localhost/' + encodeURIComponent(vhost),
                 {}, {recover_forced: true, timeout: 100, api: 'callback_api'},
                 function(err, conn){
                     if(err) {
-                      return done(err);
+                      return finish(vhost, done, err);
                     } else {
                       connects++;
                       if(connects > 1) {
                         conn.close(function(_err, ok) {
-                            return done(err);
+                            return finish(vhost, done, err);
                         });
+                      } else {
+                        setTimeout(function(){
+                            return new Promise(closeAllConn(vhost));
+                        }, 6000);
                       }
                     }
                 });
-        }).delay(5000).then(function(){
-            return new Promise(closeAllConn(vhost));
         });
     });
 
     test("rotates over multiple hosts", function(done) {
         this.timeout(15000);
         var connects = 0;
-        var vhost = 'recover_connection';
+        var vhost = 'recover_connection_multiple';
         new Promise(createVhost(vhost)).then(function() {
             recoverable.recoverableConnection(
                 ['amqp://localhost/' + encodeURIComponent(vhost),
@@ -77,15 +87,15 @@ suite("Connection recovery", function() {
                 {}, {recover_forced: true, timeout: 100},
                 function(err, conn){
                     if(err) {
-                      return done(err);
+                      return finish(vhost, done, err);
                     } else {
                       connects++;
                       if(connects > 1) {
                         conn.close();
-                        return done(err);
+                        return finish(vhost, done, err);
                       }
                     }
-                }).delay(5000).then(function(){
+                }).delay(6000).then(function(){
                     return new Promise(closeAllConn(vhost));
                 });
         });
@@ -94,7 +104,7 @@ suite("Connection recovery", function() {
     test("waits for timeout", function(done) {
         this.timeout(15000);
         var connects = 0;
-        var vhost = 'recover_connection';
+        var vhost = 'recover_connection_timeout';
         var time;
         new Promise(createVhost(vhost)).then(function() {
             recoverable.recoverableConnection(
@@ -102,17 +112,17 @@ suite("Connection recovery", function() {
                 {}, {recover_forced: true, timeout: 1000},
                 function(err, conn){
                     if(err) {
-                      return done(err);
+                      return finish(vhost, done, err);
                     } else {
                       connects++;
                       if(connects > 1) {
                         var recover_time = new Date();
                         assert(recover_time.getTime() > (time.getTime() + 1000));
                         conn.close();
-                        return done(err);
+                        return finish(vhost, done, err);
                       }
                     }
-                }).delay(5000).then(function(){
+                }).delay(6000).then(function(){
                     time = new Date();
                     return new Promise(closeAllConn(vhost));
                 });
@@ -122,7 +132,7 @@ suite("Connection recovery", function() {
     test("gives up after attempts", function(done) {
         this.timeout(15000);
         var connects = 0;
-        var vhost = 'recover_connection';
+        var vhost = 'recover_connection_attempts';
         new Promise(createVhost(vhost)).then(function() {
             recoverable.recoverableConnection(
                 ['amqp://localhost/' + encodeURIComponent(vhost),
@@ -130,16 +140,16 @@ suite("Connection recovery", function() {
                 {}, {recover_forced: true, timeout: 100, attempts: 1},
                 function(err, conn){
                     if(err) {
-                      return done(null);
-                      // return done(err);
+                      return finish(vhost, done, null);
+                      // return finish(vhost, done, err);
                     } else {
                       connects++;
                       if(connects > 1) {
                         conn.close();
-                        return done(new Error("Recovered after attempts exceeded"));
+                        return finish(vhost, done, new Error("Recovered after attempts exceeded"));
                       }
                     }
-                }).delay(5000).then(function(){
+                }).delay(6000).then(function(){
                     return new Promise(closeAllConn(vhost));
                 });
         });
