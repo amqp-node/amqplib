@@ -257,10 +257,14 @@ This function is exported by `recoverable_connection` module and accepts
 connection parameters, recovery parameters and a callback function.
 
 ```js
-recoverConnection(url, socketOptions, recoverOptions, function(err, conn){...})
+recoverConnection(urls, socketOptions, recoverOptions, function(err, conn){...})
 ```
 
 All arguments are required.
+
+`urls` can be an URL or an object, like in `connect` function, or an array of
+urls or objects. If it is an array, each reconnect will use the next url in the
+array, going back to the first one after trying all.
 
 `recoverOptions` should be an object with following optional keys:
 
@@ -288,7 +292,8 @@ Defailt value is false.
 ```js
 var recoverable = require('amqplib/recoverable_connection');
 
-recoverable.recoverableConnection('amqp://localhost', socketOptions, recoverOptions,
+recoverable.recoverableConnection(['amqp://localhost', 'amqp://localhost:5673'],
+                                  socketOptions, recoverOptions,
   function(err, conn){
     if(err) {
       console.warn(err);
