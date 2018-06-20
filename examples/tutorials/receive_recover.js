@@ -13,18 +13,30 @@ function shouldRecover(error, recover_forced) {
   }
 }
 
-// Callback to maybe reconnect when error occurs on a running connection
-function onConnectionError(err) {
+
+// Callback to maybe reconnect when connection error occurs
+function onConnectionError(error) {
   console.warn("Connection error");
   console.warn(err);
-
-  if(shouldRecover(err, shouldRecoverForced)){
+  // Do not recover on protocol errors
+  if(! recoverable.isProtocolError(error)) {
     console.log("Recovering connection after 2 seconds");
     setTimeout(connect, 2000);
   } else {
     throw err;
   }
-}
+};
+
+// Callback to maybe reconnect when connection is closed by the server
+function onConnectionClosed(error) {
+  if(recoverable.isConnectionForced(error) && shouldRecoverForced) {
+    console.warn("Connection forced.");
+    console.log("Recovering connection after 2 seconds");
+    setTimeout(connect, 2000);
+  } else {
+    return;
+  }
+};
 
 // Callback to maybe reconnect when a client fails to connect
 function connectionFailure(error){
@@ -37,6 +49,7 @@ function connectionFailure(error){
 // Connection established callback
 function connectionOK(conn) {
   conn.on('error', onConnectionError);
+  conn.on('close', onConnectionClosed);
 
   // Application logic goes here
   return conn.createChannel().then(function(ch) {
