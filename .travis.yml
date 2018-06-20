@@ -20,4 +20,6 @@ services:
 before_install:
    - node --version | (grep  -v 'v5' && npm install -g npm@2) || true
 
-sudo: false
+before_script: "./bin/ci/before_build"
+
+sudo: required
