@@ -34,10 +34,10 @@ function recoverableConnection(urls, conn_options, reconnect_options, callback) 
     var recover_forced = reconnect_options && (reconnect_options.recover_forced === true);
     var randomised_delay = (reconnect_options && reconnect_options.randomised_delay) || 0;
     var timeout = (reconnect_options && reconnect_options.timeout) || 2000;
-    var retries = (reconnect_options && reconnect_options.retries) || 5;
+    var attempts = (reconnect_options && reconnect_options.attempts) || 5;
     var api = (reconnect_options && reconnect_options.api) || 'channel_api';
 
-    var retries_current = retries;
+    var attempts_current = attempts;
     var next_url = 0;
 
     // Connection OK handler
@@ -52,6 +52,7 @@ function recoverableConnection(urls, conn_options, reconnect_options, callback) 
     var reconnect;
 
     onConnectionError = function(error) {
+        console.log("onConnectionError");
         // Do not recover on protocol errors
         if(! connection.isProtocolError(error)) {
             reconnectAfter(reconnect, timeout, randomised_delay)
@@ -61,6 +62,7 @@ function recoverableConnection(urls, conn_options, reconnect_options, callback) 
     };
 
     onConnectionClosed = function(error) {
+        console.log("onConnectionClosed");
         if(connection.isConnectionForced(error) && recover_forced) {
             reconnectAfter(reconnect, timeout, randomised_delay)
         } else {
@@ -69,18 +71,19 @@ function recoverableConnection(urls, conn_options, reconnect_options, callback) 
     };
 
     onConnectionOK = function(conn) {
-        // Connection succeded. Reset retries.
-        retries_current = retries;
+        // Connection succeded. Reset attempts.
+        attempts_current = attempts;
         conn.on('error', onConnectionError);
         conn.on('close', onConnectionClosed);
         return callback(null, conn);
     };
 
     onConnectionFailed = function(error) {
-        if(retries_current <= 0) {
+        console.log("onConnectionFailed");
+        attempts_current--;
+        if(attempts_current <= 0) {
             return callback(error);
         } else {
-            retries_current--;
             reconnectAfter(reconnect, timeout, randomised_delay)
         }
     };
