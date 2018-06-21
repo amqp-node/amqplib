@@ -293,7 +293,7 @@ Default value is 0 - there will not be a randomised fraction.
 
 Try to recover connections, closed by the server.
 This setting should be used for testing purposes only.
-Defailt value is false.
+Default value is false.
 
 ```js
 var recoverable = require('amqplib/recoverable_connection');
@@ -314,7 +314,7 @@ recoverable.recoverableConnection(['amqp://localhost', 'amqp://localhost:5673'],
 
 This function can be used with both channel and callback API, but cannot be
 made into promise, because the callback function can be called multiple times
-asynchronously from the erorr event handler.
+asynchronously from the error event handler.
 
 Complete example can be found in `examples/tutorials/receive_recover_helper.js`
 and `examples/tutorials/callback_api/receive_recover_helper.js`
