@@ -47,7 +47,7 @@ function publisher(conn) {
   function on_open(err, ch) {
     if (err != null) bail(err);
     ch.assertQueue(q);
-    ch.sendToQueue(q, new Buffer('something to do'));
+    ch.sendToQueue(q, Buffer.from('something to do'));
   }
 }
 
@@ -86,7 +86,7 @@ open.then(function(conn) {
   return conn.createChannel();
 }).then(function(ch) {
   return ch.assertQueue(q).then(function(ok) {
-    return ch.sendToQueue(q, new Buffer('something to do'));
+    return ch.sendToQueue(q, Buffer.from('something to do'));
   });
 }).catch(console.warn);
 
