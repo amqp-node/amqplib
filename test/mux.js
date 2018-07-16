@@ -37,7 +37,7 @@ test("single input", function(done) {
   var mux = new Mux(output);
   mux.pipeFrom(input);
 
-  var data = [1,2,3,4,5,6,7,8,9]; 
+  var data = [1,2,3,4,5,6,7,8,9];
   // not 0, it's treated specially by PassThrough for some reason. By
   // 'specially' I mean it breaks the stream. See e.g.,
   // https://github.com/isaacs/readable-stream/pull/55
@@ -112,16 +112,20 @@ test("unpipe", function(done) {
 
   schedule(function() {
     pipedData.forEach(input.write.bind(input));
-    mux.unpipeFrom(input);
 
     schedule(function() {
-      unpipedData.forEach(input.write.bind(input));
-      input.end();
+      mux.unpipeFrom(input);
+
       schedule(function() {
-        // exhaust so that 'end' fires
-        var v; while (v = input.read());
+        unpipedData.forEach(input.write.bind(input));
+        input.end();
+        schedule(function() {
+          // exhaust so that 'end' fires
+          var v; while (v = input.read());
+        });
       });
     });
+
   });
 
   input.on('end', function() {
