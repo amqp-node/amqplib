@@ -82,6 +82,8 @@ for (var i = 0, len = defs.classes.length; i < len; i++) {
     methods[name] = {
       id: methodId(clazz, method),
       name: name,
+      methodId: method.id,
+      clazzId: clazz.id,
       clazz: clazz.name,
       args: method['arguments'].map(argument),
       isReply: method.answer,
@@ -518,6 +520,8 @@ function decoderFn(method) {
 
 function infoObj(thing) {
   var info = JSON.stringify({id: thing.id,
+                             classId: thing.clazzId,
+                             methodId: thing.methodId,
                              name: thing.name,
                              args: thing.args});
   println('var %s = module.exports.%s = %s;',
