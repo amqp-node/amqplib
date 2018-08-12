@@ -128,6 +128,8 @@ test("server close", channelTest(
   function(ch, done) {
     ch.on('error', function(error) {
       assert.strictEqual(504, error.code);
+      assert.strictEqual(0, error.classId);
+      assert.strictEqual(0, error.methodId);
       succeed(done)();
     });
     open(ch);
@@ -229,6 +231,8 @@ test("Bad RPC", channelTest(
     var errLatch = latch(2, done);
     ch.on('error', function(error) {
       assert.strictEqual(505, error.code);
+      assert.strictEqual(60, error.classId);
+      assert.strictEqual(72, error.methodId);
       succeed(errLatch)();
     });
 
@@ -259,6 +263,8 @@ test("RPC on closed channel", channelTest(
     var close = new Promise(function(resolve) {
         ch.on('error', function(error) {
           assert.strictEqual(504, error.code);
+          assert.strictEqual(0, error.classId);
+          assert.strictEqual(0, error.methodId);
           resolve();
       });
     });
@@ -415,6 +421,8 @@ test("bad delivery", channelTest(
     var errorAndClose = latch(2, done);
     ch.on('error', function(error) {
       assert.strictEqual(505, error.code);
+      assert.strictEqual(60, error.classId);
+      assert.strictEqual(60, error.methodId);
       succeed(errorAndClose)();
     });
     ch.on('close', succeed(errorAndClose));
@@ -469,6 +477,8 @@ test("bad consumer", channelTest(
     });
     ch.on('error', function(error) {
       assert.strictEqual(541, error.code);
+      assert.strictEqual(undefined, error.classId);
+      assert.strictEqual(undefined, error.methodId);
       succeed(errorAndClose)();
     });
     ch.on('close', succeed(errorAndClose));
@@ -488,6 +498,8 @@ test("bad send in consumer", channelTest(
     ch.on('close', succeed(errorAndClose));
     ch.on('error', function(error) {
       assert.strictEqual(541, error.code);
+      assert.strictEqual(undefined, error.classId);
+      assert.strictEqual(undefined, error.methodId);
       succeed(errorAndClose)();
     });
 
