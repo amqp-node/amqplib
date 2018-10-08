@@ -3,9 +3,9 @@ JSON=amqp-rabbitmq-0.9.1.json
 RABBITMQ_CODEGEN=https://raw.githubusercontent.com/rabbitmq/rabbitmq-codegen
 AMQP_JSON=$(RABBITMQ_CODEGEN)/$(RABBITMQ_SRC_VERSION)/$(JSON)
 
-NODEJS_VERSIONS='0.8' '0.9' '0.10' '0.11' '0.12' '1.6' '2.5' '3.3' '4.2' '5.5' '6.2' '8.9' '9.11' '10.7'
+NODEJS_VERSIONS='4' '6' '8' '9' '10'
 
-MOCHA=./node_modules/.bin/mocha
+MOCHA=./node_modules/.bin/mocha --exit
 _MOCHA=./node_modules/.bin/_mocha
 UGLIFY=./node_modules/.bin/uglifyjs
 ISTANBUL=./node_modules/.bin/istanbul
@@ -33,7 +33,7 @@ test-all-nodejs: lib/defs.js
 		done
 
 coverage: $(ISTANBUL) lib/defs.js
-	$(ISTANBUL) cover $(_MOCHA) -- -u tdd -R progress test/
+	$(ISTANBUL) cover $(_MOCHA) -- --exit -u tdd -R progress test/
 	$(ISTANBUL) report
 	@echo "HTML report at file://$$(pwd)/coverage/lcov-report/index.html"
 
