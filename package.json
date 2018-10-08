@@ -9,7 +9,7 @@
     "url": "https://github.com/squaremo/amqp.node.git"
   },
   "engines": {
-    "node": ">=0.8 <=9"
+    "node": ">=4 <=10"
   },
   "dependencies": {
     "bitsyntax": "~0.0.4",
@@ -20,10 +20,10 @@
     "url-parse": "^1.2.0"
   },
   "devDependencies": {
-    "mocha": "~1",
     "claire": "0.4.1",
-    "uglify-js": "2.6.x",
-    "istanbul": "0.1.x"
+    "istanbul": "^0.4.5",
+    "mocha": "~1",
+    "uglify-js": "2.6.x"
   },
   "scripts": {
     "test": "make test",

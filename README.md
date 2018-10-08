@@ -10,8 +10,7 @@
  * [Examples from RabbitMQ tutorials][tutes]
 
 A library for making AMQP 0-9-1 clients for Node.JS, and an AMQP 0-9-1
-client for Node.JS v0.8-0.12, v4-v9, and the intervening io.js
-releases.
+client for Node.JS v4-v10 releases.
 
 This library does not implement [AMQP
 1.0](https://github.com/squaremo/amqp.node/issues/63) or [AMQP
@@ -129,7 +128,7 @@ dev.rabbitmq.com instance.
 
 You can run it under different versions of Node.JS using [nave][]:
 
-    nave use 0.8 npm test
+    nave use 4 npm test
 
 or run the tests on all supported versions of Node.JS in one go:
 
