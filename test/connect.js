@@ -118,6 +118,18 @@ suite("Connect API", function() {
             kCallback(succeed(done), fail(done)));
   });
 
+  test("using amqplain credentials", function(done) {
+    var url = require('url');
+    var parts = url.parse(URL, true);
+    var u = 'guest', p = 'guest';
+    if (parts.auth) {
+      var auth = parts.auth.split(":");
+      u = auth[0], p = auth[1];
+    }
+    connect(URL, {credentials: require('../lib/credentials').amqplain(u, p)},
+            kCallback(succeed(done), fail(done)));
+  });
+
   test("using unsupported mechanism", function(done) {
     var creds = {
       mechanism: 'UNSUPPORTED',
