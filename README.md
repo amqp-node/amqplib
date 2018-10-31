@@ -77,35 +77,33 @@ require('amqplib/callback_api')
   });
 ```
 
-## Promise API example
+## Promise/Async API example
 
 ```javascript
-var q = 'tasks';
+const amqplib = require('amqplib');
 
-var open = require('amqplib').connect('amqp://localhost');
+(async () => {
+  const conn = await amqplib.connect('amqp://localhost');
+  const ch = await conn.createChannel();
 
-// Publisher
-open.then(function(conn) {
-  return conn.createChannel();
-}).then(function(ch) {
-  return ch.assertQueue(q).then(function(ok) {
-    return ch.sendToQueue(q, Buffer.from('something to do'));
+  const queue = 'tasks';
+  
+  await ch.assertQueue(queue);
+
+  // Listener
+  ch.consume(queue, function(msg) {
+    if (msg !== null) {
+      console.log('Recieved:', msg.content.toString());
+      ch.ack(msg);
+    }
   });
-}).catch(console.warn);
 
-// Consumer
-open.then(function(conn) {
-  return conn.createChannel();
-}).then(function(ch) {
-  return ch.assertQueue(q).then(function(ok) {
-    return ch.consume(q, function(msg) {
-      if (msg !== null) {
-        console.log(msg.content.toString());
-        ch.ack(msg);
-      }
-    });
-  });
-}).catch(console.warn);
+  // Sender
+  setInterval(async () => {
+    await ch.sendToQueue(queue, Buffer.from('something to do'));
+  }, 1000);
+})()
+
 ```
 
 ## Running tests
