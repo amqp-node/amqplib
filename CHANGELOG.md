@@ -4,7 +4,9 @@
 
     git log v0.5.2..v0.5.3
 
- * Test on node 11
+ * Test on node 11.1
+  ([PR 473])(https://github.com/squaremo/amqp.node/pull/464); thanks
+  @kibertoad
  * Updated various dependencies
  * Support queue mode during assertQueue
    ([PR 464])(https://github.com/squaremo/amqp.node/pull/464); thanks
