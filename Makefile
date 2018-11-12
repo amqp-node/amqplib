@@ -3,7 +3,7 @@ JSON=amqp-rabbitmq-0.9.1.json
 RABBITMQ_CODEGEN=https://raw.githubusercontent.com/rabbitmq/rabbitmq-codegen
 AMQP_JSON=$(RABBITMQ_CODEGEN)/$(RABBITMQ_SRC_VERSION)/$(JSON)
 
-NODEJS_VERSIONS='0.8' '0.9' '0.10' '0.11' '0.12' '1.6' '2.5' '3.3' '4.2' '5.5' '6.2' '8.9' '9.11' '10.7'
+NODEJS_VERSIONS='0.8' '0.9' '0.10' '0.11' '0.12' '1.6' '2.5' '3.3' '4.2' '5.5' '6.2' '8.9' '9.11' '10.7' '11.1'
 
 MOCHA=./node_modules/.bin/mocha
 _MOCHA=./node_modules/.bin/_mocha
