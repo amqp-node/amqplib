@@ -13,17 +13,17 @@
   },
   "dependencies": {
     "bitsyntax": "~0.0.4",
-    "bluebird": "^3.4.6",
+    "bluebird": "^3.5.2",
     "buffer-more-ints": "0.0.2",
     "readable-stream": "1.x >=1.1.9",
-    "safe-buffer": "^5.0.1",
-    "url-parse": "^1.2.0"
+    "safe-buffer": "^5.1.2",
+    "url-parse": "^1.4.3"
   },
   "devDependencies": {
-    "mocha": "~1",
     "claire": "0.4.1",
-    "uglify-js": "2.6.x",
-    "istanbul": "0.1.x"
+    "istanbul": "0.1.x",
+    "mocha": "^3.5.3",
+    "uglify-js": "2.6.x"
   },
   "scripts": {
     "test": "make test",
