@@ -4,6 +4,8 @@
 
     git log v0.5.2..v0.5.3
 
+ * Bump bitsyntax to remove some `Buffer` misuse deprecation notices
+ ([PR 480])(https://github.com/squaremo/amqp.node/pull/480)
  * Test on node 11.1
   ([PR 473])(https://github.com/squaremo/amqp.node/pull/464); thanks
   @kibertoad
