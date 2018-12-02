@@ -1,5 +1,49 @@
 # Change log for amqplib
 
+## Changes in v0.5.3
+
+    git log v0.5.2..v0.5.3
+
+ * Bump bitsyntax to remove some `Buffer` misuse deprecation notices
+ ([PR 480])(https://github.com/squaremo/amqp.node/pull/480)
+ * Test on node 11.1
+  ([PR 473])(https://github.com/squaremo/amqp.node/pull/464); thanks
+  @kibertoad
+ * Updated various dependencies
+ * Support queue mode during assertQueue
+   ([PR 464])(https://github.com/squaremo/amqp.node/pull/464); thanks
+   @JoeTheFkingFrypan
+ * Expose serverProperties in the connection object
+   ([PR 452])(https://github.com/squaremo/amqp.node/pull/452); thanks
+   @jfromaniello
+ * Test on Node 10
+   ([PR 454])(https://github.com/squaremo/amqp.node/pull/454); thanks
+   @kibertoad
+ * Support amqplain credentials
+   ([PR 451])(https://github.com/squaremo/amqp.node/pull/451); thanks
+   @jfromaniello
+ * Decorate channel errors with methodId and classId
+   ([PR 447])(https://github.com/squaremo/amqp.node/pull/447); thanks
+   @MitMaro
+ * Resolve issues caused by Node 10 `readable` changes
+   ([PR 442])(https://github.com/squaremo/amqp.node/pull/442)
+ * Bump uglify to 2.6.x and node to 9.1 due to nodejs/node#16781.
+   ([PR 439])(https://github.com/squaremo/amqp.node/pull/439)
+ * Updated README with more modern Buffer syntax
+   ([PR 438](https://github.com/squaremo/amqp.node/pull/438); thanks
+   @ravshansbox    
+ * Support overflow option to assert queue
+   ([PR 436])(https://github.com/squaremo/amqp.node/pull/436); thanks
+   to @honestserpent
+ * Replace instances of keyword `await`
+   ([PR 396])(https://github.com/squaremo/amqp.node/pull/396),
+   as discussed in
+   [issue 235](https://github.com/squaremo/amqp.node/issues/235)
+ * Use 3rd party url for better decoding of username/password
+   ([PR 395])(https://github.com/squaremo/amqp.node/pull/395),
+   as discussed in
+   [issue 385](https://github.com/squaremo/amqp.node/issues/385))
+
 ## Changes in v0.5.2
 
     git log v0.5.1..v0.5.2
