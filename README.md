@@ -57,7 +57,7 @@ function consumer(conn) {
   function on_open(err, ch) {
     if (err != null) bail(err);
     ch.assertQueue(q);
-    ch.consume(q, function(msg) {
+    ch.consume(q, (msg) => {
       if (msg !== null) {
         console.log(msg.content.toString());
         ch.ack(msg);
@@ -67,7 +67,7 @@ function consumer(conn) {
 }
 
 require('amqplib/callback_api')
-  .connect('amqp://localhost', function(err, conn) {
+  .connect('amqp://localhost', (err, conn) => {
     if (err != null) bail(err);
     consumer(conn);
     publisher(conn);
@@ -84,11 +84,11 @@ const amqplib = require('amqplib');
   const ch = await conn.createChannel();
 
   const queue = 'tasks';
-  
+
   await ch.assertQueue(queue);
 
   // Listener
-  ch.consume(queue, function(msg) {
+  ch.consume(queue, (msg) => {
     if (msg !== null) {
       console.log('Recieved:', msg.content.toString());
       ch.ack(msg);
@@ -96,8 +96,8 @@ const amqplib = require('amqplib');
   });
 
   // Sender
-  setInterval(async () => {
-    await ch.sendToQueue(queue, Buffer.from('something to do'));
+  setInterval(() => {
+    ch.sendToQueue(queue, Buffer.from('something to do'));
   }, 1000);
 })()
 
