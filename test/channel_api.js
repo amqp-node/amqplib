@@ -581,4 +581,17 @@ confirmtest('wait for confirms', function(ch) {
   return ch.waitForConfirms();
 })
 
+confirmtest('works when channel is closed', function(ch) {
+  for (var i=0; i < 1000; i++) {
+    ch.publish('', '', Buffer.from('foobar'), {});
+  }
+  return ch.close().then(function () {
+    return ch.waitForConfirms()
+  }).then(function () {
+    assert.strictEqual(true, false, 'Wait should have failed.')
+  }, function (e) {
+    assert.strictEqual(e.message, 'channel closed')
+  });
+});
+
 });
