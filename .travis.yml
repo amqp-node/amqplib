@@ -16,8 +16,10 @@ node_js:
    - "11.1"
    - "node"
 
-services:
-   - rabbitmq
+addons:
+  apt:
+    packages:
+      - rabbitmq-server
 
 before_install:
    - node --version | (grep  -v 'v5' && npm install -g npm@2) || true
