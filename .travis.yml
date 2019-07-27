@@ -1,27 +1,45 @@
 language: node_js
-
 node_js:
-   - "0.8"
-   - "0.10"
-   - "0.12"
-   - "iojs-v1"
-   - "iojs-v2"
-   - "iojs-v3"
-   - "4.2"
-   - "5.5"
-   - "6.12"
-   - "8.9"
-   - "9.11"
-   - "10.10"
-   - "11.1"
-   - "node"
+- "0.8"
+- "0.10"
+- "0.12"
+- "iojs-v1"
+- "iojs-v2"
+- "iojs-v3"
+- "4.2"
+- "5.5"
+- "6.12"
+- "8.9"
+- "9.11"
+- "10.10"
+- "11.1"
+- "node"
+
+sudo: false
 
 addons:
   apt:
     packages:
-      - rabbitmq-server
+    - rabbitmq-server
 
 before_install:
-   - node --version | (grep  -v 'v5' && npm install -g npm@2) || true
+- node --version | (grep  -v 'v5' && npm install -g npm@2) || true
 
-sudo: false
+# This makes a deploy stage that will run *after* the whole matrix of
+# builds above has completed successfully.
+jobs:
+  include:
+  - stage: deploy
+    node_js: '11.1'
+    script: skip
+    before_deploy:
+    - sudo apt-get install -y jq
+    - test "$TRAVIS_TAG" == "v$(jq -r .version < package.json)"
+    deploy:
+      provider: npm
+      email: "$NPM_USER"
+      api_key: "$NPM_TOKEN"
+      on:
+        branch: master
+        tag: true
+        condition: $TRAVIS_TAG =~ ^v[0-9]+.[0-9]+.[0-9]+$
