@@ -1,5 +1,24 @@
 # Change log for amqplib
 
+## Changes in v0.5.4
+
+    git log v0.5.3..v0.5.4
+
+**NB** this includes a minor but possibly breaking change: after [PR
+498](https://github.com/squaremo/amqp.node/pull/498), all confirmation
+promises still unresolved will be rejected when their associated
+channel is closed.
+
+ * Generate defs in `npm prepare` rather than `npm prepublish` so that
+  e.g., amqplib can be installed via git ([part of PR
+  498](https://github.com/squaremo/amqp.node/pull/498))
+ * Reject all pending confirmations when the channel is closed ([PR
+  498](https://github.com/squaremo/amqp.node/pull/498)); thanks
+  @johanneswuerbach
+ * Update supported NodeJS versions in package.json ([PR
+   525](https://github.com/squaremo/amqp.node/pull/525)); thenks
+   @tingwai
+
 ## Changes in v0.5.3
 
     git log v0.5.2..v0.5.3
@@ -31,7 +50,7 @@
    ([PR 439])(https://github.com/squaremo/amqp.node/pull/439)
  * Updated README with more modern Buffer syntax
    ([PR 438](https://github.com/squaremo/amqp.node/pull/438); thanks
-   @ravshansbox    
+   @ravshansbox
  * Support overflow option to assert queue
    ([PR 436])(https://github.com/squaremo/amqp.node/pull/436); thanks
    to @honestserpent
