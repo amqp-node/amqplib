@@ -35,10 +35,12 @@ jobs:
     before_deploy:
     - sudo apt-get install -y jq
     - test "$TRAVIS_TAG" == "v$(jq -r .version < package.json)"
+    - npm run prepare
     deploy:
       provider: npm
       email: "$NPM_USER"
       api_key: "$NPM_TOKEN"
+      skip_cleanup: true # stop TravisCI from doing git stash --all
       on:
         branch: master
         tags: true
