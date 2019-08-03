@@ -1,8 +1,8 @@
 # Change log for amqplib
 
-## Changes in v0.5.4
+## Changes in v0.5.5
 
-    git log v0.5.3..v0.5.4
+    git log v0.5.3..v0.5.5
 
 **NB** this includes a minor but possibly breaking change: after [PR
 498](https://github.com/squaremo/amqp.node/pull/498), all confirmation
@@ -16,8 +16,13 @@ channel is closed.
   498](https://github.com/squaremo/amqp.node/pull/498)); thanks
   @johanneswuerbach
  * Update supported NodeJS versions in package.json ([PR
-   525](https://github.com/squaremo/amqp.node/pull/525)); thenks
+   525](https://github.com/squaremo/amqp.node/pull/525)); thanks
    @tingwai
+
+## (Deprecated v0.5.4)
+
+This release was mistakenly published without the generated file
+`./defs.js`. It has been deprecated in favour of v0.5.5.
 
 ## Changes in v0.5.3
 
