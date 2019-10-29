@@ -1,6 +1,6 @@
 dependencies:
   bitsyntax: 0.1.0
-  bluebird: 3.7.0
+  bluebird: 3.7.1
   buffer-more-ints: 1.0.0
   readable-stream: 1.1.14
   safe-buffer: 5.1.2
@@ -54,10 +54,10 @@ packages:
       node: '>=0.8'
     resolution:
       integrity: sha512-ikAdCnrloKmFOugAfxWws89/fPc+nw0OOG1IzIE72uSOg/A3cYptKCjSUhDTuj7fhsJtzkzlv7l3b8PzRHLN0Q==
-  /bluebird/3.7.0:
+  /bluebird/3.7.1:
     dev: false
     resolution:
-      integrity: sha512-aBQ1FxIa7kSWCcmKHlcHFlT2jt6J/l4FzC7KcPELkOJOsPOb/bccdhmIrKDfXhwFrmc7vDoDrrepFvGqjyXGJg==
+      integrity: sha512-DdmyoGCleJnkbp3nkbxTLJ18rjDsE4yCggEwKNXkeV123sPNfOCYeDoeuOY+F2FrSjO1YXcTU+dsy96KMy+gcg==
   /boo/1.2.4:
     dev: true
     resolution:
