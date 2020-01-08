@@ -388,4 +388,55 @@ test("detect lack of heartbeats", connectionTest(
     // conspicuously not sending anything ...
   }));
 
+test("send heartbeats at interval / 2", function(done) {
+  var numIntervalsToTest = 10;
+  var interval = 1;
+  var timeToTest = numIntervalsToTest * interval * heartbeat.UNITS_TO_MS;
+  connectionTest(
+    function(c, done) {
+      var opts = Object.create(OPEN_OPTS);
+      opts.heartbeat = interval;
+      // Don't leave the error waiting to happen for the next test, this
+      // confuses mocha awfully
+      c.on('error', function() {});
+      c.open(opts, function() {
+        var isDone = false;
+        setTimeout(function() {
+          isDone = true;
+        }, timeToTest);
+
+        var lastBeatTime = 0;
+        c.heartbeater.on("beat", function() {
+          var beatTime = Date.now();
+          if (lastBeatTime !== 0) {
+            var deltaTime = beatTime - lastBeatTime;
+            var expectedTime = heartbeat.UNITS_TO_MS / 2;
+            var buffer = expectedTime * 0.20; // percent
+            var amountOff = Math.abs(expectedTime - deltaTime);
+            assert(amountOff <= buffer, `Expected delta time of ${expectedTime} (with a buffer of +- ${buffer}), got ${deltaTime}`);
+          }
+
+          lastBeatTime = beatTime;
+
+          if (isDone) {
+            done();
+          }
+        });
+      });
+    },
+    function(send, wait, done, socket) {
+      happy_open(send, wait)
+        .then(function() {
+          var timer = setInterval(function() {
+            socket.write(HB_BUF);
+          }, heartbeat.UNITS_TO_MS);
+
+          setTimeout(function() {
+            clearInterval(timer);
+            done();
+          }, timeToTest);
+        })
+    })(done);
+  });
+
 });
