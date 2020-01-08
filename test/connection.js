@@ -410,7 +410,7 @@ test("send heartbeats at interval / 2", function(done) {
           var beatTime = Date.now();
           if (lastBeatTime !== 0) {
             var deltaTime = beatTime - lastBeatTime;
-            var expectedTime = heartbeat.UNITS_TO_MS / 2;
+            var expectedTime = interval * heartbeat.UNITS_TO_MS / 2;
             var buffer = expectedTime * 0.20; // percent
             var amountOff = Math.abs(expectedTime - deltaTime);
             assert(amountOff <= buffer, "Expected delta time of " + expectedTime + " (with a buffer of +- " + buffer + "), got " + deltaTime);
