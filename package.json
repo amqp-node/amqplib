@@ -15,6 +15,7 @@
     "bitsyntax": "~0.1.0",
     "bluebird": "^3.5.2",
     "buffer-more-ints": "~1.0.0",
+    "debug": "^4.1.1",
     "readable-stream": "1.x >=1.1.9",
     "safe-buffer": "~5.1.2",
     "url-parse": "~1.4.3"
