@@ -105,6 +105,42 @@ open.then(function(conn) {
 }).catch(console.warn);
 ```
 
+## async/await API example
+
+```javascript
+const amqp = require('amqplib')
+
+async function publisher ({ host, queue }) {
+  try {
+    const connection = await amqp.connect(host)
+    const channel = await connection.createChannel()
+    await channel.assertQueue(queue)
+    await channel.sendToQueue(queue, Buffer.from('something'))
+  } catch (error) {
+    console.warn(error)
+  }
+}
+
+async function consumer ({ host, queue }) {
+  try {
+    const connection = await amqp.connect(host)
+    const channel = await connection.createChannel()
+    await channel.assertQueue(queue)
+    channel.consume(queue, (msg) => {
+      if (msg !== null) {
+        console.log('received', msg.content.toString())
+        channel.ack(msg)
+      }
+    })
+  } catch (error) {
+    console.warn(error)
+  }
+}
+
+publisher({ host: 'amqp://localhost', queue: 'tasks' })
+consumer({ host: 'amqp://localhost', queue: 'tasks' })
+```
+
 ## Running tests
 
     npm test
