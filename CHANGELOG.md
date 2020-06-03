@@ -1,5 +1,19 @@
 # Change log for amqplib
 
+## Changes in v0.5.6
+
+    git log v0.5.5..v0.5.6
+
+ * Increase size of encoding space for message headers, to fit e.g.,
+   JWT ([PR 545](https://github.com/squaremo/amqp.node/pull/545));
+   thanks @twatson83
+ * Switch to a non-deprecated UUID module ([PR
+   528](https://github.com/squaremo/amqp.node/pull/528)); thanks to
+   @StrayBird-ATSH
+ * Fix a bug in multiplexing that caused an assertion to fail ([PR
+   503](https://github.com/squaremo/amqp.node/pull/503)); thanks
+   @johanneswuerbach
+
 ## Changes in v0.5.5
 
     git log v0.5.3..v0.5.5
