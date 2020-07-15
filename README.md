@@ -10,7 +10,7 @@
  * [Examples from RabbitMQ tutorials][tutes]
 
 A library for making AMQP 0-9-1 clients for Node.JS, and an AMQP 0-9-1
-client for Node.JS v0.8-0.12, v4-v9, and the intervening io.js
+client for Node.JS v0.8-0.12, v4-v14, and the intervening io.js
 releases.
 
 This library does not implement [AMQP
