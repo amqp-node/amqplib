@@ -13,7 +13,9 @@ node_js:
 - "9.11"
 - "10.10"
 - "11.1"
-- "node"
+- "12"
+- "13"
+- "node" # Latest stable Node version
 
 sudo: false
 
