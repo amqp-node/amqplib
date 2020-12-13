@@ -10,7 +10,7 @@ devDependencies:
   istanbul: 0.1.46
   mocha: 3.5.3
   uglify-js: 2.6.4
-lockfileVersion: 5.1
+lockfileVersion: 5.2
 packages:
   /abbrev/1.0.9:
     dev: true
