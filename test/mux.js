@@ -51,6 +51,40 @@ test("single input", function(done) {
   input.end();
 });
 
+test("single input, resuming stream", function(done) {
+  var input = stream();
+  var output = stream();
+  input.on('end', function() { output.end() });
+
+  var mux = new Mux(output);
+  mux.pipeFrom(input);
+
+  // Streams might be blocked and become readable again, simulate this
+  // using a special read function and a marker
+  var data = [1,2,3,4,'skip',6,7,8,9];
+
+  var oldRead  = input.read;
+  input.read = function(size) {
+    var val = oldRead.call(input, size)
+
+    if (val === 'skip') {
+      input.emit('readable');
+      return null
+    }
+
+    return val;
+  }
+
+  data.forEach(input.write.bind(input));
+
+  readAllObjects(output, function(vals) {
+    assert.deepEqual([1,2,3,4,6,7,8,9], vals);
+    done();
+  });
+
+  input.end();
+});
+
 test("two sequential inputs", function(done) {
   var input1 = stream();
   var input2 = stream();
