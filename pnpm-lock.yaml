@@ -1,6 +1,6 @@
 dependencies:
   bitsyntax: 0.1.0
-  bluebird: 3.7.1
+  bluebird: 3.7.2
   buffer-more-ints: 1.0.0
   readable-stream: 1.1.14
   safe-buffer: 5.1.2
@@ -16,10 +16,6 @@ packages:
     dev: true
     resolution:
       integrity: sha1-kbR5JYinc4wl813W9jdSovh3YTU=
-  /abbrev/1.1.1:
-    dev: true
-    resolution:
-      integrity: sha512-nne9/IiQ/hzIhY6pdDnbBtz7DjPTKrY00P/zvPSm5pOFkl6xuGrGnXn/VtTNNfNtAfZ9/1RtehkszU9qcTii0Q==
   /align-text/0.1.4:
     dependencies:
       kind-of: 3.2.2
@@ -54,10 +50,10 @@ packages:
       node: '>=0.8'
     resolution:
       integrity: sha512-ikAdCnrloKmFOugAfxWws89/fPc+nw0OOG1IzIE72uSOg/A3cYptKCjSUhDTuj7fhsJtzkzlv7l3b8PzRHLN0Q==
-  /bluebird/3.7.1:
+  /bluebird/3.7.2:
     dev: false
     resolution:
-      integrity: sha512-DdmyoGCleJnkbp3nkbxTLJ18rjDsE4yCggEwKNXkeV123sPNfOCYeDoeuOY+F2FrSjO1YXcTU+dsy96KMy+gcg==
+      integrity: sha512-XpNj6GDQzdfW+r2Wnn7xiSAd7TM3jzkxGXBGTtWKuSXv1xUV+azxAm8jdWZN06QTQk+2N2XB9jRDkvbmQmcRtg==
   /boo/1.2.4:
     dev: true
     resolution:
@@ -383,12 +379,14 @@ packages:
     resolution:
       integrity: sha1-hX/Kv8M5fSYluCKCYuhqp6ARsF0=
   /mkdirp/0.3.5:
+    deprecated: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
     dev: true
     resolution:
       integrity: sha1-3j5fiWHIjHh+4TaN+EmsRBPsqNc=
   /mkdirp/0.5.1:
     dependencies:
       minimist: 0.0.8
+    deprecated: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
     dev: true
     hasBin: true
     resolution:
@@ -419,7 +417,7 @@ packages:
       integrity: sha1-VgiurfwAvmwpAd9fmGF4jeDVl8g=
   /nopt/2.1.2:
     dependencies:
-      abbrev: 1.1.1
+      abbrev: 1.0.9
     dev: true
     hasBin: true
     resolution:
@@ -448,10 +446,10 @@ packages:
       node: '>= 0.8.0'
     resolution:
       integrity: sha1-z4JLS0fMc8vZb56YhQc7Q6rqqzs=
-  /querystringify/2.1.1:
+  /querystringify/2.2.0:
     dev: false
     resolution:
-      integrity: sha512-w7fLxIRCRT7U8Qu53jQnJyPkYZIaR4n5151KMfcJlO/A9397Wxb1amJvROTK6TOnp7PfoAmg/qXiNHI+08jRfA==
+      integrity: sha512-FIqgj2EUvTa7R50u0rGsyTftzjYmv/a3hO345bZNrqabNqjtgiDMgmo4mkUjd+nzU5oF3dClKqFIPUKybUyqoQ==
   /readable-stream/1.1.14:
     dependencies:
       core-util-is: 1.0.2
@@ -553,7 +551,7 @@ packages:
       integrity: sha1-bgkk1r2mta/jSeOabWMoUKD4grc=
   /url-parse/1.4.7:
     dependencies:
-      querystringify: 2.1.1
+      querystringify: 2.2.0
       requires-port: 1.0.0
     dev: false
     resolution:
