@@ -42,7 +42,7 @@ bin/amqp-rabbitmq-0.9.1.json:
 	curl -L $(AMQP_JSON) > $@
 
 $(ISTANBUL):
-	pnpm install #--production=false
+	npm install --production=false
 
 $(UGLIFY):
-	pnpm install #--production=false
+	npm install --production=false
