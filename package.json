@@ -10,18 +10,18 @@
   },
   "dependencies": {
     "bitsyntax": "~0.1.0",
-    "bluebird": "^3.7.2",
     "buffer-more-ints": "~1.0.0",
-    "readable-stream": "3.x",
+    "readable-stream": "~3.6.0",
     "safe-buffer": "~5.2.1",
     "url-parse": "~1.4.7"
   },
   "devDependencies": {
+    "bluebird": "^3.7.2",
     "claire": "0.4.1",
-    "istanbul": "0.4.x",
+    "istanbul": "0.4.5",
     "mocha": "^8.2.1",
     "nyc": "^15.1.0",
-    "uglify-js": "<3.0.0"
+    "uglify-js": "^2.8.29"
   },
   "scripts": {
     "test": "make test",
