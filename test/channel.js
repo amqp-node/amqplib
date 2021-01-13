@@ -332,7 +332,8 @@ suite("channel machinery", function () {
           return ch._rpc(defs.BasicRecover, { requeue: true }, defs.BasicRecoverOk, failureCb(resolve, reject));
         });
 
-        Promise.join(close, fail1, fail2).then(succeed(done)).catch(fail(done));
+        // Promise.join(close, fail1, fail2).then(succeed(done)).catch(fail(done));
+        Promise.all([close, fail1, fail2]).then(succeed(done)).catch(fail(done));
       },
       function (send, wait, done, ch) {
         wait(defs.BasicRecover)()
