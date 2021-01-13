@@ -1,0 +1,5 @@
+{
+  "extension": ["js"],
+  "ui": "tdd",
+  "spec": "test/**/*.js"
+}

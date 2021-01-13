@@ -20,6 +20,7 @@
     "claire": "0.4.1",
     "istanbul": "0.4.x",
     "mocha": "^8.2.1",
+    "nyc": "^15.1.0",
     "uglify-js": "<3.0.0"
   },
   "scripts": {
