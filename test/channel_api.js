@@ -9,7 +9,7 @@ var schedule = util.schedule;
 var randomString = util.randomString;
 var Buffer = require("safe-buffer").Buffer;
 
-var URL = process.env.URL || "amqp://localhost:5673";
+var URL = process.env.URL || "amqp://localhost";
 
 function connect() {
   return api.connect(URL, {});
@@ -116,7 +116,7 @@ suite("assert, check, delete", function () {
 
   chtest("delete queue", function (ch) {
     var q = "test.delete-queue";
-    return Promise.join(ch.assertQueue(q, QUEUE_OPTS), ch.checkQueue(q))
+    return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.checkQueue(q)])
       .then(function () {
         return ch.deleteQueue(q);
       })
@@ -127,7 +127,7 @@ suite("assert, check, delete", function () {
 
   chtest("delete exchange", function (ch) {
     var ex = "test.delete-exchange";
-    return Promise.join(ch.assertExchange(ex, "fanout", EX_OPTS), ch.checkExchange(ex))
+    return Promise.all([ch.assertExchange(ex, "fanout", EX_OPTS), ch.checkExchange(ex)])
       .then(function () {
         return ch.deleteExchange(ex);
       })
@@ -171,7 +171,7 @@ suite("sendMessage", function () {
   chtest("send to queue and get from queue", function (ch) {
     var q = "test.send-to-q";
     var msg = randomString();
-    return Promise.join(ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
+    return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)])
       .then(function () {
         ch.sendToQueue(q, Buffer.from(msg));
         return waitForMessages(q);
@@ -188,7 +188,7 @@ suite("sendMessage", function () {
   chtest("send (and get) zero content to queue", function (ch) {
     var q = "test.send-to-q";
     var msg = Buffer.alloc(0);
-    return Promise.join(ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
+    return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)])
       .then(function () {
         ch.sendToQueue(q, msg);
         return waitForMessages(q);
@@ -210,7 +210,7 @@ suite("binding, consuming", function () {
     var q = "test.route-message-q";
     var msg = randomString();
 
-    return Promise.join(ch.assertExchange(ex, "fanout", EX_OPTS), ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q), ch.bindQueue(q, ex, "", {}))
+    return Promise.all([ch.assertExchange(ex, "fanout", EX_OPTS), ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q), ch.bindQueue(q, ex, "", {})])
       .then(function () {
         ch.publish(ex, "", Buffer.from(msg));
         return waitForMessages(q);
@@ -249,7 +249,7 @@ suite("binding, consuming", function () {
     var viabinding = randomString();
     var direct = randomString();
 
-    return Promise.join(ch.assertExchange(ex, "fanout", EX_OPTS), ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q), ch.bindQueue(q, ex, "", {}))
+    return Promise.all([ch.assertExchange(ex, "fanout", EX_OPTS), ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q), ch.bindQueue(q, ex, "", {})])
       .then(function () {
         ch.publish(ex, "", Buffer.from("foobar"));
         return waitForMessages(q);
@@ -288,7 +288,7 @@ suite("binding, consuming", function () {
     var q = "test.ex-ex-binding-q";
     var rk = "test.routing.key",
       msg = randomString();
-    return Promise.join(ch.assertExchange(ex1, "direct", EX_OPTS), ch.assertExchange(ex2, "fanout", { durable: false, internal: true }), ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q), ch.bindExchange(ex2, ex1, rk, {}), ch.bindQueue(q, ex2, "", {})).then(function () {
+    return Promise.all([ch.assertExchange(ex1, "direct", EX_OPTS), ch.assertExchange(ex2, "fanout", { durable: false, internal: true }), ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q), ch.bindExchange(ex2, ex1, rk, {}), ch.bindQueue(q, ex2, "", {})]).then(function () {
       return new Promise(function (resolve, reject) {
         function delivery(m) {
           if (m.content.toString() === msg) resolve();
@@ -309,7 +309,7 @@ suite("binding, consuming", function () {
     var viabinding = randomString();
     var direct = randomString();
 
-    return Promise.join(ch.assertExchange(source, "fanout", EX_OPTS), ch.assertExchange(dest, "fanout", EX_OPTS), ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q), ch.bindExchange(dest, source, "", {}), ch.bindQueue(q, dest, "", {}))
+    return Promise.all([ch.assertExchange(source, "fanout", EX_OPTS), ch.assertExchange(dest, "fanout", EX_OPTS), ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q), ch.bindExchange(dest, source, "", {}), ch.bindQueue(q, dest, "", {})])
       .then(function () {
         ch.publish(source, "", Buffer.from("foobar"));
         return waitForMessages(q);
@@ -345,7 +345,7 @@ suite("binding, consuming", function () {
     var q = "test.consumer-cancel";
     var ctag;
     var recv1 = new Promise(function (resolve, reject) {
-      Promise.join(
+      Promise.all([
         ch.assertQueue(q, QUEUE_OPTS),
         ch.purgeQueue(q),
         // My callback is 'resolve the promise in `arrived`'
@@ -353,18 +353,18 @@ suite("binding, consuming", function () {
           ctag = ok.consumerTag;
           ch.sendToQueue(q, Buffer.from("foo"));
         }),
-      );
+      ]);
     });
 
     // A message should arrive because of the consume
     return recv1.then(function () {
-      var recv2 = Promise.join(
+      var recv2 = Promise.all([
         ch.cancel(ctag).then(function () {
           return ch.sendToQueue(q, Buffer.from("bar"));
         }),
         // but check a message did arrive in the queue
         waitForMessages(q),
-      )
+      ])
         .then(function () {
           return ch.get(q, { noAck: true });
         })
@@ -383,14 +383,14 @@ suite("binding, consuming", function () {
   chtest("cancelled consumer", function (ch) {
     var q = "test.cancelled-consumer";
     return new Promise(function (resolve, reject) {
-      return Promise.join(
+      return Promise.all([
         ch.assertQueue(q),
         ch.purgeQueue(q),
         ch.consume(q, function (msg) {
           if (msg === null) resolve();
           else reject(new Error("Message not expected"));
         }),
-      ).then(function () {
+      ]).then(function () {
         return ch.deleteQueue(q);
       });
     });
@@ -402,7 +402,7 @@ suite("binding, consuming", function () {
     var msg1 = randomString(),
       msg2 = randomString();
 
-    return Promise.join(ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
+    return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)])
       .then(function () {
         ch.sendToQueue(q, Buffer.from(msg1));
         ch.sendToQueue(q, Buffer.from(msg2));
@@ -430,7 +430,7 @@ suite("binding, consuming", function () {
     var q = "test.nack";
     var msg1 = randomString();
 
-    return Promise.join(ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
+    return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)])
       .then(function () {
         ch.sendToQueue(q, Buffer.from(msg1));
         return waitForMessages(q);
@@ -458,7 +458,7 @@ suite("binding, consuming", function () {
     var q = "test.reject";
     var msg1 = randomString();
 
-    return Promise.join(ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
+    return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)])
       .then(function () {
         ch.sendToQueue(q, Buffer.from(msg1));
         return waitForMessages(q);
@@ -482,7 +482,7 @@ suite("binding, consuming", function () {
 
   chtest("prefetch", function (ch) {
     var q = "test.prefetch";
-    return Promise.join(ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q), ch.prefetch(1))
+    return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q), ch.prefetch(1)])
       .then(function () {
         ch.sendToQueue(q, Buffer.from("foobar"));
         ch.sendToQueue(q, Buffer.from("foobar"));
@@ -517,7 +517,7 @@ var confirmtest = channel_test.bind(null, "createConfirmChannel");
 suite("confirms", function () {
   confirmtest("message is confirmed", function (ch) {
     var q = "test.confirm-message";
-    return Promise.join(ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)).then(function () {
+    return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)]).then(function () {
       return ch.sendToQueue(q, Buffer.from("bleep"));
     });
   });
@@ -529,7 +529,7 @@ suite("confirms", function () {
   // multi-ack.
   confirmtest("multiple confirms", function (ch) {
     var q = "test.multiple-confirms";
-    return Promise.join(ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)).then(function () {
+    return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)]).then(function () {
       var multipleRainbows = false;
       ch.on("ack", function (a) {
         if (a.multiple) multipleRainbows = true;
