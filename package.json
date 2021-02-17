@@ -9,7 +9,7 @@
     "url": "https://github.com/squaremo/amqp.node.git"
   },
   "engines": {
-    "node": ">=0.8 <=14"
+    "node": ">=0.8 <=15"
   },
   "dependencies": {
     "bitsyntax": "~0.1.0",
