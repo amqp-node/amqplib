@@ -41,7 +41,7 @@ test("single input", function(done) {
   // not 0, it's treated specially by PassThrough for some reason. By
   // 'specially' I mean it breaks the stream. See e.g.,
   // https://github.com/isaacs/readable-stream/pull/55
-  data.forEach(input.write.bind(input));
+  data.forEach(function (chunk) { input.write(chunk); });
 
   readAllObjects(output, function(vals) {
     assert.deepEqual(data, vals);
@@ -75,7 +75,7 @@ test("single input, resuming stream", function(done) {
     return val;
   }
 
-  data.forEach(input.write.bind(input));
+  data.forEach(function (chunk) { input.write(chunk); });
 
   readAllObjects(output, function(vals) {
     assert.deepEqual([1,2,3,4,6,7,8,9], vals);
@@ -145,13 +145,13 @@ test("unpipe", function(done) {
   mux.pipeFrom(input);
 
   schedule(function() {
-    pipedData.forEach(input.write.bind(input));
+    pipedData.forEach(function (chunk) { input.write(chunk); });
 
     schedule(function() {
       mux.unpipeFrom(input);
 
       schedule(function() {
-        unpipedData.forEach(input.write.bind(input));
+        unpipedData.forEach(function(chunk) { input.write(chunk); });
         input.end();
         schedule(function() {
           // exhaust so that 'end' fires
