@@ -123,7 +123,7 @@ suite("Parsing", function() {
         bufs.push(defs.encodeMethod(f.id, 0, f.fields));
       });
 
-      partition(bufs).forEach(input.write.bind(input));
+      partition(bufs).forEach(function (chunk) { input.write(chunk); });
       frames.acceptLoop();
       if (ex) throw ex;
       return i === t.length;
