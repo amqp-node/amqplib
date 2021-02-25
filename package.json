@@ -23,7 +23,7 @@
     "claire": "0.4.1",
     "istanbul": "0.1.x",
     "mocha": "^3.5.3",
-    "uglify-js": "2.6.x"
+    "uglify-js": "2.8.x"
   },
   "scripts": {
     "test": "make test",
