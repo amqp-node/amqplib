@@ -1,5 +1,26 @@
 # Change log for amqplib
 
+## Changes in v0.7.1
+
+    git log v0.7.0..v0.7.1
+
+ * Update url-parse (and others) ([PR
+   607](https://github.com/squaremo/amqp.node/pull/545), thanks
+   @ThomasGawlitza)
+
+## Changes in v0.7.0
+
+    git log v0.6.0..v0.7.0
+
+ * Extend support to Node.js v15
+ * Fix use of stream.write in tests
+
+## Changes in v0.6.0
+
+    git log v0.5.6..v0.6.0
+
+ * Extend support to Node.js v14
+
 ## Changes in v0.5.6
 
     git log v0.5.5..v0.5.6
