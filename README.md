@@ -5,8 +5,8 @@
     npm install amqplib
 
  * [Change log][changelog]
- * [GitHub pages][gh-pages]
- * [API reference][gh-pages-apiref]
+ * [GitHub pages][documentation]
+ * [API reference][apiref]
  * [Examples from RabbitMQ tutorials][tutes]
 
 A library for making AMQP 0-9-1 clients for Node.JS, and an AMQP 0-9-1
@@ -148,8 +148,8 @@ really only useful for checking the kind and formatting of the errors.
     make coverage
     open file://`pwd`/coverage/lcov-report/index.html
 
-[gh-pages]: http://squaremo.github.com/amqp.node/
-[gh-pages-apiref]: http://squaremo.github.com/amqp.node/channel_api.html
+[documentation]: http://www.squaremobius.net/amqp.node/
+[apiref]: http://www.squaremobius.net/amqp.node/channel_api.html
 [nave]: https://github.com/isaacs/nave
 [tutes]: https://github.com/squaremo/amqp.node/tree/master/examples/tutorials
 [rabbitmq-tutes]: http://www.rabbitmq.com/getstarted.html
