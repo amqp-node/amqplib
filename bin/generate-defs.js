@@ -116,7 +116,6 @@ println(
 '*/');
 
 println("'use strict';"); nl();
-println('var Buffer = require("safe-buffer").Buffer;');
 nl()
 println('var codec = require("./codec");');
 println('var ints = require("buffer-more-ints");');

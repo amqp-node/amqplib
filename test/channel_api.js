@@ -7,7 +7,6 @@ var succeed = util.succeed, fail = util.fail;
 var schedule = util.schedule;
 var randomString = util.randomString;
 var Promise = require('bluebird');
-var Buffer = require('safe-buffer').Buffer;
 
 var URL = process.env.URL || 'amqp://localhost';
 

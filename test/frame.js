@@ -3,7 +3,6 @@
 var assert = require('assert');
 var succeed = require('./util').succeed;
 var fail = require('./util').fail;
-var Buffer = require('safe-buffer').Buffer;
 var connection = require('../lib/connection');
 var Frames = connection.Connection;
 var HEARTBEAT = require('../lib/frame').HEARTBEAT;
@@ -27,7 +26,7 @@ var HB = Buffer.from([defs.constants.FRAME_HEARTBEAT,
                      defs.constants.FRAME_END]);
 
 suite("Explicit parsing", function() {
-  
+
   test('Parse heartbeat', function() {
     var input = inputs();
     var frames = new Frames(input);
@@ -117,7 +116,7 @@ suite("Parsing", function() {
         }
         i++;
       };
-      
+
       t.forEach(function(f) {
         f.channel = 0;
         bufs.push(defs.encodeMethod(f.id, 0, f.fields));
