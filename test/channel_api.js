@@ -40,7 +40,7 @@ function channel_test(chmethod, name, chfun) {
       c[chmethod]().then(ignoreErrors).then(chfun)
         .then(succeed(done), fail(done))
       // close the connection regardless of what happens with the test
-        .finally(function() {c.close();});
+        .finally(() => c.close());
     });
   });
 }
