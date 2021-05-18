@@ -3,7 +3,6 @@
 'use strict';
 
 var C = require('claire');
-var Buffer = require('safe-buffer').Buffer;
 var forAll = C.forAll;
 var arb = C.data;
 var transform = C.transform;

@@ -2,7 +2,6 @@
 
 var assert = require('assert');
 var defs = require('../lib/defs');
-var Buffer = require('safe-buffer').Buffer;
 var Connection = require('../lib/connection').Connection;
 var HEARTBEAT = require('../lib/frame').HEARTBEAT;
 var HB_BUF = require('../lib/frame').HEARTBEAT_BUF;

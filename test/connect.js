@@ -1,7 +1,6 @@
 'use strict';
 
 var connect = require('../lib/connect').connect;
-var Buffer = require('safe-buffer').Buffer
 var credentialsFromUrl = require('../lib/connect').credentialsFromUrl;
 var assert = require('assert');
 var util = require('./util');
