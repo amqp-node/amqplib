@@ -1,5 +1,17 @@
 # Change log for amqplib
 
+## Changes in v0.8.0
+
+    git log v0.7.1..v0.8.0
+
+ * :warning: Support for NodeJS prior to v10 is dropped :warning: ([PR
+   615](https://github.com/squaremo/amqp.node/pull/615), thank you
+   @xamgore and everyone who helped there)
+ * Use hostname as TLS servername, to help with using servers behind
+   load balancers ([PR
+   567](https://github.com/squaremo/amqp.node/pull/567), thanks to
+   @carlhoerberg and commenters)
+
 ## Changes in v0.7.1
 
     git log v0.7.0..v0.7.1
