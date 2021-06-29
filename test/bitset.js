@@ -2,9 +2,15 @@
 
 const claire = require('claire');
 
-const forAll = claire.forAll, arb = claire.data, label = claire.label, choice = claire.choice, transform = claire.transform;
+const {
+  forAll,
+  data: arb,
+  label,
+  choice,
+  transform
+} = claire;
 
-const BitSet = require('../lib/bitset').BitSet;
+const {BitSet} = require('../lib/bitset');
 const PosInt = transform(Math.floor, arb.Positive);
 
 const EmptyBitSet = label('bitset', transform(
@@ -20,7 +26,7 @@ test('get bit', forAll(EmptyBitSet, PosInt)
        b.set(bit);
        return b.get(bit);
      }).asTest());
-  
+
 test('clear bit', forAll(EmptyBitSet, PosInt)
      .satisfy((b, bit) => {
        b.set(bit);
