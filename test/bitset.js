@@ -1,6 +1,7 @@
 'use strict';
 
 const claire = require('claire');
+const {BitSet} = require('../lib/bitset');
 
 const {
   forAll,
@@ -10,7 +11,6 @@ const {
   transform
 } = claire;
 
-const {BitSet} = require('../lib/bitset');
 const PosInt = transform(Math.floor, arb.Positive);
 
 const EmptyBitSet = label('bitset', transform(
@@ -66,5 +66,4 @@ test('next clear of one set', forAll(EmptyBitSet, PosInt)
        b.set(bit);
        return b.nextClearBit(bit) === bit + 1;
      }).asTest());
-
 });
