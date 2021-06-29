@@ -4,7 +4,6 @@ var codec = require('../lib/codec');
 var defs = require('../lib/defs');
 var assert = require('assert');
 var ints = require('buffer-more-ints');
-var Buffer = require('safe-buffer').Buffer
 var C = require('claire');
 var forAll = C.forAll;
 

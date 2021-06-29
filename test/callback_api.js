@@ -8,7 +8,6 @@ var schedule = util.schedule;
 var randomString = util.randomString;
 var kCallback = util.kCallback;
 var domain = require('domain');
-var Buffer = require('safe-buffer').Buffer;
 
 var URL = process.env.URL || 'amqp://localhost';
 

@@ -12,7 +12,6 @@ var completes = util.completes;
 var defs = require('../lib/defs');
 var conn_handshake = require('./connection').connection_handshake;
 var OPEN_OPTS = require('./connection').OPEN_OPTS;
-var Buffer = require('safe-buffer').Buffer;
 
 var LOG_ERRORS = process.env.LOG_ERRORS;
 
