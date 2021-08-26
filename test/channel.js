@@ -53,7 +53,7 @@ function channelTest(client, server) {
                                  // errors bubble out
     }
   );
-};
+}
 
 function channel_handshake(send, wait) {
   return wait(defs.ChannelOpen)()

@@ -227,7 +227,7 @@ for (var k in defs) {
     propertieses.push(properties(defs[k]));
     propertieses[defs[k].name] = properties(defs[k]);
   }
-};
+}
 
 module.exports = {
   Octet: Octet,

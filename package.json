@@ -21,11 +21,13 @@
   },
   "devDependencies": {
     "claire": "0.4.1",
+    "eslint": "^7.32.0",
     "istanbul": "0.1.x",
     "mocha": "^3.5.3",
     "uglify-js": "2.8.x"
   },
   "scripts": {
+    "lint": "eslint .",
     "test": "make test",
     "prepare": "make"
   },

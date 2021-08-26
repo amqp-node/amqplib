@@ -9,7 +9,7 @@ function connect(url, connOptions) {
   .then(function(conn) {
     return new ChannelModel(conn);
   });
-};
+}
 
 module.exports.connect = connect;
 module.exports.credentials = require('./lib/credentials');

@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [10.x, 12.x, 14.x, 16.x]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install JSON processor
+        run: |
+          sudo apt-get install -y jq
+      - name: Install rabbitmq
+        run: |
+          sudo apt-get install rabbitmq-server -y --fix-missing
+
+      - name: Install dependencies
+        run: |
+          npm install
+      - name: Prepare
+        run: |
+          npm run prepare
+      - name: Run tests
+        run: |
+          npm run test
+
+  automerge:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: fastify/github-action-merge-dependabot@v2.4.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}

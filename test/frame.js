@@ -127,7 +127,7 @@ suite("Parsing", function() {
       if (ex) throw ex;
       return i === t.length;
     }).asTest({times: 20})
-  };
+  }
 
   test("Parse trace of methods",
        testPartitioning(function(bufs) { return bufs; }));
