@@ -10,8 +10,8 @@
 A library for making AMQP 0-9-1 clients for Node.JS, and an AMQP 0-9-1 client for Node.JS v10+.
 
 This library does not implement [AMQP
-1.0](https://github.com/squaremo/amqp.node/issues/63) or [AMQP
-0-10](https://github.com/squaremo/amqp.node/issues/94).
+1.0](https://github.com/amqp-node/amqplib/issues/63) or [AMQP
+0-10](https://github.com/amqp-node/amqplib/issues/94).
 
 Project status:
 
@@ -144,10 +144,10 @@ really only useful for checking the kind and formatting of the errors.
     make coverage
     open file://`pwd`/coverage/lcov-report/index.html
 
-[gh-pages]: http://www.squaremobius.net/amqp.node/
-[gh-pages-apiref]: http://www.squaremobius.net/amqp.node/channel_api.html
+[gh-pages]: http://amqp-node.github.io/amqplib/
+[gh-pages-apiref]: http://amqp-node.github.io/amqplib/channel_api.html
 [nave]: https://github.com/isaacs/nave
-[tutes]: https://github.com/squaremo/amqp.node/tree/main/examples/tutorials
+[tutes]: https://github.com/amqp-node/amqplib/tree/main/examples/tutorials
 [rabbitmq-tutes]: http://www.rabbitmq.com/getstarted.html
-[changelog]: https://github.com/squaremo/amqp.node/blob/main/CHANGELOG.md
+[changelog]: https://github.com/amqp-node/amqplib/blob/main/CHANGELOG.md
 [docker]: https://www.docker.com/

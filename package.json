@@ -1,13 +1,13 @@
 
 {
   "name": "amqplib",
-  "homepage": "http://squaremo.github.io/amqp.node/",
+  "homepage": "http://amqp-node.github.io/amqplib/",
   "main": "./channel_api.js",
   "version": "0.8.0",
   "description": "An AMQP 0-9-1 (e.g., RabbitMQ) library and client.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/squaremo/amqp.node.git"
+    "url": "https://github.com/amqp-node/amqplib.git"
   },
   "engines": {
     "node": ">=10"
