@@ -2,10 +2,11 @@
 
 var connect = require('../lib/connect').connect;
 var credentialsFromUrl = require('../lib/connect').credentialsFromUrl;
+var defs = require('../lib/defs');
 var assert = require('assert');
 var util = require('./util');
 var net = require('net');
-var fail = util.fail, succeed = util.succeed,
+var fail = util.fail, succeed = util.succeed, latch = util.latch,
     kCallback = util.kCallback,
     succeedIfAttributeEquals = util.succeedIfAttributeEquals;
 var format = require('util').format;
@@ -147,5 +148,50 @@ suite("Connect API", function() {
         else done();
     });
   });
+});
 
+suite('Errors on connect', function() {
+  var server
+  afterEach(function() {
+    if (server) {
+      server.close();
+    }
+  })
+
+  test("closes underlying connection on authentication error", function(done) {
+    var bothDone = latch(2, done);
+    server = net.createServer(function(socket) {
+      socket.once('data', function(protocolHeader) {
+        assert.deepStrictEqual(
+          protocolHeader,
+          Buffer.from("AMQP" + String.fromCharCode(0,0,9,1))
+        );
+        util.runServer(socket, function(send, wait) {
+          send(defs.ConnectionStart,
+            {versionMajor: 0,
+              versionMinor: 9,
+              serverProperties: {},
+              mechanisms: Buffer.from('PLAIN'),
+              locales: Buffer.from('en_US')});
+          wait(defs.ConnectionStartOk)().then(function() {
+            send(defs.ConnectionClose,
+              {replyCode: 403,
+              replyText: 'ACCESS_REFUSED - Login was refused using authentication mechanism PLAIN',
+              classId: 0,
+              methodId: 0});
+          });
+        });
+      });
+
+      // Wait for the connection to be closed after the authentication error
+      socket.once('end', function() {
+        bothDone();
+      });
+    }).listen(0);
+
+    connect('amqp://localhost:' + server.address().port, {}, function(err) {
+      if (!err) bothDone(new Error('Expected authentication error'));
+      bothDone();
+    });
+  });
 });
