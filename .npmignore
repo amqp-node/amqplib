@@ -6,3 +6,4 @@ scratch
 bin/amqp-rabbitmq-0.9.1.json
 etc/
 coverage/
+.nyc_output/
