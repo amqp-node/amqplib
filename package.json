@@ -1,5 +1,5 @@
 {
-  "name": "amqplib",
+  "name": "@worthaboutapig/amqplib",
   "homepage": "http://squaremo.github.io/amqp.node/",
   "main": "./channel_api.js",
   "version": "0.6.0",
