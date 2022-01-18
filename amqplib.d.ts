@@ -1,3 +1,5 @@
+declare module "@worthaboutapig/amqplib";
+
 type CloseHandler = () => void;
 type ErrorHandler = (error: Error) => void;
 type IMessage = { content: string };
