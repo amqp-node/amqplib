@@ -33,5 +33,6 @@
     "RabbitMQ"
   ],
   "author": "Michael Bridgen <mikeb@squaremobius.net>",
-  "license": "MIT"
+  "license": "MIT",
+  "typings": "./lib/amqplib.d.ts"
 }
