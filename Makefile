@@ -23,7 +23,6 @@ lib/defs.js: $(UGLIFY) bin/generate-defs.js bin/amqp-rabbitmq-0.9.1.json
 	$(UGLIFY) ./lib/defs.js -o ./lib/defs.js \
 		-c 'sequences=false' --comments \
 		-b 'indent-level=2' 2>&1 | (grep -v 'WARN' || true)
-	(cp ./amqplib.d.ts ./lib)
 
 test: lib/defs.js
 	$(MOCHA) --check-leaks -u tdd test/
