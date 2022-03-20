@@ -1,4 +1,3 @@
-
 {
   "name": "amqplib",
   "homepage": "http://squaremo.github.io/amqp.node/",
@@ -17,7 +16,7 @@
     "bluebird": "^3.7.2",
     "buffer-more-ints": "~1.0.0",
     "readable-stream": "1.x >=1.1.9",
-    "url-parse": "~1.5.3"
+    "url-parse": "~1.5.10"
   },
   "devDependencies": {
     "claire": "0.4.1",
