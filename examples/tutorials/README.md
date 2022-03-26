@@ -80,6 +80,14 @@ and routing replies back to clients.
  * [rpc_server.js](rpc_server.js)
  * [rpc_client.js](rpc_client.js)
 
+## [Tutorial seven: Priority Queue][tute-seven]
+
+RabbitMQ has priority queue implementation in the core as of version 3.5.0.
+Using RabbitMQ as a priority queue, showing how to set maximum priority value supported by the queue and setting priority of each message pushed to the queue. In case of messages having equal value of priority, they are consumed in FIFO order.
+
+ * [send_priority_queue.js](callback_api/send_priority_queue.js)
+ * [receive_priority_queue.js](callback_api/receive_priority_queue.js)
+
 I depart slightly from the original tutorial code, which I think has
 some needless object-orientation (in the Python code; you don't get a
 choice about needless object-orientation in Java).
@@ -91,3 +99,4 @@ choice about needless object-orientation in Java).
 [tute-four]: http://www.rabbitmq.com/tutorials/tutorial-four-python.html
 [tute-five]: http://www.rabbitmq.com/tutorials/tutorial-five-python.html
 [tute-six]: http://www.rabbitmq.com/tutorials/tutorial-six-python.html
+[tute-seven]: https://www.rabbitmq.com/priority.html
