@@ -1,5 +1,9 @@
 # Change log for amqplib
 
+## Unreleased
+
+ * Replace url-parse lib with native URL interface
+
 ## Changes in v0.8.0
 
     git log v0.7.1..v0.8.0

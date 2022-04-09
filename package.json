@@ -15,8 +15,7 @@
     "bitsyntax": "~0.1.0",
     "bluebird": "^3.7.2",
     "buffer-more-ints": "~1.0.0",
-    "readable-stream": "1.x >=1.1.9",
-    "url-parse": "~1.5.10"
+    "readable-stream": "1.x >=1.1.9"
   },
   "devDependencies": {
     "claire": "0.4.1",

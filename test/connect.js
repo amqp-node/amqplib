@@ -6,14 +6,14 @@ var defs = require('../lib/defs');
 var assert = require('assert');
 var util = require('./util');
 var net = require('net');
+var parseUrl = require('url').parse;
 var fail = util.fail, succeed = util.succeed, latch = util.latch,
     kCallback = util.kCallback,
     succeedIfAttributeEquals = util.succeedIfAttributeEquals;
 var format = require('util').format;
 
-var URL = process.env.URL || 'amqp://localhost';
+var baseURL = process.env.URL || 'amqp://localhost';
 
-var urlparse = require('url-parse');
 
 suite("Credentials", function() {
 
@@ -29,27 +29,27 @@ suite("Credentials", function() {
   }
 
   test("no creds", function(done) {
-    var parts = urlparse('amqp://localhost');
+    var parts = new URL('amqp://localhost');
     var creds = credentialsFromUrl(parts);
     checkCreds(creds, 'guest', 'guest', done);
   });
   test("usual user:pass", function(done) {
-    var parts = urlparse('amqp://user:pass@localhost')
+    var parts = new URL('amqp://user:pass@localhost')
     var creds = credentialsFromUrl(parts);
     checkCreds(creds, 'user', 'pass', done);
   });
   test("missing user", function(done) {
-    var parts = urlparse('amqps://:password@localhost');
+    var parts = new URL('amqps://:password@localhost');
     var creds = credentialsFromUrl(parts);
     checkCreds(creds, '', 'password', done);
   });
   test("missing password", function(done) {
-    var parts = urlparse('amqps://username:@localhost');
+    var parts = new URL('amqps://username:@localhost');
     var creds = credentialsFromUrl(parts);
     checkCreds(creds, 'username', '', done);
   });
   test("escaped colons", function(done) {
-    var parts = urlparse('amqp://user%3Aname:pass%3Aword@localhost')
+    var parts = new URL('amqp://user%3Aname:pass%3Aword@localhost')
     var creds = credentialsFromUrl(parts);
     checkCreds(creds, 'user:name', 'pass:word', done);
   });
@@ -69,83 +69,72 @@ suite("Connect API", function() {
     });
   });
 
-  test("wrongly typed open option", function(done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
-    var q = parts.query || {};
-    q.frameMax = 'NOT A NUMBER';
-    parts.query = q;
-    var u = url.format(parts);
-    connect(u, {}, kCallback(fail(done), succeed(done)));
-  });
+  [
+    ["As instance of URL", url => url ],
+    ["As string", url => url.href ],
+  ].forEach(([suiteDescription, processURL]) => {
+    suite(suiteDescription, () => {
+      test("wrongly typed open option", function(done) {
+        var url = new URL(baseURL);
+        url.searchParams.set('frameMax', 'NOT A NUMBER');
+        connect(processURL(url), {}, kCallback(fail(done), succeed(done)));
+      });
 
-  test("serverProperties", function(done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
-    var config = parts.query || {};
-    connect(config, {}, function(err, connection) {
-      if (err) { return done(err); }
-      assert.equal(connection.serverProperties.product, 'RabbitMQ');
-      done();
-    });
-  });
+      test("serverProperties", function(done) {
+        var url = new URL(baseURL);
+        connect(processURL(url), {}, function(err, connection) {
+          if (err) { return done(err); }
+          assert.equal(connection.serverProperties.product, 'RabbitMQ');
+          done();
+        });
+      });
 
-  test("using custom heartbeat option", function(done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
-    var config = parts.query || {};
-    config.heartbeat = 20;
-    connect(config, {}, kCallback(succeedIfAttributeEquals('heartbeat', 20, done), fail(done)));
-  });
+      test("using custom heartbeat option", function(done) {
+        var url = new URL(baseURL);
+        url.searchParams.set('heartbeat', 20);
+        connect(processURL(url), {}, kCallback(succeedIfAttributeEquals('heartbeat', 20, done), fail(done)));
+      });
 
-  test("wrongly typed heartbeat option", function(done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
-    var config = parts.query || {};
-    config.heartbeat = 'NOT A NUMBER';
-    connect(config, {}, kCallback(fail(done), succeed(done)));
-  });
+      test("wrongly typed heartbeat option", function(done) {
+        var url = new URL(baseURL);
+        url.searchParams.set('heartbeat', 'NOT A NUMBER');
+        connect(processURL(url), {}, kCallback(fail(done), succeed(done)));
+      });
 
-  test("using plain credentials", function(done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
-    var u = 'guest', p = 'guest';
-    if (parts.auth) {
-      var auth = parts.auth.split(":");
-      u = auth[0], p = auth[1];
-    }
-    connect(URL, {credentials: require('../lib/credentials').plain(u, p)},
-            kCallback(succeed(done), fail(done)));
-  });
+      test("using plain credentials", function(done) {
+        var url = new URL(baseURL);
+        var u = url.username || 'guest';
+        var p = url.password || 'guest';
+        connect(processURL(url), {credentials: require('../lib/credentials').plain(u, p)},
+                kCallback(succeed(done), fail(done)));
+      });
 
-  test("using amqplain credentials", function(done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
-    var u = 'guest', p = 'guest';
-    if (parts.auth) {
-      var auth = parts.auth.split(":");
-      u = auth[0], p = auth[1];
-    }
-    connect(URL, {credentials: require('../lib/credentials').amqplain(u, p)},
-            kCallback(succeed(done), fail(done)));
-  });
+      test("using amqplain credentials", function(done) {
+        var url = new URL(baseURL);
+        var u = url.username || 'guest';
+        var p = url.password || 'guest';
+        connect(processURL(url), {credentials: require('../lib/credentials').amqplain(u, p)},
+                kCallback(succeed(done), fail(done)));
+      });
 
-  test("using unsupported mechanism", function(done) {
-    var creds = {
-      mechanism: 'UNSUPPORTED',
-      response: function() { return Buffer.from(''); }
-    };
-    connect(URL, {credentials: creds},
-            kCallback(fail(done), succeed(done)));
-  });
+      test("using unsupported mechanism", function(done) {
+        var creds = {
+          mechanism: 'UNSUPPORTED',
+          response: function() { return Buffer.from(''); }
+        };
+        connect(processURL(baseURL), {credentials: creds},
+                kCallback(fail(done), succeed(done)));
+      });
 
-  test("with a given connection timeout", function(done) {
-    var timeoutServer = net.createServer(function() {}).listen(31991);
-
-    connect('amqp://localhost:31991', {timeout: 50}, function(err, val) {
-        timeoutServer.close();
-        if (val) done(new Error('Expected connection timeout, did not'));
-        else done();
+      test("with a given connection timeout", function(done) {
+        var timeoutServer = net.createServer(function() {}).listen(31991);
+        var url = new URL('amqp://localhost:31991');
+        connect(processURL(url), {timeout: 50}, function(err, val) {
+            timeoutServer.close();
+            if (val) done(new Error('Expected connection timeout, did not'));
+            else done();
+        });
+      });
     });
   });
 });
