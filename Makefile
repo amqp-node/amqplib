@@ -8,7 +8,7 @@ NODEJS_VERSIONS='10.21' '11.15' '12.18' '13.14' '14.5' '15.8'
 MOCHA=./node_modules/.bin/mocha
 _MOCHA=./node_modules/.bin/_mocha
 UGLIFY=./node_modules/.bin/uglifyjs
-ISTANBUL=./node_modules/.bin/istanbul
+NYC=./node_modules/.bin/nyc
 
 .PHONY: test test-all-nodejs all clean coverage
 
@@ -33,9 +33,8 @@ test-all-nodejs: lib/defs.js
 		nave use $$v $(MOCHA) -u tdd -R progress test; \
 		done
 
-coverage: $(ISTANBUL) lib/defs.js
-	$(ISTANBUL) cover $(_MOCHA) -- -u tdd -R progress test/
-	$(ISTANBUL) report
+coverage: $(NYC) lib/defs.js
+	$(NYC) --reporter=lcov --reporter=text $(_MOCHA) -u tdd -R progress test/
 	@echo "HTML report at file://$$(pwd)/coverage/lcov-report/index.html"
 
 bin/amqp-rabbitmq-0.9.1.json:
