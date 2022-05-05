@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "claire": "0.4.1",
-    "mocha": "^3.5.3",
+    "mocha": "^9.2.2",
     "nyc": "^15.1.0",
     "uglify-js": "2.8.x"
   },
