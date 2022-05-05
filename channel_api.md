@@ -414,6 +414,13 @@ The socket options may also include the key `noDelay`, with a boolean
 value. If the value is `true`, this sets
 [`TCP_NODELAY`][wikipedia-nagling] on the underlying socket.
 
+###### Client properties
+You can specify additional client properties such as `connection_name` as follows...
+
+```javascript
+amqp.connect('amqp://localhost', {clientProperties: {connection_name: 'myFriendlyName'}});
+```
+
 ###### Result
 
 The returned promise, or supplied callback, will either be resolved
