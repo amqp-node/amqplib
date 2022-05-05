@@ -25,12 +25,12 @@ lib/defs.js: $(UGLIFY) bin/generate-defs.js bin/amqp-rabbitmq-0.9.1.json
 		-b 'indent-level=2' 2>&1 | (grep -v 'WARN' || true)
 
 test: lib/defs.js
-	$(MOCHA) --check-leaks -u tdd test/
+	$(MOCHA) --check-leaks -u tdd --exit test/
 
 test-all-nodejs: lib/defs.js
 	for v in $(NODEJS_VERSIONS); \
 		do echo "-- Node version $$v --"; \
-		nave use $$v $(MOCHA) -u tdd -R progress test; \
+		nave use $$v $(MOCHA) -u tdd --exit -R progress test; \
 		done
 
 coverage: $(NYC) lib/defs.js
