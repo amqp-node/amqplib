@@ -117,6 +117,8 @@ already exists but with different properties. A failed operation will
  * cause the channel object to emit `'error'`
  * cause the channel object to emit `'close'`
 
+Error events emitted from a channel (or a connection) have the potential to [crash your application](https://nodejs.org/docs/latest/api/events.html#events_error_events) if not handled.
+
 Since the RPCs are effectively synchronised, any such channel error is
 very likely to have been caused by the outstanding RPC. However, it's
 often sufficient to fire off a number of RPCs and check only the
