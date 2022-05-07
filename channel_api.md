@@ -320,11 +320,11 @@ NB AMQP only has signed integers in tables.
 
 ### <a name="connect"></a>connect
 
-##### Promises
+##### Promises API
 
 `connect([url, [socketOptions]])`
 
-##### Callbacks
+##### Callback API
 
 `connect([url, [socketOptions]], function(err, conn) {...})`
 
@@ -457,11 +457,11 @@ are exported as potential extension points.
 
 ### <a name="model_close"></a>{Channel,Callback}Model#close
 
-##### Promises
+##### Promises API
 
 `connection.close()`
 
-##### Callbacks
+##### Callback API
 
 `connection.close([function(err) {...}])`
 
@@ -565,11 +565,11 @@ alleviated.
 
 ### <a name="model_createChannel"></a>{Channel,Callback}Model#createChannel
 
-##### Promises
+##### Promises API
 
 `#createChannel()`
 
-##### Callbacks
+##### Callback API
 
 `#createChannel(function(err, channel) {...})`
 
@@ -582,11 +582,11 @@ there are already `channelMax` channels open).
 
 ### <a name="model_createConfirmChannel"></a>{Channel,Callback}Model#createConfirmChannel
 
-##### Promises
+##### Promises API
 
 `#createConfirmChannel()`
 
-##### Callbacks
+##### Callback API
 
 `#createConfirmChannel(function(err, channel) {...})`
 
@@ -616,11 +616,11 @@ connection (`connect()` above) and calling `#createChannel` or
 
 ### <a name="channel_close"></a>Channel#close
 
-##### Promises
+##### Promises API
 
 `Channel#close()`
 
-##### Callbacks
+##### Callback API
 
 `Channel#close([function(err) {...}])`
 
@@ -677,11 +677,11 @@ is ready for writes again).
 
 ### <a name="channel_assertQueue"></a>Channel#assertQueue
 
-##### Promises
+##### Promises API
 
 `#assertQueue([queue, [options]])`
 
-##### Callbacks
+##### Callback API
 
 `#assertQueue([queue, [options, [function(err, ok) {...}]]])`
 
@@ -756,11 +756,11 @@ consumer count, and a recent message count; e.g.,
 
 ### <a name="channel_checkQueue"></a>Channel#checkQueue
 
-##### Promises
+##### Promises API
 
 `#checkQueue(queue)`
 
-##### Callbacks
+##### Callback API
 
 `#checkQueue(queue, [function(err, ok) {...}])`
 
@@ -773,11 +773,11 @@ name. The reply from the server is the same as for `#assertQueue()`.
 
 ### <a name="channel_deleteQueue"></a>Channel#deleteQueue
 
-##### Promises
+##### Promises API
 
 `#deleteQueue(queue, [options])`
 
-##### Callbacks
+##### Callback API
 
 `#deleteQueue(queue, [options, [function(err, ok) {...}]])`
 
@@ -806,11 +806,11 @@ number of messages deleted or dead-lettered along with the queue.
 
 ### <a name="channel_purgeQueue"></a>Channel#purgeQueue
 
-##### Promises
+##### Promises API
 
 `#purgeQueue(queue)`
 
-##### Callbacks
+##### Callback API
 
 `#purgeQueue(queue, [function(err, ok) {...}])`
 
@@ -827,11 +827,11 @@ the number of messages purged from the queue.
 
 ### <a name="channel_bindQueue"></a>Channel#bindQueue
 
-##### Promises
+##### Promises API
 
 `#bindQueue(queue, source, pattern, [args])`
 
-##### Callbacks
+##### Callback API
 
 `#bindQueue(queue, source, pattern, [args, [function(err, ok) {...}]])`
 
@@ -852,11 +852,11 @@ The server reply has no fields.
 
 ### <a name="channel_unbindQueue"></a>Channel#unbindQueue
 
-##### Promises
+##### Promises API
 
 `#unbindQueue(queue, source, pattern, [args])`
 
-##### Callbacks
+##### Callback API
 
 `#unbindQueue(queue, source, pattern, [args, [function(err, ok) {...}]])`
 
@@ -873,11 +873,11 @@ all[1][rabbitmq-idempotent-delete]. Good ol' RabbitMQ).
 
 ### <a name="channel_assertExchange"></a>Channel#assertExchange
 
-##### Promises
+##### Promises API
 
 `#assertExchange(exchange, type, [options])`
 
-##### Callbacks
+##### Callback API
 
 `#assertExchange(exchange, type, [options, [function(err, ok) {...}]])`
 
@@ -918,11 +918,11 @@ The server reply echoes the exchange name, in the field `exchange`.
 
 ### <a name="channel_checkExchange"></a>Channel#checkExchange
 
-##### Promises
+##### Promises API
 
 `#checkExchange(exchange)`
 
-##### Callbacks
+##### Callback API
 
 `#checkExchange(exchange, [function(err, ok) {...}])`
 
@@ -933,11 +933,11 @@ be closed with an error. If it does exist, happy days.
 
 ### <a name="channel_deleteExchange"></a>Channel#deleteExchange
 
-##### Promises
+##### Promises API
 
 `#deleteExchange(name, [options])`
 
-##### Callbacks
+##### Callback API
 
 `#deleteExchange(name, [options, [function(err, ok) {...}]])`
 
@@ -956,11 +956,11 @@ The server reply has no fields.
 
 ### <a name="channel_bindExchange"></a>Channel#bindExchange
 
-##### Promises
+##### Promises API
 
 `#bindExchange(destination, source, pattern, [args])`
 
-##### Callbacks
+##### Callback API
 
 `#bindExchange(destination, source, pattern, [args, [function(err, ok) {...}]])`
 
@@ -978,11 +978,11 @@ The server reply has no fields.
 
 ### <a name="channel_unbindExchange"></a>Channel#unbindExchange
 
-##### Promises
+##### Promises API
 
 `#unbindExchange(destination, source, pattern, [args])`
 
-##### Callbacks
+##### Callback API
 
 `#unbindExchange(destination, source, pattern, [args, [function(err, ok) {...}]])`
 
@@ -997,9 +997,12 @@ trivially[1][rabbitmq-idempotent-delete].
 
 ### <a name="channel_publish"></a>Channel#publish
 
-##### Promises or callbacks
+##### Promises and callback APIs
 
 `#publish(exchange, routingKey, content, [options])`
+
+**NOTE**: Does not return a promise in the promises API; see
+[flow control](#flowcontrol)
 
 Publish a single message to an exchange. The mandatory parameters are:
 
@@ -1113,9 +1116,12 @@ is 'full', and `true` otherwise. If it returns `false`, it will emit a
 
 ### <a name="channel_sendToQueue"></a>Channel#sendToQueue
 
-##### Promises and callbacks
+##### Promises and callback APIs
 
 `#sendToQueue(queue, content, [options])`
+
+**NOTE**: Does not return a promise in the promises API; see
+[flow control](#flowcontrol)
 
 Send a single message with the `content` given as a buffer to the
 specific `queue` named, bypassing routing. The options and return
@@ -1125,11 +1131,11 @@ value are exactly the same as for `#publish`.
 
 ### <a name="channel_consume"></a>Channel#consume
 
-##### Promises
+##### Promises API
 
 `#consume(queue, function(msg) {...}, [options])`
 
-##### Callbacks
+##### Callback API
 
 `#consume(queue, function(msg) {...}, [options, [function(err, ok) {...}]])`
 
@@ -1204,11 +1210,11 @@ the message callback will be invoked with `null`.
 
 ### <a name="channel_cancel"></a>Channel#cancel
 
-##### Promises
+##### Promises API
 
 `#cancel(consumerTag)`
 
-##### Callbacks
+##### Callback API
 
 `#cancel(consumerTag, [function(err, ok) {...}])`
 
@@ -1225,11 +1231,11 @@ which may have been generated by the server.
 
 ### <a name="channel_get"></a>Channel#get
 
-##### Promises
+##### Promises API
 
 `#get(queue, [options])`
 
-##### Callbacks
+##### Callback API
 
 `#get(queue, [options, [function(err, msgOrFalse) {...}]])`
 
@@ -1249,9 +1255,11 @@ Options:
 
 ### <a name="channel_ack"></a>Channel#ack
 
-##### Promises and callbacks
+##### Promises and callback APIs
 
 `#ack(message, [allUpTo])`
+
+**NOTE**: Does not return a promise in the promises API, or accept a callback in the callback API.
 
 Acknowledge the given message, or all messages up to and including the
 given message.
@@ -1274,9 +1282,11 @@ you don't have a specific message around, use `#ackAll`.
 
 ### <a name="channel_ackAll"></a>Channel#ackAll
 
-##### Promises and callbacks
+##### Promises and callback APIs
 
 `#ackAll()`
+
+**NOTE**: Does not return a promise in the promises API, or accept a callback in the callback API.
 
 Acknowledge all outstanding messages on the channel. This is a "safe"
 operation, in that it won't result in an error even if there are no
@@ -1286,9 +1296,11 @@ such messages.
 
 ### <a name="channel_nack"></a>Channel#nack
 
-#### Promises and callbacks
+##### Promises and callback APIs
 
 `#nack(message, [allUpTo, [requeue]])`
+
+**NOTE**: Does not return a promise in the promises API, or accept a callback in the callback API.
 
 Reject a message. This instructs the server to either requeue the
 message or throw it away (which may result in it being dead-lettered).
@@ -1309,9 +1321,11 @@ extension][rabbitmq-nack].
 
 ### <a name="channel_nackAll"></a>Channel#nackAll
 
-##### Promises and callbacks
+##### Promises and callback APIs
 
 `#nackAll([requeue])`
+
+**NOTE**: Does not return a promise in the promises API, or accept a callback in the callback API.
 
 Reject all messages outstanding on this channel. If `requeue` is
 truthy, or omitted, the server will try to re-enqueue the messages.
@@ -1320,9 +1334,11 @@ truthy, or omitted, the server will try to re-enqueue the messages.
 
 ### <a name="channel_reject"></a>Channel#reject
 
-##### Promises and callbacks
+##### Promises and callback APIs
 
 `#reject(message, [requeue])`
+
+**NOTE**: Does not return a promise in the promises API, or accept a callback in the callback API.
 
 Reject a message. Equivalent to `#nack(message, false, requeue)`, but
 works in older versions of RabbitMQ (< v2.3.0) where `#nack` does not.
@@ -1331,9 +1347,11 @@ works in older versions of RabbitMQ (< v2.3.0) where `#nack` does not.
 
 ### <a name="channel_prefetch"></a>Channel#prefetch
 
-##### Promises and callbacks
+##### Promises and callback APIs
 
 `#prefetch(count, [global])`
+
+**NOTE**: Does not return a promise in the promises API, or accept a callback in the callback API.
 
 Set the prefetch count for this channel. The `count` given is the
 maximum number of messages sent over the channel that can be awaiting
@@ -1355,11 +1373,11 @@ v3.3.0 will bring down the whole connection.
 
 ### <a name="channel_recover"></a>Channel#recover
 
-##### Promises
+##### Promises API
 
 `#recover()`
 
-##### Callbacks
+##### Callback API
 
 `#recover([function(err, ok) {...}])`
 
@@ -1425,37 +1443,37 @@ connection, then call `#createConfirmChannel`.
 
 ### <a name="confirmchannel_publish"></a>ConfirmChannel#publish
 
-##### Callbacks
+##### Promises and callback APIs
 
 `#publish(exchange, routingKey, content, options, function(err, ok) {...})`
 
-`options` argument must be supplied, at least as an empty object.
-
-**NOTE**: Does not return a promise in the promises API; see
+**NOTE**: Does not return a promise and stil expects a callback in the promises API; see
 [flow control](#flowcontrol)
+
+`options` argument must be supplied, at least as an empty object.
 
 [^top](#top)
 
 ### <a name="confirmchannel_sendToQueue"></a>ConfirmChannel#sendToQueue
 
-##### Callbacks
+##### Promises and callback APIs
 
 `#sendToQueue(queue, content, options, function(err, ok) {...})`
 
-`options` argument must be supplied, at least as an empty object.
-
-**NOTE**: Does not return a promise in the promises API; see
+**NOTE**: Does not return a promise and stil expects a callback in the promises API; see
 [flow control](#flowcontrol)
+
+`options` argument must be supplied, at least as an empty object.
 
 [^top](#top)
 
 ### <a name="confirmchannel_waitForConfirms"></a>ConfirmChannel#waitForConfirms
 
-##### Promises
+##### Promises API
 
 `#waitForConfirms()`
 
-##### Callbacks
+##### Callback API
 
 `#waitForConfirms(function(err) {...})`
 
