@@ -1,5 +1,41 @@
 # Change log for amqplib
 
+## Changes in v0.9.0
+
+    git log v0.8.0..v0.9.0
+
+ * Update mocha and replace the deprecated istanbul with nyc ([PR
+   681](https://github.com/squaremo/amqp.node/pull/681)
+ * Update url-parse ([PR
+   675](https://github.com/squaremo/amqp.node/pull/675), thank you
+   @suhail-n and @kibertoad)
+ * fix: done called twice on invalid options ([PR
+   667](https://github.com/squaremo/amqp.node/pull/667), thank you
+   @luddd3 and @kibertoad)
+ * Close connection to server on connect errors ([PR
+   647](https://github.com/squaremo/amqp.node/pull/647), thank you
+   @luddd3 and @kibertoad)
+ * Modernise channel_model.js ([PR
+   635](https://github.com/squaremo/amqp.node/pull/635), thank you
+   @kibertoad and @jimmywarting)
+ * Bring package-lock.json up to date ([PR
+   653](https://github.com/squaremo/amqp.node/pull/653)
+ * Update url-parse ([PR
+   652](https://github.com/squaremo/amqp.node/pull/652), thank you
+   @giorgioatanasov and @buffolander)
+ * Modernise channel_model.js ([PR
+   651](https://github.com/squaremo/amqp.node/pull/651), thank you
+   for the review @kibertoad)
+ * Modernise bitset.js ([PR
+   634](https://github.com/squaremo/amqp.node/pull/634), thank you
+   @kibertoad and @jimmywarting)
+ * :warning: Drop CI for node versions below 10 ([PR
+   631](https://github.com/squaremo/amqp.node/pull/631), thank you
+   for the review @kibertoad)
+ * Replace safe-buffer dependency with native buffers ([PR
+   628](https://github.com/squaremo/amqp.node/pull/628), thank you
+   @kibertoad and @jimmywarting)
+
 ## Changes in v0.8.0
 
     git log v0.7.1..v0.8.0
