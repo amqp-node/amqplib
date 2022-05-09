@@ -152,7 +152,7 @@ suite("Connect API", function() {
 
 suite('Errors on connect', function() {
   var server
-  afterEach(function() {
+  teardown(function() {
     if (server) {
       server.close();
     }
