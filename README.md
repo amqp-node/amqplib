@@ -37,44 +37,39 @@ Still working on:
 ## Callback API example
 
 ```javascript
-var q = 'tasks';
+const amqplib = require('amqplib/callback_api');
+const queue = 'tasks';
 
-function bail(err) {
-  console.error(err);
-  process.exit(1);
-}
+amqplib.connect('amqp://localhost', (err, conn) => {
+  if (err) throw err;
 
-// Publisher
-function publisher(conn) {
-  conn.createChannel(on_open);
-  function on_open(err, ch) {
-    if (err != null) bail(err);
-    ch.assertQueue(q);
-    ch.sendToQueue(q, Buffer.from('something to do'));
-  }
-}
+  // Listener
+  conn.createChannel((err, ch2) => {
+    if (err) throw err;
 
-// Consumer
-function consumer(conn) {
-  var ok = conn.createChannel(on_open);
-  function on_open(err, ch) {
-    if (err != null) bail(err);
-    ch.assertQueue(q);
-    ch.consume(q, (msg) => {
+    ch2.assertQueue(queue);
+
+    ch2.consume(queue, (msg) => {
       if (msg !== null) {
         console.log(msg.content.toString());
-        ch.ack(msg);
+        ch2.ack(msg);
+      } else {
+        console.log('Consumer cancelled by server');
       }
     });
-  }
-}
-
-require('amqplib/callback_api')
-  .connect('amqp://localhost', (err, conn) => {
-    if (err != null) bail(err);
-    consumer(conn);
-    publisher(conn);
   });
+
+  // Sender
+  conn.createChannel((err, ch1) => {
+    if (err) throw err;
+
+    ch1.assertQueue(queue);
+
+    setInterval(() => {
+      ch1.sendToQueue(queue, Buffer.from('something to do'));
+    }, 1000);
+  });
+});
 ```
 
 ## Promise/Async API example
@@ -83,26 +78,29 @@ require('amqplib/callback_api')
 const amqplib = require('amqplib');
 
 (async () => {
-  const conn = await amqplib.connect('amqp://localhost');
-  const ch = await conn.createChannel();
-
   const queue = 'tasks';
+  const conn = await amqplib.connect('amqp://localhost');
 
-  await ch.assertQueue(queue);
+  const ch1 = await conn.createChannel();
+  await ch1.assertQueue(queue);
 
   // Listener
-  ch.consume(queue, (msg) => {
+  ch1.consume(queue, (msg) => {
     if (msg !== null) {
       console.log('Recieved:', msg.content.toString());
-      ch.ack(msg);
+      ch1.ack(msg);
+    } else {
+      console.log('Consumer cancelled by server');
     }
   });
 
   // Sender
+  const ch2 = await conn.createChannel();
+
   setInterval(() => {
-    ch.sendToQueue(queue, Buffer.from('something to do'));
+    ch2.sendToQueue(queue, Buffer.from('something to do'));
   }, 1000);
-})()
+})();
 
 ```
 
