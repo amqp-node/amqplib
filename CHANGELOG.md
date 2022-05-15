@@ -5,6 +5,9 @@
  * Use Array.prototype.push.apply instead of concat in Mux ([PR
    658](https://github.com/squaremo/amqp.node/pull/658), thank you
    @Uzlopak and @kibertoad)
+ * Use Map instead of Object for BaseChannel.consumers ([PR
+   660](https://github.com/squaremo/amqp.node/pull/660), thank you
+   @Uzlopak)
 
 ## Changes in v0.9.0
 
