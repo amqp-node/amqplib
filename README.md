@@ -146,10 +146,10 @@ really only useful for checking the kind and formatting of the errors.
     make coverage
     open file://`pwd`/coverage/lcov-report/index.html
 
-[gh-pages]: http://www.squaremobius.net/amqp.node/
-[gh-pages-apiref]: http://www.squaremobius.net/amqp.node/channel_api.html
+[gh-pages]: https://amqp-node.github.io/amqplib/
+[gh-pages-apiref]: https://amqp-node.github.io/amqplib/channel_api.html
 [nave]: https://github.com/isaacs/nave
-[tutes]: https://github.com/squaremo/amqp.node/tree/main/examples/tutorials
+[tutes]: https://github.com/amqp-node/amqplib/tree/main/examples/tutorials
 [rabbitmq-tutes]: http://www.rabbitmq.com/getstarted.html
-[changelog]: https://github.com/squaremo/amqp.node/blob/main/CHANGELOG.md
+[changelog]: https://github.com/amqp-node/amqplib/blob/main/CHANGELOG.md
 [docker]: https://www.docker.com/
