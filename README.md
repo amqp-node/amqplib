@@ -128,7 +128,7 @@ dev.rabbitmq.com instance.
 
 You can run it under different versions of Node.JS using [nave][]:
 
-    nave use 0.8 npm test
+    nave use 10 npm test
 
 or run the tests on all supported versions of Node.JS in one go:
 
