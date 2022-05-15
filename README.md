@@ -1,6 +1,6 @@
 # AMQP 0-9-1 library and client for Node.JS
 
-[![Build Status](https://travis-ci.org/squaremo/amqp.node.png)](https://travis-ci.org/squaremo/amqp.node)
+[![Node.js CI](https://github.com/amqp-node/amqplib/workflows/Node.js%20CI/badge.svg)](https://github.com/amqp-node/amqplib/actions?query=workflow%3A%22Node.js+CI%22)
 
     npm install amqplib
 
