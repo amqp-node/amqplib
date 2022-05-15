@@ -60,7 +60,7 @@ function consumer(conn) {
   function on_open(err, ch) {
     if (err != null) bail(err);
     ch.assertQueue(q);
-    ch.consume(q, function(msg) {
+    ch.consume(q, (msg) => {
       if (msg !== null) {
         console.log(msg.content.toString());
         ch.ack(msg);
@@ -70,42 +70,40 @@ function consumer(conn) {
 }
 
 require('amqplib/callback_api')
-  .connect('amqp://localhost', function(err, conn) {
+  .connect('amqp://localhost', (err, conn) => {
     if (err != null) bail(err);
     consumer(conn);
     publisher(conn);
   });
 ```
 
-## Promise API example
+## Promise/Async API example
 
 ```javascript
-var q = 'tasks';
+const amqplib = require('amqplib');
 
-var open = require('amqplib').connect('amqp://localhost');
+(async () => {
+  const conn = await amqplib.connect('amqp://localhost');
+  const ch = await conn.createChannel();
 
-// Publisher
-open.then(function(conn) {
-  return conn.createChannel();
-}).then(function(ch) {
-  return ch.assertQueue(q).then(function(ok) {
-    return ch.sendToQueue(q, Buffer.from('something to do'));
+  const queue = 'tasks';
+
+  await ch.assertQueue(queue);
+
+  // Listener
+  ch.consume(queue, (msg) => {
+    if (msg !== null) {
+      console.log('Recieved:', msg.content.toString());
+      ch.ack(msg);
+    }
   });
-}).catch(console.warn);
 
-// Consumer
-open.then(function(conn) {
-  return conn.createChannel();
-}).then(function(ch) {
-  return ch.assertQueue(q).then(function(ok) {
-    return ch.consume(q, function(msg) {
-      if (msg !== null) {
-        console.log(msg.content.toString());
-        ch.ack(msg);
-      }
-    });
-  });
-}).catch(console.warn);
+  // Sender
+  setInterval(() => {
+    ch.sendToQueue(queue, Buffer.from('something to do'));
+  }, 1000);
+})()
+
 ```
 
 ## Running tests
