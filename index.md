@@ -69,6 +69,34 @@ primitive values; e.g., strings and numbers. A few points of interface
 require callbacks of the `function(err, ok) {}` variety, or in the
 form of duck-typed objects (e.g., an object with an `#accept` method).
 
+## Troubleshooting
+
+### Why don't the publish, sendToQueue, ack, ackAll, nack, nackAll and reject channel methods return a promise?
+Some commands in the amqp protocol require a reply, others do not. When a command does not require a reply, amqplib writes the command to an internal buffer and returns immediately. When a command expects a reply, amqplib will **usually** return a promise which will resolve when the reply is received. The two exceptions are the publish and sendToQueue methods, which when using a confirm channel do expect a reply, but still do not return a promise. This is because they return a boolean to indicate whether the internal buffer is full and that the client should back off until a drain event is emitted from the channel.
+
+### Why does amqplib crash my application?
+Error events are a special type of event in Node.js applications, which if unhandled will cause the node process to exit. The connection and channel objects emit error events when something bad happens. Your code needs to handle these events if you don't want your application to crash.
+
+```js
+const connection = await amqplib.connect();
+connection.on('error', (err) => {
+  // recover or exit
+});
+
+const channel = await connection.createChannel();
+channel.on('error', (err) => {
+  // recover or exit
+})l
+```
+
+### How do I recover from a connection or channel error?
+To recover from a channel error your code must listen for the channel error event, create a new channel and restablish any consumers. To recover from a connection error your code must listen for the connection error event, reconnect, create the necessary channels and restablish any consumers. You may also wish to handle to the connection 'close' event which will be emitted if the server shutsdown gracefully AND following a connection error.
+
+### How do I flush messages? / Why are messages not sent?
+When you publish a message using channel.publish or channel.sendToQueue it is written to an internal buffer associated with the channel. Under the hood, amqplib loops through each of the channel buffers, sending the messages to the server. Messages will be written as fast as possible and the buffers do not need to be flushed, however if you close the connection or your application exits while there are still messages in the buffer, they will be lost. Be sure to explicity close the channel and wait for the returned promise to resolve, or supplied callback to be invoked before closing the connection or terminating your application.
+
+### Why do I get ECONNRESET?
+ECONNRESET means that the server (or something between the client and the server) closed the connection without warning. This may occur during the initial handshake if the connection parameters you supply are invalid, or after successful connection if the server is killed, or if the network is unstable, or if you connect to the server through a load balancer / firewall and it decides to drop the connection, or if the client application is overloaded and cannot send commands to the server before the heartbeat timeout expires. Typically an ECONNRESET does not indicate a problem with amqplib, but a configuration or networking issue in your environment.
 
 [rabbit.js]: https://github.com/squaremo/rabbit.js
 [node-amqp]: https://github.com/postwait/node-amqp
