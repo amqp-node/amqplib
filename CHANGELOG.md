@@ -8,6 +8,10 @@
  * Use Map instead of Object for BaseChannel.consumers ([PR
    660](https://github.com/squaremo/amqp.node/pull/660), thank you
    @Uzlopak)
+ * Delete consumer callback after cancellation to free memory ([PR
+   659](https://github.com/squaremo/amqp.node/pull/659), thank you
+   @Uzlopak and @kibertoad)
+
 
 ## Changes in v0.9.0
 
