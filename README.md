@@ -10,7 +10,9 @@
  * [Change log][changelog]
  * [GitHub pages][gh-pages]
  * [API reference][gh-pages-apiref]
+ * [Troubleshooting][gh-pages-trouble]
  * [Examples from RabbitMQ tutorials][tutes]
+
 
 A library for making AMQP 0-9-1 clients for Node.JS, and an AMQP 0-9-1 client for Node.JS v10+.
 
@@ -151,6 +153,7 @@ really only useful for checking the kind and formatting of the errors.
 
 [gh-pages]: https://amqp-node.github.io/amqplib/
 [gh-pages-apiref]: https://amqp-node.github.io/amqplib/channel_api.html
+[gh-pages-trouble]: https://amqp-node.github.io/amqplib/#troubleshooting
 [nave]: https://github.com/isaacs/nave
 [tutes]: https://github.com/amqp-node/amqplib/tree/main/examples/tutorials
 [rabbitmq-tutes]: http://www.rabbitmq.com/getstarted.html
