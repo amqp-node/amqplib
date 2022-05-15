@@ -1,5 +1,11 @@
 # Change log for amqplib
 
+## Unreleased
+ * Assorted readme changes
+ * Use Array.prototype.push.apply instead of concat in Mux ([PR
+   658](https://github.com/squaremo/amqp.node/pull/658), thank you
+   @Uzlopak and @kibertoad)
+
 ## Changes in v0.9.0
 
     git log v0.8.0..v0.9.0
