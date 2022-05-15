@@ -1,6 +1,9 @@
 # AMQP 0-9-1 library and client for Node.JS
 
+[![NPM version](https://img.shields.io/npm/v/amqplib.svg?style=flat-square)](https://www.npmjs.com/package/amqplib)
+[![NPM downloads](https://img.shields.io/npm/dm/amqplib.svg?style=flat-square)](https://www.npmjs.com/package/amqplib)
 [![Node.js CI](https://github.com/amqp-node/amqplib/workflows/Node.js%20CI/badge.svg)](https://github.com/amqp-node/amqplib/actions?query=workflow%3A%22Node.js+CI%22)
+[![amqplib](https://snyk.io/advisor/npm-package/amqplib/badge.svg)](https://snyk.io/advisor/npm-package/amqplib)
 
     npm install amqplib
 
