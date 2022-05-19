@@ -3,7 +3,7 @@
 'use strict';
 
 var assert = require('assert');
-var Promise = require('bluebird');
+var promisify = require('util').promisify;
 var Channel = require('../lib/channel').Channel;
 var Connection = require('../lib/connection').Connection;
 var util = require('./util');
@@ -75,13 +75,11 @@ var DELIVER_FIELDS = {
   replyText: 'derp',
 };
 
-function open(ch) {
-  return Promise.try(function() {
-    ch.allocate();
-    return Promise.fromCallback(function(cb) {
-      ch._rpc(defs.ChannelOpen, {outOfBand: ''}, defs.ChannelOpenOk, cb);
-    });
-  });
+async function open(ch) {
+  ch.allocate();
+  return promisify(function(cb) {
+    ch._rpc(defs.ChannelOpen, {outOfBand: ''}, defs.ChannelOpenOk, cb);
+  })();
 }
 
 suite("channel open and close", function() {
@@ -285,7 +283,7 @@ test("RPC on closed channel", channelTest(
         failureCb(resolve, reject));
     });
 
-    Promise.join(close, fail1, fail2)
+    Promise.all([close, fail1, fail2])
       .then(succeed(done))
       .catch(fail(done));
   },

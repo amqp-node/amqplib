@@ -6,7 +6,7 @@ var util = require('./util');
 var succeed = util.succeed, fail = util.fail;
 var schedule = util.schedule;
 var randomString = util.randomString;
-var Promise = require('bluebird');
+var promisify = require('util').promisify;
 
 var URL = process.env.URL || 'amqp://localhost';
 
@@ -118,9 +118,9 @@ chtest("channel break on publishing to non-exchange", function(ch) {
 
 chtest("delete queue", function(ch) {
   var q = 'test.delete-queue';
-  return Promise.join(
+  return Promise.all([
     ch.assertQueue(q, QUEUE_OPTS),
-    ch.checkQueue(q))
+    ch.checkQueue(q)])
     .then(function() {
       return ch.deleteQueue(q);})
     .then(function() {
@@ -129,9 +129,9 @@ chtest("delete queue", function(ch) {
 
 chtest("delete exchange", function(ch) {
   var ex = 'test.delete-exchange';
-  return Promise.join(
+  return Promise.all([
     ch.assertExchange(ex, 'fanout', EX_OPTS),
-    ch.checkExchange(ex))
+    ch.checkExchange(ex)])
     .then(function() {
       return ch.deleteExchange(ex);})
     .then(function() {
@@ -177,7 +177,7 @@ suite("sendMessage", function() {
 chtest("send to queue and get from queue", function(ch) {
   var q = 'test.send-to-q';
   var msg = randomString();
-  return Promise.join(ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
+  return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)])
     .then(function() {
       ch.sendToQueue(q, Buffer.from(msg));
       return waitForMessages(q);
@@ -194,9 +194,9 @@ chtest("send to queue and get from queue", function(ch) {
 chtest("send (and get) zero content to queue", function(ch) {
   var q = 'test.send-to-q';
   var msg = Buffer.alloc(0);
-  return Promise.join(
+  return Promise.all([
     ch.assertQueue(q, QUEUE_OPTS),
-    ch.purgeQueue(q))
+    ch.purgeQueue(q)])
     .then(function() {
       ch.sendToQueue(q, msg);
       return waitForMessages(q);})
@@ -218,11 +218,11 @@ chtest("route message", function(ch) {
   var q = 'test.route-message-q';
   var msg = randomString();
 
-  return Promise.join(
+  return Promise.all([
     ch.assertExchange(ex, 'fanout', EX_OPTS),
     ch.assertQueue(q, QUEUE_OPTS),
     ch.purgeQueue(q),
-    ch.bindQueue(q, ex, '', {}))
+    ch.bindQueue(q, ex, '', {})])
     .then(function() {
       ch.publish(ex, '', Buffer.from(msg));
       return waitForMessages(q);})
@@ -256,11 +256,11 @@ chtest("unbind queue", function(ch) {
   var viabinding = randomString();
   var direct = randomString();
 
-  return Promise.join(
+  return Promise.all([
     ch.assertExchange(ex, 'fanout', EX_OPTS),
     ch.assertQueue(q, QUEUE_OPTS),
     ch.purgeQueue(q),
-    ch.bindQueue(q, ex, '', {}))
+    ch.bindQueue(q, ex, '', {})])
     .then(function() {
       ch.publish(ex, '', Buffer.from('foobar'));
       return waitForMessages(q);})
@@ -289,14 +289,14 @@ chtest("consume via exchange-exchange binding", function(ch) {
   var ex1 = 'test.ex-ex-binding1', ex2 = 'test.ex-ex-binding2';
   var q = 'test.ex-ex-binding-q';
   var rk = 'test.routing.key', msg = randomString();
-  return Promise.join(
+  return Promise.all([
     ch.assertExchange(ex1, 'direct', EX_OPTS),
     ch.assertExchange(ex2, 'fanout',
                       {durable: false, internal: true}),
     ch.assertQueue(q, QUEUE_OPTS),
     ch.purgeQueue(q),
     ch.bindExchange(ex2, ex1, rk, {}),
-    ch.bindQueue(q, ex2, '', {}))
+    ch.bindQueue(q, ex2, '', {})])
     .then(function() {
       return new Promise(function(resolve, reject) {
         function delivery(m) {
@@ -319,13 +319,13 @@ chtest("unbind exchange", function(ch) {
   var viabinding = randomString();
   var direct = randomString();
 
-  return Promise.join(
+  return Promise.all([
     ch.assertExchange(source, 'fanout', EX_OPTS),
     ch.assertExchange(dest, 'fanout', EX_OPTS),
     ch.assertQueue(q, QUEUE_OPTS),
     ch.purgeQueue(q),
     ch.bindExchange(dest, source, '', {}),
-    ch.bindQueue(q, dest, '', {}))
+    ch.bindQueue(q, dest, '', {})])
     .then(function() {
       ch.publish(source, '', Buffer.from('foobar'));
       return waitForMessages(q);})
@@ -353,7 +353,7 @@ chtest("cancel consumer", function(ch) {
   var q = 'test.consumer-cancel';
   var ctag;
   var recv1 = new Promise(function (resolve, reject) {
-      Promise.join(
+      Promise.all([
     ch.assertQueue(q, QUEUE_OPTS),
     ch.purgeQueue(q),
     // My callback is 'resolve the promise in `arrived`'
@@ -361,17 +361,17 @@ chtest("cancel consumer", function(ch) {
       .then(function(ok) {
         ctag = ok.consumerTag;
         ch.sendToQueue(q, Buffer.from('foo'));
-      }));
+      })]);
   });
 
   // A message should arrive because of the consume
   return recv1.then(function() {
-    var recv2 = Promise.join(
+    var recv2 = Promise.all([
       ch.cancel(ctag).then(function() {
         return ch.sendToQueue(q, Buffer.from('bar'));
       }),
       // but check a message did arrive in the queue
-      waitForMessages(q))
+      waitForMessages(q)])
       .then(function() {
         return ch.get(q, {noAck:true});
       })
@@ -390,13 +390,13 @@ chtest("cancel consumer", function(ch) {
 chtest("cancelled consumer", function(ch) {
   var q = 'test.cancelled-consumer';
   return new Promise(function(resolve, reject) {
-    return Promise.join(
+    return Promise.all([
       ch.assertQueue(q),
       ch.purgeQueue(q),
       ch.consume(q, function(msg) {
         if (msg === null) resolve();
         else reject(new Error('Message not expected'));
-      }))
+      })])
       .then(function() {
         return ch.deleteQueue(q);
       });
@@ -408,9 +408,9 @@ chtest("ack", function(ch) {
   var q = 'test.ack';
   var msg1 = randomString(), msg2 = randomString();
 
-  return Promise.join(
+  return Promise.all([
     ch.assertQueue(q, QUEUE_OPTS),
-    ch.purgeQueue(q))
+    ch.purgeQueue(q)])
     .then(function() {
       ch.sendToQueue(q, Buffer.from(msg1));
       ch.sendToQueue(q, Buffer.from(msg2));
@@ -438,8 +438,8 @@ chtest("nack", function(ch) {
   var q = 'test.nack';
   var msg1 = randomString();
 
-  return Promise.join(
-    ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
+  return Promise.all([
+    ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)])
     .then(function() {
       ch.sendToQueue(q, Buffer.from(msg1));
       return waitForMessages(q);})
@@ -463,8 +463,8 @@ chtest("reject", function(ch) {
   var q = 'test.reject';
   var msg1 = randomString();
 
-  return Promise.join(
-    ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
+  return Promise.all([
+    ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)])
     .then(function() {
       ch.sendToQueue(q, Buffer.from(msg1));
       return waitForMessages(q);})
@@ -484,9 +484,9 @@ chtest("reject", function(ch) {
 
 chtest("prefetch", function(ch) {
   var q = 'test.prefetch';
-  return Promise.join(
+  return Promise.all([
     ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q),
-    ch.prefetch(1))
+    ch.prefetch(1)])
     .then(function() {
       ch.sendToQueue(q, Buffer.from('foobar'));
       ch.sendToQueue(q, Buffer.from('foobar'));
@@ -523,8 +523,8 @@ suite("confirms", function() {
 
 confirmtest('message is confirmed', function(ch) {
   var q = 'test.confirm-message';
-  return Promise.join(
-    ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
+  return Promise.all([
+    ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)])
     .then(function() {
       return ch.sendToQueue(q, Buffer.from('bleep'));
     });
@@ -537,8 +537,8 @@ confirmtest('message is confirmed', function(ch) {
 // multi-ack.
 confirmtest('multiple confirms', function(ch) {
   var q = 'test.multiple-confirms';
-  return Promise.join(
-    ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q))
+  return Promise.all([
+    ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)])
     .then(function() {
       var multipleRainbows = false;
       ch.on('ack', function(a) {
@@ -549,9 +549,9 @@ confirmtest('multiple confirms', function(ch) {
         var cs = [];
 
         function sendAndPushPromise() {
-          var conf = Promise.fromCallback(function(cb) {
+          var conf = promisify(function(cb) {
             return ch.sendToQueue(q, Buffer.from('bleep'), {}, cb);
-          });
+          })();
           cs.push(conf);
         }
 
