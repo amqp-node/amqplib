@@ -2,7 +2,6 @@
 
 var amqp = require('amqplib');
 var basename = require('path').basename;
-var Promise = require('bluebird');
 var uuid = require('node-uuid');
 
 // I've departed from the form of the original RPC tutorial, which
