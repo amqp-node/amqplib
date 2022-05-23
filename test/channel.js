@@ -75,7 +75,7 @@ var DELIVER_FIELDS = {
   replyText: 'derp',
 };
 
-async function open(ch) {
+function open(ch) {
   ch.allocate();
   return promisify(function(cb) {
     ch._rpc(defs.ChannelOpen, {outOfBand: ''}, defs.ChannelOpenOk, cb);
