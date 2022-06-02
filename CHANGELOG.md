@@ -1,5 +1,10 @@
 # Change log for amqplib
 
+## Chagnes in v0.10.0
+ * Use Native promises ([PR
+   689](https://github.com/amqp-node/amqplib/pull/689), thank you
+   @mohd-akram and @kibertoad)
+
 ## Changes in v0.9.1
 
     git log v0.9.0..v0.9.1
