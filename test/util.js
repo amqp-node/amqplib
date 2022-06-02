@@ -1,6 +1,5 @@
 'use strict';
 
-var Promise = require('bluebird');
 var crypto = require('crypto');
 var Connection = require('../lib/connection').Connection;
 var PassThrough =
