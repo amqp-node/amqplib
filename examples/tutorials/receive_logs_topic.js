@@ -2,7 +2,6 @@
 
 var amqp = require('amqplib');
 var basename = require('path').basename;
-var all = require('bluebird').all;
 
 var keys = process.argv.slice(2);
 if (keys.length < 1) {
@@ -23,7 +22,7 @@ amqp.connect('amqp://localhost').then(function(conn) {
 
     ok = ok.then(function(qok) {
       var queue = qok.queue;
-      return all(keys.map(function(rk) {
+      return Promise.all(keys.map(function(rk) {
         ch.bindQueue(queue, ex, rk);
       })).then(function() { return queue; });
     });

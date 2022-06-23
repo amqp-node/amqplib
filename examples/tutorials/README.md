@@ -85,9 +85,9 @@ some needless object-orientation (in the Python code; you don't get a
 choice about needless object-orientation in Java).
 
 [rabbitmq-tutes]: http://github.com/rabbitmq/rabbitmq-tutorials
-[tute-one]: http://www.rabbitmq.com/tutorials/tutorial-one-python.html
-[tute-two]: http://www.rabbitmq.com/tutorials/tutorial-two-python.html
-[tute-three]: http://www.rabbitmq.com/tutorials/tutorial-three-python.html
-[tute-four]: http://www.rabbitmq.com/tutorials/tutorial-four-python.html
-[tute-five]: http://www.rabbitmq.com/tutorials/tutorial-five-python.html
-[tute-six]: http://www.rabbitmq.com/tutorials/tutorial-six-python.html
+[tute-one]: http://www.rabbitmq.com/tutorials/tutorial-one-javascript.html
+[tute-two]: http://www.rabbitmq.com/tutorials/tutorial-two-javascript.html
+[tute-three]: http://www.rabbitmq.com/tutorials/tutorial-three-javascript.html
+[tute-four]: http://www.rabbitmq.com/tutorials/tutorial-four-javascript.html
+[tute-five]: http://www.rabbitmq.com/tutorials/tutorial-five-javascript.html
+[tute-six]: http://www.rabbitmq.com/tutorials/tutorial-six-javascript.html

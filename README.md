@@ -1,13 +1,18 @@
 # AMQP 0-9-1 library and client for Node.JS
 
-[![Build Status](https://travis-ci.org/squaremo/amqp.node.png)](https://travis-ci.org/squaremo/amqp.node)
+[![NPM version](https://img.shields.io/npm/v/amqplib.svg?style=flat-square)](https://www.npmjs.com/package/amqplib)
+[![NPM downloads](https://img.shields.io/npm/dm/amqplib.svg?style=flat-square)](https://www.npmjs.com/package/amqplib)
+[![Node.js CI](https://github.com/amqp-node/amqplib/workflows/Node.js%20CI/badge.svg)](https://github.com/amqp-node/amqplib/actions?query=workflow%3A%22Node.js+CI%22)
+[![amqplib](https://snyk.io/advisor/npm-package/amqplib/badge.svg)](https://snyk.io/advisor/npm-package/amqplib)
 
     npm install amqplib
 
  * [Change log][changelog]
  * [GitHub pages][gh-pages]
  * [API reference][gh-pages-apiref]
+ * [Troubleshooting][gh-pages-trouble]
  * [Examples from RabbitMQ tutorials][tutes]
+
 
 A library for making AMQP 0-9-1 clients for Node.JS, and an AMQP 0-9-1 client for Node.JS v10+.
 
@@ -32,75 +37,71 @@ Still working on:
 ## Callback API example
 
 ```javascript
-var q = 'tasks';
+const amqplib = require('amqplib/callback_api');
+const queue = 'tasks';
 
-function bail(err) {
-  console.error(err);
-  process.exit(1);
-}
+amqplib.connect('amqp://localhost', (err, conn) => {
+  if (err) throw err;
 
-// Publisher
-function publisher(conn) {
-  conn.createChannel(on_open);
-  function on_open(err, ch) {
-    if (err != null) bail(err);
-    ch.assertQueue(q);
-    ch.sendToQueue(q, Buffer.from('something to do'));
-  }
-}
+  // Listener
+  conn.createChannel((err, ch2) => {
+    if (err) throw err;
 
-// Consumer
-function consumer(conn) {
-  var ok = conn.createChannel(on_open);
-  function on_open(err, ch) {
-    if (err != null) bail(err);
-    ch.assertQueue(q);
-    ch.consume(q, function(msg) {
+    ch2.assertQueue(queue);
+
+    ch2.consume(queue, (msg) => {
       if (msg !== null) {
         console.log(msg.content.toString());
-        ch.ack(msg);
+        ch2.ack(msg);
+      } else {
+        console.log('Consumer cancelled by server');
       }
     });
-  }
-}
-
-require('amqplib/callback_api')
-  .connect('amqp://localhost', function(err, conn) {
-    if (err != null) bail(err);
-    consumer(conn);
-    publisher(conn);
   });
+
+  // Sender
+  conn.createChannel((err, ch1) => {
+    if (err) throw err;
+
+    ch1.assertQueue(queue);
+
+    setInterval(() => {
+      ch1.sendToQueue(queue, Buffer.from('something to do'));
+    }, 1000);
+  });
+});
 ```
 
-## Promise API example
+## Promise/Async API example
 
 ```javascript
-var q = 'tasks';
+const amqplib = require('amqplib');
 
-var open = require('amqplib').connect('amqp://localhost');
+(async () => {
+  const queue = 'tasks';
+  const conn = await amqplib.connect('amqp://localhost');
 
-// Publisher
-open.then(function(conn) {
-  return conn.createChannel();
-}).then(function(ch) {
-  return ch.assertQueue(q).then(function(ok) {
-    return ch.sendToQueue(q, Buffer.from('something to do'));
+  const ch1 = await conn.createChannel();
+  await ch1.assertQueue(queue);
+
+  // Listener
+  ch1.consume(queue, (msg) => {
+    if (msg !== null) {
+      console.log('Recieved:', msg.content.toString());
+      ch1.ack(msg);
+    } else {
+      console.log('Consumer cancelled by server');
+    }
   });
-}).catch(console.warn);
 
-// Consumer
-open.then(function(conn) {
-  return conn.createChannel();
-}).then(function(ch) {
-  return ch.assertQueue(q).then(function(ok) {
-    return ch.consume(q, function(msg) {
-      if (msg !== null) {
-        console.log(msg.content.toString());
-        ch.ack(msg);
-      }
-    });
-  });
-}).catch(console.warn);
+  // Sender
+  const ch2 = await conn.createChannel();
+
+  setInterval(() => {
+    ch2.sendToQueue(queue, Buffer.from('something to do'));
+  }, 1000);
+})();
+
 ```
 
 ## Running tests
@@ -127,7 +128,7 @@ dev.rabbitmq.com instance.
 
 You can run it under different versions of Node.JS using [nave][]:
 
-    nave use 0.8 npm test
+    nave use 10 npm test
 
 or run the tests on all supported versions of Node.JS in one go:
 
@@ -146,10 +147,11 @@ really only useful for checking the kind and formatting of the errors.
     make coverage
     open file://`pwd`/coverage/lcov-report/index.html
 
-[gh-pages]: http://www.squaremobius.net/amqp.node/
-[gh-pages-apiref]: http://www.squaremobius.net/amqp.node/channel_api.html
+[gh-pages]: https://amqp-node.github.io/amqplib/
+[gh-pages-apiref]: https://amqp-node.github.io/amqplib/channel_api.html
+[gh-pages-trouble]: https://amqp-node.github.io/amqplib/#troubleshooting
 [nave]: https://github.com/isaacs/nave
-[tutes]: https://github.com/squaremo/amqp.node/tree/main/examples/tutorials
+[tutes]: https://github.com/amqp-node/amqplib/tree/main/examples/tutorials
 [rabbitmq-tutes]: http://www.rabbitmq.com/getstarted.html
-[changelog]: https://github.com/squaremo/amqp.node/blob/main/CHANGELOG.md
+[changelog]: https://github.com/amqp-node/amqplib/blob/main/CHANGELOG.md
 [docker]: https://www.docker.com/
