@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## Unreleased
+ * Replace url-parse lib with native URL interface
+
 ## Chagnes in v0.10.0
  * Use Native promises ([PR
    689](https://github.com/amqp-node/amqplib/pull/689), thank you
