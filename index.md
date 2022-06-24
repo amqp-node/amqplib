@@ -98,5 +98,8 @@ When you publish a message using channel.publish or channel.sendToQueue it is wr
 ### Why do I get ECONNRESET?
 ECONNRESET means that the server (or something between the client and the server) closed the connection without warning. This may occur during the initial handshake if the connection parameters you supply are invalid, or after successful connection if the server is killed, or if the network is unstable, or if you connect to the server through a load balancer / firewall and it decides to drop the connection, or if the client application is overloaded and cannot send commands to the server before the heartbeat timeout expires. Typically an ECONNRESET does not indicate a problem with amqplib, but a configuration or networking issue in your environment.
 
+### Why do I get Error: Channel ended, no reply will be forthcoming?
+Many amqp commands require a reply. If the channel ends before the reply is received then the outstanding promise / callback will fail with this error. This can occur when the client does not wait for all operations to complete and/or does not prevent new operations from starting, while the application is shutting down.
+
 [rabbit.js]: https://github.com/squaremo/rabbit.js
 [node-amqp]: https://github.com/postwait/node-amqp
