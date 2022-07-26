@@ -2,7 +2,7 @@
 
 ## Changes in v0.10.1
 
-    git log v0.9.1..v0.10.0
+    git log v0.10.0..v0.10.1
 
  * Allow servername to be specified via socket options as discussed in as discussed in
    [issue 697](https://github.com/squaremo/amqp.node/issues/697)
