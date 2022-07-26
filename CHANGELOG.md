@@ -1,6 +1,16 @@
 # Change log for amqplib
 
-## Chagnes in v0.10.0
+## Changes in v0.10.1
+
+    git log v0.9.1..v0.10.0
+
+ * Allow servername to be specified via socket options as discussed in as discussed in
+   [issue 697](https://github.com/squaremo/amqp.node/issues/697)
+
+## Changes in v0.10.0
+
+    git log v0.9.1..v0.10.0
+
  * Use Native promises ([PR
    689](https://github.com/amqp-node/amqplib/pull/689), thank you
    @mohd-akram and @kibertoad)
