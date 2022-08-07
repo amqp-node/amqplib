@@ -1,5 +1,13 @@
 # Change log for amqplib
 
+## Changes in v0.10.2
+
+    git log v0.10.1..v0.10.2
+
+- Use Buffer.allocUnsafe when sending messages to improve performance ([PR
+  695](https://github.com/amqp-node/amqplib/pull/695), thank you
+  @chkimes and @Uzlopak)
+
 ## Changes in v0.10.1
 
     git log v0.10.0..v0.10.1
