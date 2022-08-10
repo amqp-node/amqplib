@@ -29,7 +29,7 @@ If the above does not help, please provide the following information...
   - RabbitMQ version
   - amqplib version
 
-If you include code snippets, please take the time to format them for they are easier to read
+If you include code snippets, please format them so they are easier to read
 
 - https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/creating-and-highlighting-code-blocks
 
