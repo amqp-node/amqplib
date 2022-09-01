@@ -1,5 +1,11 @@
 # Change log for amqplib
 
+## Changes in v0.10.3
+
+    git log v0.10.2..v0.10.3
+
+- Use @acuminous/bitsyntax fork. See https://github.com/amqp-node/amqplib/issues/453
+
 ## Changes in v0.10.2
 
     git log v0.10.1..v0.10.2
