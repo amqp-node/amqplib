@@ -25,11 +25,11 @@ Before reporting a bug or requesting support please...
 
 If the above does not help, please provide the following information...
 
-  - A clear and concise description of what the bug is.
+  - A clear and concise description of the problem
   - RabbitMQ version
   - amqplib version
 
-If you include code snippets, please format them so they are easier to read
+If you include code snippets, please format them so they are easier to read and keep them to the bare minimum that demonstrates the problem. 
 
 - https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/creating-and-highlighting-code-blocks
 
