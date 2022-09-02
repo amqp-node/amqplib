@@ -28,6 +28,7 @@ If the above does not help, please provide the following information...
   - A clear and concise description of the problem
   - RabbitMQ version
   - amqplib version
+  - Node.js version
 
 If you include code snippets, please format them so they are easier to read and keep them to the bare minimum that demonstrates the problem. 
 
