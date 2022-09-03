@@ -18,7 +18,7 @@
 
     git log v0.10.0..v0.10.1
 
- * Allow servername to be specified via socket options as discussed in as discussed in
+ * Allow servername to be specified via socket options as discussed in
    [issue 697](https://github.com/squaremo/amqp.node/issues/697)
 
 ## Changes in v0.10.0
