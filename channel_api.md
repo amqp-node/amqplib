@@ -410,8 +410,10 @@ on the object supplied*; that is, not in the prototype chain. The
 socket options is useful for supplying certificates and so on for an
 SSL connection; see the [SSL guide][ssl-doc].
 
-The socket options may also include the key `noDelay`, with a boolean
-value. If the value is `true`, this sets
+The socket options may also include the keys `timeout` and `noDelay`. 
+`timeout` specifies the socket timeout in milliseconds while 
+establishing the connection and `noDelay` is a boolean value that 
+when `true` sets
 [`TCP_NODELAY`][wikipedia-nagling] on the underlying socket.
 
 ###### Client properties
