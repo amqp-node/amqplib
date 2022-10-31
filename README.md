@@ -87,7 +87,7 @@ const amqplib = require('amqplib');
   // Listener
   ch1.consume(queue, (msg) => {
     if (msg !== null) {
-      console.log('Recieved:', msg.content.toString());
+      console.log('Received:', msg.content.toString());
       ch1.ack(msg);
     } else {
       console.log('Consumer cancelled by server');
