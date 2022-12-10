@@ -23,11 +23,13 @@ if (isNaN(n)) {
       const { queue: replyTo } = await channel.assertQueue('', { exclusive: true });
 
       await channel.consume(replyTo, (message) => {
-        if (message.properties.correlationId === correlationId) {
+        if (!message) console.warn(' [x] Consumer cancelled');
+        else if (message.properties.correlationId === correlationId) {
           resolve(message.content.toString());
-        }      
+        }
       }, { noAck: true });
 
+      await channel.assertQueue(queue, { durable: false });
       console.log(' [x] Requesting fib(%d)', n);
       channel.sendToQueue(queue, Buffer.from(n.toString()), { 
         correlationId,

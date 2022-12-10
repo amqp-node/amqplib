@@ -1,56 +1,57 @@
 #!/usr/bin/env node
 
-var amqp = require('amqplib/callback_api');
+const amqp = require('amqplib/callback_api');
+const { basename } = require('path');
 
-var basename = require('path').basename;
-
-var severities = process.argv.slice(2);
+const exchange = 'direct_logs';
+const severities = process.argv.slice(2);
 if (severities.length < 1) {
-  console.log('Usage %s [info] [warning] [error]',
-              basename(process.argv[1]));
+  console.log('Usage %s [info] [warning] [error]', basename(process.argv[1]));
   process.exit(1);
 }
 
-function bail(err, conn) {
-  console.error(err);
-  if (conn) conn.close(function() { process.exit(1); });
-}
+amqp.connect((err, connection) => {
+  if (err) return bail(err);
+  connection.createChannel((err, channel) => {
+    if (err) return bail(err, connection);
 
-function on_connect(err, conn) {
-  if (err !== null) return bail(err);
-  process.once('SIGINT', function() { conn.close(); });
+    process.once('SIGINT', () => {
+      channel.close(() => {
+        connection.close();
+      });
+    });
 
-  conn.createChannel(function(err, ch) {
-    if (err !== null) return bail(err, conn);
-    var ex = 'direct_logs', exopts = {durable: false};
-
-    ch.assertExchange(ex, 'direct', exopts);
-    ch.assertQueue('', {exclusive: true}, function(err, ok) {
-      if (err !== null) return bail(err, conn);
-
-      var queue = ok.queue, i = 0;
-
-      function sub(err) {
-        if (err !== null) return bail(err, conn);
-        else if (i < severities.length) {
-          ch.bindQueue(queue, ex, severities[i], {}, sub);
-          i++;
-        }
-      }
-
-      ch.consume(queue, logMessage, {noAck: true}, function(err) {
-        if (err !== null) return bail(err, conn);
-        console.log(' [*] Waiting for logs. To exit press CTRL+C.');
-        sub(null);
+    channel.assertExchange(exchange, 'direct', { durable: false }, (err) => {
+      if (err) return bail(err, connection);
+      channel.assertQueue('', { exclusive: true }, (err, { queue }) => {
+        if (err) return bail(err, connection);
+        channel.consume(queue, (message) => {
+          if (message) console.log(" [x] %s:'%s'", message.fields.routingKey, message.content.toString());
+          else console.warn(' [x] Consumer cancelled');
+        }, {noAck: true}, function(err) {
+          if (err) return bail(err, connection);
+          console.log(' [*] Waiting for logs. To exit press CTRL+C.');
+          subscribeAll(channel, queue, severities, (err) => {
+            if (err) return bail(err, connection);
+          });
+        });
       });
     });
   });
+});
+
+function subscribeAll(channel, queue, bindingKeys, cb) {
+  if (bindingKeys.length === 0) return cb();
+  const bindingKey = bindingKeys.shift();
+  channel.bindQueue(queue, exchange, bindingKey, {}, (err) => {
+    if (err) return cb(err);
+    subscribeAll(channel, queue, bindingKeys, cb);
+  });
 }
 
-function logMessage(msg) {
-  console.log(" [x] %s:'%s'",
-              msg.fields.routingKey,
-              msg.content.toString());
+function bail(err, connection) {
+  console.error(err);
+  if (connection) connection.close(() => {
+    process.exit(1);
+  });
 }
-
-amqp.connect(on_connect);
