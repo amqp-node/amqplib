@@ -27,7 +27,7 @@ const queue = 'rpc_queue';
       channel.ack(message);
     });
 
-    console.log(' [x] Awaiting RPC requests');
+    console.log(' [x] Awaiting RPC requests. To exit press CTRL+C.');
   }
   catch (err) {
     console.warn(err);
