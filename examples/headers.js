@@ -1,25 +1,20 @@
 #!/usr/bin/env node
 
-// Example of using a headers exchange
+const amqp = require('../');
 
-var amqp = require('../')
+(async () => {
 
-amqp.connect().then(function(conn) {
-  return conn.createChannel().then(withChannel);
-}, console.error);
+  const connection = await amqp.connect();
+  const channel = await connection.createChannel();
 
-function withChannel(ch) {
-  // NB the type of the exchange is 'headers'
-  ch.assertExchange('matching exchange', 'headers').then(function(ex) {
-    ch.assertQueue().then(function(q) {
-      bindAndConsume(ch, ex, q).then(function() {
-        send(ch, ex);
-      });
-    });
+  process.once('SIGINT', async () => {
+    await channel.close();
+    await connection.close();
   });
-}
 
-function bindAndConsume(ch, ex, q) {
+  const { exchange } = await channel.assertExchange('matching exchange', 'headers');
+  const { queue } = await channel.assertQueue();
+
   // When using a headers exchange, the headers to be matched go in
   // the binding arguments. The routing key is ignore, so best left
   // empty.
@@ -27,16 +22,19 @@ function bindAndConsume(ch, ex, q) {
   // 'x-match' is 'all' or 'any', meaning "all fields must match" or
   // "at least one field must match", respectively. The values to be
   // matched go in subsequent fields.
-  ch.bindQueue(q.queue, ex.exchange, '', {'x-match': 'any',
-                                          'foo': 'bar',
-                                          'baz': 'boo'});
-  return ch.consume(q.queue, function(msg) {
-    console.log(msg.content.toString());
-  }, {noAck: true});
-}
+  await channel.bindQueue(queue, exchange, '', {
+    'x-match': 'any',
+    'foo': 'bar',
+    'baz': 'boo'
+  });
 
-function send(ch, ex) {
-  // The headers for a message are given as an option to `publish`:
-  ch.publish(ex.exchange, '', Buffer.from('hello'), {headers: {baz: 'boo'}});
-  ch.publish(ex.exchange, '', Buffer.from('world'), {headers: {foo: 'bar'}});
-}
+  await channel.consume(queue, (message) => {
+    console.log(message.content.toString());
+  }, { noAck: true });
+
+  channel.publish(exchange, '', Buffer.from('hello'), { headers: { baz: 'boo' }});
+  channel.publish(exchange, '', Buffer.from('hello'), { headers: { foo: 'bar' }});
+  channel.publish(exchange, '', Buffer.from('lost'), { headers: { meh: 'nah' }});
+
+  console.log(' [x] To exit press CTRL+C.');
+})();

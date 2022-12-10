@@ -18,8 +18,8 @@
 //
 //     openssl s_client -connect localhost:5671
 
-var amqp = require('../');
-var fs = require('fs');
+const amqp = require('../');
+const fs = require('fs');
 
 // Assemble the SSL options; for verification we need at least
 // * a certificate to present to the server ('cert', in PEM format)
@@ -34,7 +34,7 @@ var fs = require('fs');
 // to use `rejectUnauthorized: false`.
 
 // Options for full client and server verification:
-var opts = {
+const opts = {
   cert: fs.readFileSync('../etc/client/cert.pem'),
   key: fs.readFileSync('../etc/client/key.pem'),
   // cert and key or
@@ -49,16 +49,22 @@ var opts = {
 //     {verify, verify_none},
 //     {fail_if_no_peer_cert,false}
 //
-// var opts = {  ca: [fs.readFileSync('../etc/testca/cacert.pem')] };
+// const opts = {  ca: [fs.readFileSync('../etc/testca/cacert.pem')] };
 
 // Option to use the SSL client certificate for authentication
 // opts.credentials = amqp.credentials.external();
 
-var open = amqp.connect('amqps://localhost', opts);
+(async () => {
+  const connection = await amqp.connect('amqp://localhost', opts);
+  const channel = await connection.createChannel();
 
-open.then(function(conn) {
-  process.on('SIGINT', conn.close.bind(conn));
-  return conn.createChannel().then(function(ch) {
-    ch.sendToQueue('foo', Buffer.from('Hello World!'));
+  process.on('SIGINT', async () => {
+    await channel.close();
+    await connection.close();
   });
-}).then(null, console.warn);
+
+  channel.sendToQueue('foo', Buffer.from('Hello World!'));
+
+  console.log(' [x] To exit press CTRL+C.');
+})();
+

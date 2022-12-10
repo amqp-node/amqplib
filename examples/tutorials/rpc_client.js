@@ -1,52 +1,49 @@
 #!/usr/bin/env node
 
-var amqp = require('amqplib');
-var basename = require('path').basename;
-var uuid = require('node-uuid');
+const amqp = require('amqplib');
+const { basename } = require('path');
+const { v4: uuid } = require('uuid');
 
-// I've departed from the form of the original RPC tutorial, which
-// needlessly introduces a class definition, and doesn't even
-// parameterise the request.
+const queue = 'rpc_queue';
 
-var n;
-try {
-  if (process.argv.length < 3) throw Error('Too few args');
-  n = parseInt(process.argv[2]);
-}
-catch (e) {
-  console.error(e);
+const n = parseInt(process.argv[2], 10);
+if (isNaN(n)) {
   console.warn('Usage: %s number', basename(process.argv[1]));
   process.exit(1);
 }
 
-amqp.connect('amqp://localhost').then(function(conn) {
-  return conn.createChannel().then(function(ch) {
-    return new Promise(function(resolve) {
-      var corrId = uuid();
-      function maybeAnswer(msg) {
-        if (msg.properties.correlationId === corrId) {
-          resolve(msg.content.toString());
+(async () => {
+  let connection;
+  try {
+    connection = await amqp.connect('amqp://localhost');
+    const channel = await connection.createChannel();
+    const correlationId = uuid();
+
+    const requestFib = new Promise(async (resolve) => {
+      const { queue: replyTo } = await channel.assertQueue('', { exclusive: true });
+
+      await channel.consume(replyTo, (message) => {
+        if (!message) console.warn(' [x] Consumer cancelled');
+        else if (message.properties.correlationId === correlationId) {
+          resolve(message.content.toString());
         }
-      }
+      }, { noAck: true });
 
-      var ok = ch.assertQueue('', {exclusive: true})
-        .then(function(qok) { return qok.queue; });
-
-      ok = ok.then(function(queue) {
-        return ch.consume(queue, maybeAnswer, {noAck: true})
-          .then(function() { return queue; });
-      });
-
-      ok = ok.then(function(queue) {
-        console.log(' [x] Requesting fib(%d)', n);
-        ch.sendToQueue('rpc_queue', Buffer.from(n.toString()), {
-          correlationId: corrId, replyTo: queue
-        });
+      await channel.assertQueue(queue, { durable: false });
+      console.log(' [x] Requesting fib(%d)', n);
+      channel.sendToQueue(queue, Buffer.from(n.toString()), { 
+        correlationId,
+        replyTo,
       });
     });
-  })
-  .then(function(fibN) {
+
+    const fibN = await requestFib;
     console.log(' [.] Got %d', fibN);
-  })
-  .finally(function() { conn.close(); });
-}).catch(console.warn);
+  }
+  catch (err) {
+    console.warn(err);
+  }
+  finally {
+    if (connection) await connection.close();
+  };
+})();  

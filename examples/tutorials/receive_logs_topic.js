@@ -1,43 +1,39 @@
 #!/usr/bin/env node
 
-var amqp = require('amqplib');
-var basename = require('path').basename;
+const amqp = require('../..');
+const { basename } = require('path');
 
-var keys = process.argv.slice(2);
-if (keys.length < 1) {
-  console.log('Usage: %s pattern [pattern...]',
-              basename(process.argv[1]));
+const exchange = 'topic_logs';
+const bindingKeys = process.argv.slice(2);
+if (bindingKeys.length < 1) {
+  console.log('Usage: %s pattern [pattern...]', basename(process.argv[1]));
   process.exit(1);
 }
 
-amqp.connect('amqp://localhost').then(function(conn) {
-  process.once('SIGINT', function() { conn.close(); });
-  return conn.createChannel().then(function(ch) {
-    var ex = 'topic_logs';
-    var ok = ch.assertExchange(ex, 'topic', {durable: false});
+(async () => {
+  try {
+    const connection = await amqp.connect('amqp://localhost');
+    const channel = await connection.createChannel();
 
-    ok = ok.then(function() {
-      return ch.assertQueue('', {exclusive: true});
+    process.once('SIGINT', async () => { 
+      await channel.close();
+      await connection.close();
     });
 
-    ok = ok.then(function(qok) {
-      var queue = qok.queue;
-      return Promise.all(keys.map(function(rk) {
-        ch.bindQueue(queue, ex, rk);
-      })).then(function() { return queue; });
-    });
+    await channel.assertExchange(exchange, 'topic', { durable: false });
+    const { queue } = await channel.assertQueue('', { exclusive: true });
+    await Promise.all(bindingKeys.map(async (bindingKey) => {
+      await channel.bindQueue(queue, exchange, bindingKey);
+    }));
 
-    ok = ok.then(function(queue) {
-      return ch.consume(queue, logMessage, {noAck: true});
-    });
-    return ok.then(function() {
-      console.log(' [*] Waiting for logs. To exit press CTRL+C.');
-    });
+    await channel.consume(queue, (message) => {
+      if (message) console.log(" [x] %s:'%s'", message.fields.routingKey, message.content.toString());      
+      else console.warn(' [x] Consumer cancelled');
+    }, { noAck: true });
 
-    function logMessage(msg) {
-      console.log(" [x] %s:'%s'",
-                  msg.fields.routingKey,
-                  msg.content.toString());
-    }
-  });
-}).catch(console.warn);
+    console.log(' [*] Waiting for logs. To exit press CTRL+C.');
+  }
+  catch (err) {
+    console.warn(err);
+  }
+})();

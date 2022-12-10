@@ -1,18 +1,25 @@
 #!/usr/bin/env node
 // Post a new task to the work queue
 
-var amqp = require('amqplib');
+const amqp = require('amqplib');
 
-amqp.connect('amqp://localhost').then(function(conn) {
-  return conn.createChannel().then(function(ch) {
-    var q = 'task_queue';
-    var ok = ch.assertQueue(q, {durable: true});
+const queue = 'task_queue';
+const text = process.argv.slice(2).join(' ') || "Hello World!";
 
-    return ok.then(function() {
-      var msg = process.argv.slice(2).join(' ') || "Hello World!";
-      ch.sendToQueue(q, Buffer.from(msg), {deliveryMode: true});
-      console.log(" [x] Sent '%s'", msg);
-      return ch.close();
-    });
-  }).finally(function() { conn.close(); });
-}).catch(console.warn);
+(async () => {
+  let connection;
+  try {
+    connection = await amqp.connect('amqp://localhost');
+    const channel = await connection.createChannel();
+    await channel.assertQueue(queue, { durable: true });
+    channel.sendToQueue(queue, Buffer.from(text), { persistent: true });
+    console.log(" [x] Sent '%s'", text);
+    await channel.close();
+  }
+  catch (err) {
+    console.warn(err);
+  }
+  finally { 
+    await connection.close();
+  };
+})();

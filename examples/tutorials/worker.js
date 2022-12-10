@@ -1,28 +1,34 @@
 #!/usr/bin/env node
 // Process tasks from the work queue
 
-var amqp = require('amqplib');
+const amqp = require('amqplib');
 
-amqp.connect('amqp://localhost').then(function(conn) {
-  process.once('SIGINT', function() { conn.close(); });
-  return conn.createChannel().then(function(ch) {
-    var ok = ch.assertQueue('task_queue', {durable: true});
-    ok = ok.then(function() { ch.prefetch(1); });
-    ok = ok.then(function() {
-      ch.consume('task_queue', doWork, {noAck: false});
-      console.log(" [*] Waiting for messages. To exit press CTRL+C");
+const queue = 'task_queue';
+
+(async () => {
+  try {
+    const connection = await amqp.connect('amqp://localhost');
+    process.once('SIGINT', async () => { 
+      await connection.close();
     });
-    return ok;
 
-    function doWork(msg) {
-      var body = msg.content.toString();
-      console.log(" [x] Received '%s'", body);
-      var secs = body.split('.').length - 1;
-      //console.log(" [x] Task takes %d seconds", secs);
-      setTimeout(function() {
+    const channel = await connection.createChannel();
+    await channel.assertQueue(queue, { durable: true });
+
+    channel.prefetch(1);
+    await channel.consume(queue, (message) => {
+      const text = message.content.toString();
+      console.log(" [x] Received '%s'", text);
+      const seconds = text.split('.').length - 1;
+      setTimeout(() => {
         console.log(" [x] Done");
-        ch.ack(msg);
-      }, secs * 1000);
-    }
-  });
-}).catch(console.warn);
+        channel.ack(message);
+      }, seconds * 1000);      
+    }, { noAck: false });
+      
+    console.log(" [*] Waiting for messages. To exit press CTRL+C");
+  }
+  catch (err) {
+    console.warn(err);
+  }
+})();

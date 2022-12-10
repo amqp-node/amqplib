@@ -1,49 +1,51 @@
 #!/usr/bin/env node
 
-var amqp = require('amqplib/callback_api');
-var basename = require('path').basename;
-var uuid = require('node-uuid');
+const amqp = require('amqplib/callback_api');
+const { basename } = require('path');
+const { v4: uuid } = require('uuid');
 
-var n;
-try {
-  if (process.argv.length < 3) throw Error('Too few args');
-  n = parseInt(process.argv[2]);
-}
-catch (e) {
-  console.error(e);
+const queue = 'rpc_queue';
+
+const n = parseInt(process.argv[2], 10);
+if (isNaN(n)) {
   console.warn('Usage: %s number', basename(process.argv[1]));
   process.exit(1);
 }
 
-function bail(err, conn) {
-  console.error(err);
-  if (conn) conn.close(function() { process.exit(1); });
-}
+amqp.connect((err, connection) => {
+  if (err) return bail(err);
+  connection.createChannel((err, channel) => {
+    if (err) return bail(err, connection);
+    channel.assertQueue('', { exclusive: true }, (err, { queue: replyTo }) => {
+      if (err) return bail(err, connection);
 
-function on_connect(err, conn) {
-  if (err !== null) return bail(err);
-  conn.createChannel(function(err, ch) {
-    if (err !== null) return bail(err, conn);
+      const correlationId = uuid();
+      channel.consume(replyTo, (message) => {
+        if (!message) console.warn(' [x] Consumer cancelled');
+        else if (message.properties.correlationId === correlationId) {
+          console.log(' [.] Got %d', message.content.toString());
+          channel.close(() => {
+            connection.close();
+          })
+        }
+      }, { noAck: true });
 
-    var correlationId = uuid();
-    function maybeAnswer(msg) {
-      if (msg.properties.correlationId === correlationId) {
-        console.log(' [.] Got %d', msg.content.toString());
-      }
-      else return bail(new Error('Unexpected message'), conn);
-      ch.close(function() { conn.close(); });
-    }
-
-    ch.assertQueue('', {exclusive: true}, function(err, ok) {
-      if (err !== null) return bail(err, conn);
-      var queue = ok.queue;
-      ch.consume(queue, maybeAnswer, {noAck:true});
-      console.log(' [x] Requesting fib(%d)', n);
-      ch.sendToQueue('rpc_queue', Buffer.from(n.toString()), {
-        replyTo: queue, correlationId: correlationId
+      channel.assertQueue(queue, { durable: false }, (err) => {
+        if (err) return bail(err, connection);
+        console.log(' [x] Requesting fib(%d)', n);
+        channel.sendToQueue(queue, Buffer.from(n.toString()), {
+          correlationId,
+          replyTo
+        });
       });
     });
   });
+});
+
+function bail(err, connection) {
+  console.error(err);
+  if (connection) connection.close(() => {
+    process.exit(1);
+  });
 }
 
-amqp.connect(on_connect);

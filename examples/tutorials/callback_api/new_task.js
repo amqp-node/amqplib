@@ -1,27 +1,28 @@
 #!/usr/bin/env node
 
-var amqp = require('amqplib/callback_api');
+const amqp = require('amqplib/callback_api');
 
-function bail(err, conn) {
-  console.error(err);
-  if (conn) conn.close(function() { process.exit(1); });
-}
+const queue = 'task_queue';
+const text = process.argv.slice(2).join(' ') || "Hello World!";
 
-function on_connect(err, conn) {
-  if (err !== null) return bail(err);
-
-  var q = 'task_queue';
-  
-  conn.createChannel(function(err, ch) {
-    if (err !== null) return bail(err, conn);
-    ch.assertQueue(q, {durable: true}, function(err, _ok) {
-      if (err !== null) return bail(err, conn);
-      var msg = process.argv.slice(2).join(' ') || "Hello World!";
-      ch.sendToQueue(q, Buffer.from(msg), {persistent: true});
-      console.log(" [x] Sent '%s'", msg);
-      ch.close(function() { conn.close(); });
+amqp.connect((err, connection) => {
+  if (err) return bail(err);
+  connection.createChannel((err, channel) => {
+    if (err) return bail(err, connection);
+    channel.assertQueue(queue, { durable: true }, (err) => {
+      if (err) return bails(err, connection);
+      channel.sendToQueue(queue, Buffer.from(text), { persistent: true });
+      console.log(" [x] Sent '%s'", text);
+      channel.close(() => {
+        connection.close();
+      });
     });
   });
-}
+});
 
-amqp.connect(on_connect);
+function bail(err, connection) {
+  console.error(err);
+  if (connection) connection.close(() => {
+    process.exit(1);
+  });
+}

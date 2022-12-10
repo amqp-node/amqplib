@@ -1,28 +1,30 @@
 #!/usr/bin/env node
 
-var amqp = require('amqplib');
+const amqp = require('amqplib');
 
-amqp.connect('amqp://localhost').then(function(conn) {
-  process.once('SIGINT', function() { conn.close(); });
-  return conn.createChannel().then(function(ch) {
-    var ok = ch.assertExchange('logs', 'fanout', {durable: false});
-    ok = ok.then(function() {
-      return ch.assertQueue('', {exclusive: true});
-    });
-    ok = ok.then(function(qok) {
-      return ch.bindQueue(qok.queue, 'logs', '').then(function() {
-        return qok.queue;
-      });
-    });
-    ok = ok.then(function(queue) {
-      return ch.consume(queue, logMessage, {noAck: true});
-    });
-    return ok.then(function() {
-      console.log(' [*] Waiting for logs. To exit press CTRL+C');
+const exchange = 'logs';
+
+(async () => {
+  try {
+    const connection = await amqp.connect('amqp://localhost');
+    const channel = await connection.createChannel();
+
+    process.once('SIGINT', async () => { 
+      await channel.close();
+      await connection.close();
     });
 
-    function logMessage(msg) {
-      console.log(" [x] '%s'", msg.content.toString());
-    }
-  });
-}).catch(console.warn);
+    await channel.assertExchange(exchange, 'fanout', { durable: false });
+    const { queue } = await channel.assertQueue('', { exclusive: true });
+    await channel.bindQueue(queue, exchange, '')
+
+    await channel.consume(queue, (message) => {
+      if (message) console.log(" [x] '%s'", message.content.toString());
+      else console.warn(' [x] Consumer cancelled');
+    }, { noAck: true });
+
+    console.log(' [*] Waiting for logs. To exit press CTRL+C');
+  } catch (err) {
+    console.warn(err);
+  }
+})();
