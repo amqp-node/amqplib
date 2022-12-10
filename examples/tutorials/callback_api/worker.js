@@ -1,35 +1,39 @@
 #!/usr/bin/env node
 
-var amqp = require('amqplib/callback_api');
+const amqp = require('amqplib/callback_api');
 
-function bail(err, conn) {
-  console.error(err);
-  if (conn) conn.close(function() { process.exit(1); });
-}
+const queue = 'task_queue';
 
-function on_connect(err, conn) {
-  if (err !== null) return bail(err);
-  process.once('SIGINT', function() { conn.close(); });
-  
-  var q = 'task_queue';
+amqp.connect((err, connection) => {
+  if (err) return bail(err);
+  connection.createChannel((err, channel) => {
+    if (err) return bail(err, connection);
 
-  conn.createChannel(function(err, ch) {
-    if (err !== null) return bail(err, conn);
-    ch.assertQueue(q, {durable: true}, function(err, _ok) {
-      ch.consume(q, doWork, {noAck: false});
-      console.log(" [*] Waiting for messages. To exit press CTRL+C");
+    process.once('SIGINT', () => {
+      channel.close(() => {
+        connection.close();
+      });
     });
 
-    function doWork(msg) {
-      var body = msg.content.toString();
-      console.log(" [x] Received '%s'", body);
-      var secs = body.split('.').length - 1;
-      setTimeout(function() {
-        console.log(" [x] Done");
-        ch.ack(msg);
-      }, secs * 1000);
-    }
+    channel.assertQueue(queue, { durable: true }, (err, { queue }) => {
+      if (err) return bail(err, connection);
+      channel.consume(queue, (message) => {
+        const text = message.content.toString();
+        console.log(" [x] Received '%s'", text);
+        const seconds = text.split('.').length - 1;
+        setTimeout(() => {
+          console.log(" [x] Done");
+          channel.ack(message);
+        }, seconds * 1000);
+      }, { noAck: false });
+      console.log(" [*] Waiting for messages. To exit press CTRL+C");
+    });
+  });
+});
+
+function bail(err, connection) {
+  console.error(err);
+  if (connection) connection.close(() => {
+    process.exit(1);
   });
 }
-
-amqp.connect(on_connect);

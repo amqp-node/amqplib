@@ -7,11 +7,13 @@ const exchange = 'logs';
 (async () => {
   try {
     const connection = await amqp.connect('amqp://localhost');
+    const channel = await connection.createChannel();
+
     process.once('SIGINT', async () => { 
+      await channel.close();
       await connection.close();
     });
 
-    const channel = await connection.createChannel();
     await channel.assertExchange(exchange, 'fanout', { durable: false });
     const { queue } = await channel.assertQueue('', { exclusive: true });
     await channel.bindQueue(queue, exchange, '')

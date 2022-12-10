@@ -1,36 +1,42 @@
 #!/usr/bin/env node
 
-var amqp = require('amqplib/callback_api');
+const amqp = require('amqplib/callback_api');
 
-function bail(err, conn) {
-  console.error(err);
-  if (conn) conn.close(function() { process.exit(1); });
-}
+const exchange = 'logs';
 
-function on_connect(err, conn) {
-  if (err !== null) return bail(err);
-  process.once('SIGINT', function() { conn.close(); });
+amqp.connect((err, connection) => {
+  if (err) return bail(err);
+  connection.createChannel((err, channel) => {
+    if (err) return bail(err, connection);
 
-  var ex = 'logs';
-  
-  function on_channel_open(err, ch) {
-    if (err !== null) return bail(err, conn);
-    ch.assertQueue('', {exclusive: true}, function(err, ok) {
-      var q = ok.queue;
-      ch.bindQueue(q, ex, '');
-      ch.consume(q, logMessage, {noAck: true}, function(err, ok) {
-        if (err !== null) return bail(err, conn);
-        console.log(" [*] Waiting for logs. To exit press CTRL+C.");
+    process.once('SIGINT', () => {
+      channel.close(() => {
+        connection.close();
       });
     });
-  }
 
-  function logMessage(msg) {
-    if (msg)
-      console.log(" [x] '%s'", msg.content.toString());
-  }
+    channel.assertExchange(exchange, 'fanout', { durable: false }, (err, { queue }) => {
+      if (err) return bail(err, connection);
+      channel.assertQueue('', { exclusive: true }, (err, { queue }) => {
+        if (err) return bail(err, connection);
+        channel.bindQueue(queue, exchange, '', {}, (err) => {
+          if (err) return bail(err, connection);
+          channel.consume(queue, (message) => {
+            if (message) console.log(" [x] '%s'", message.content.toString());
+            else console.warn(' [x] Consumer cancelled');
+          }, { noAck: true }, (err) => {
+            if (err) return bail(err, connection);
+            console.log(" [*] Waiting for logs. To exit press CTRL+C.");
+          });
+        });
+      });
+    });
+  });
+});
 
-  conn.createChannel(on_channel_open);
+function bail(err, connection) {
+  console.error(err);
+  if (connection) connection.close(() => {
+    process.exit(1);
+  });
 }
-
-amqp.connect(on_connect);
