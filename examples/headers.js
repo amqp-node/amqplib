@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-// Example of using a headers exchange
-
 const amqp = require('../');
 
 (async () => {
