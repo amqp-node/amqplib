@@ -23,16 +23,16 @@ Before reporting a bug or requesting support please...
    - https://www.cloudamqp.com/blog/part1-rabbitmq-for-beginners-what-is-rabbitmq.html
    - https://www.rabbitmq.com/tutorials/amqp-concepts.html
 
-If the above does not help, please provide the following information...
+If the above does not help, please provide as much of the following information as is relevant...
 
   - A clear and concise description of the problem
   - RabbitMQ version
   - amqplib version
   - Node.js version
+  - The simplest possible code snippet that demonstrates the problem
+  - A stack trace
 
-If you include code snippets, please format them so they are easier to read and keep them to the bare minimum that demonstrates the problem. 
-
-- https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/creating-and-highlighting-code-blocks
+Please format code snippets and/or stack traces using [GitHub Markdown](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/creating-and-highlighting-code-blocks).
 
 Thank you
 
