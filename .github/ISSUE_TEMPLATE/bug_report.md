@@ -32,7 +32,9 @@ If the above does not help, please provide as much of the following information 
   - The simplest possible code snippet that demonstrates the problem
   - A stack trace
 
-Please format code snippets and/or stack traces using [GitHub Markdown](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/creating-and-highlighting-code-blocks).
+Please format code snippets and/or stack traces using GitHub Markdown
+
+  - https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/creating-and-highlighting-code-blocks).
 
 Thank you
 
