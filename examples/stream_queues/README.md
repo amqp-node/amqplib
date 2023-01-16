@@ -9,7 +9,7 @@ Send a message to a stream queue
 ./send_stream.js   
 ```
 
-Reveice all the messages from stream queue:
+Receive all the messages from stream queue:
 ```
 ./receive_stream.js 
 ```
