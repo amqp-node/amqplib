@@ -1018,9 +1018,9 @@ trivially[1][rabbitmq-idempotent-delete].
 Publish a single message to an exchange. The mandatory parameters are:
 
  * `exchange` and `routingKey`: the exchange and routing key, which
- determine where the message goes. A special case is sending `''` as
- the exchange, which will send directly to the queue named by the
- routing key; `#sendToQueue` below is equivalent to this special
+ determine where the message goes. A special case is sending `''` 
+ (or undefined) as the exchange, which will send directly to the queue 
+ named by the routing key; `#sendToQueue` below is equivalent to this special
  case. If the named exchange does not exist, the channel will be
  closed.
 
