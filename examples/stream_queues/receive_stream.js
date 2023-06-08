@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-const amqp = require('amqplib');
+import amqp from 'amqplib';
 
 
-async function receiveStream() {
+export async function receiveStream() {
     try {
         const connection = await amqp.connect('amqp://localhost');
         process.once('SIGINT', connection.close);
@@ -39,9 +39,4 @@ async function receiveStream() {
     }
     // Catch and display any errors in the console
     catch(e) { console.log(e) }
-}
-
-
-module.exports = {
-    receiveStream
 }

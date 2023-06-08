@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const amqp = require('amqplib/callback_api');
-const { basename } = require('path');
-const { v4: uuid } = require('uuid');
+import amqp from 'amqplib/callback_api';
+import { basename } from 'path'
+import { v4 as uuid } from 'uuid'
 
 const queue = 'rpc_queue';
 

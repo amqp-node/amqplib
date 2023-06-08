@@ -1,7 +1,6 @@
-'use strict';
 
-const claire = require('claire');
-const {BitSet} = require('../lib/bitset');
+import claire from 'claire';
+import { BitSet } from '../lib/bitset.js'
 
 const {
   forAll,

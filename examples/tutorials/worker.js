@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Process tasks from the work queue
 
-const amqp = require('amqplib');
+import amqp from 'amqplib';
 
 const queue = 'task_queue';
 

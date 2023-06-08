@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 
-'use strict';
-const co = require('co');
-const amqp = require('amqplib');
-const readline = require('readline');
+import co from "co"
+import amqp from "amqplib";
+import readline from "readline";
 
 co(function* () {
   const myConsumer = (msg) => {

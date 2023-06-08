@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-
-const amqp = require('../');
-const { v4: uuid } = require('uuid');
+import amqp from "../"
+import { v4: uuid } from "uuid"
 
 const queue = 'rpc_queue';
 

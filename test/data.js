@@ -1,23 +1,22 @@
 // Property-based testing representations of various things in AMQP
 
-'use strict';
 
-var C = require('claire');
-var forAll = C.forAll;
-var arb = C.data;
-var transform = C.transform;
-var repeat = C.repeat;
-var label = C.label;
-var sequence = C.sequence;
-var asGenerator = C.asGenerator;
-var sized = C.sized;
-var recursive = C.recursive;
-var choice = C.choice;
-var Undefined = C.Undefined;
+import C from 'claire';
+const forAll = C.forAll;
+const arb = C.data;
+const transform = C.transform;
+const repeat = C.repeat;
+const label = C.label;
+const sequence = C.sequence;
+const asGenerator = C.asGenerator;
+const sized = C.sized;
+const recursive = C.recursive;
+const choice = C.choice;
+const Undefined = C.Undefined;
 
 // Stub these out so we can use outside tests
-// if (!suite) var suite = function() {}
-// if (!test) var test = function() {}
+// if (!suite) const suite = function() {}
+// if (!test) const test = function() {}
 
 // These aren't exported in claire/index. so I could have to reproduce
 // them I guess.
@@ -29,23 +28,23 @@ function chooseInt(a, b) {
   return Math.floor(choose(a, b));
 }
 
-function rangeInt(name, a, b) {
+export function rangeInt(name, a, b) {
   return label(name,
                asGenerator(function(_) { return chooseInt(a, b); }));
 }
 
 function toFloat32(i) {
-  var b = Buffer.alloc(4);
+  const b = Buffer.alloc(4);
   b.writeFloatBE(i, 0);
   return b.readFloatBE(0);
 }
 
 function floatChooser(maxExp) {
   return function() {
-    var n = Number.NaN;
+    let n = Number.NaN;
     while (isNaN(n)) {
-      var mantissa = Math.random() * 2 - 1;
-      var exponent = chooseInt(0, maxExp);
+      const mantissa = Math.random() * 2 - 1;
+      const exponent = chooseInt(0, maxExp);
       n = Math.pow(mantissa, exponent);
   }
     return n;
@@ -60,50 +59,50 @@ function explicitType(t, underlying) {
 
 // FIXME null, byte array, others?
 
-var Octet = rangeInt('octet', 0, 255);
-var ShortStr = label('shortstr',
+const Octet = rangeInt('octet', 0, 255);
+const ShortStr = label('shortstr',
                      transform(function(s) {
                        return s.substr(0, 255);
                      }, arb.Str));
 
-var LongStr = label('longstr',
+const LongStr = label('longstr',
                     transform(
                       function(bytes) { return Buffer.from(bytes); },
                       repeat(Octet)));
 
-var UShort = rangeInt('short-uint', 0, 0xffff);
-var ULong = rangeInt('long-uint', 0, 0xffffffff);
-var ULongLong = rangeInt('longlong-uint', 0, 0xffffffffffffffff);
-var Short = rangeInt('short-int', -0x8000, 0x7fff);
-var Long = rangeInt('long-int', -0x80000000, 0x7fffffff);
-var LongLong = rangeInt('longlong-int', -0x8000000000000000,
+const UShort = rangeInt('short-uint', 0, 0xffff);
+const ULong = rangeInt('long-uint', 0, 0xffffffff);
+const ULongLong = rangeInt('longlong-uint', 0, 0xffffffffffffffff);
+const Short = rangeInt('short-int', -0x8000, 0x7fff);
+const Long = rangeInt('long-int', -0x80000000, 0x7fffffff);
+const LongLong = rangeInt('longlong-int', -0x8000000000000000,
                         0x7fffffffffffffff);
-var Bit = label('bit', arb.Bool);
-var Double = label('double', asGenerator(floatChooser(308)));
-var Float = label('float', transform(toFloat32, floatChooser(38)));
-var Timestamp = label('timestamp', transform(
+const Bit = label('bit', arb.Bool);
+const Double = label('double', asGenerator(floatChooser(308)));
+const Float = label('float', transform(toFloat32, floatChooser(38)));
+const Timestamp = label('timestamp', transform(
   function(n) {
     return {'!': 'timestamp', value: n};
   }, ULongLong));
-var Decimal = label('decimal', transform(
+const Decimal = label('decimal', transform(
   function(args) {
     return {'!': 'decimal', value: {places: args[1], digits: args[0]}};
   }, sequence(arb.UInt, Octet)));
 
 // Signed 8 bit int
-var Byte = rangeInt('byte', -128, 127);
+const Byte = rangeInt('byte', -128, 127);
 
 // Explicitly typed values
-var ExByte = explicitType('byte', Byte);
-var ExInt8 = explicitType('int8', Byte);
-var ExShort = explicitType('short', Short);
-var ExInt16 = explicitType('int16', Short);
-var ExInt = explicitType('int', Long);
-var ExInt32 = explicitType('int32', Long);
-var ExLong = explicitType('long', LongLong);
-var ExInt64 = explicitType('int64', LongLong);
+const ExByte = explicitType('byte', Byte);
+const ExInt8 = explicitType('int8', Byte);
+const ExShort = explicitType('short', Short);
+const ExInt16 = explicitType('int16', Short);
+const ExInt = explicitType('int', Long);
+const ExInt32 = explicitType('int32', Long);
+const ExLong = explicitType('long', LongLong);
+const ExInt64 = explicitType('int64', LongLong);
 
-var FieldArray = label('field-array', recursive(function() {
+const FieldArray = label('field-array', recursive(function() {
   return arb.Array(
     arb.Null,
     LongStr, ShortStr,
@@ -114,7 +113,7 @@ var FieldArray = label('field-array', recursive(function() {
     Bit, Float, Double, FieldTable, FieldArray)
 }));
 
-var FieldTable = label('table', recursive(function() {
+const FieldTable = label('table', recursive(function() {
   return sized(function() { return 5; },
                arb.Object(
                  arb.Null,
@@ -127,7 +126,7 @@ var FieldTable = label('table', recursive(function() {
 }));
 
 // Internal tests of our properties
-var domainProps = [
+const domainProps = [
   [Octet, function(n) { return n >= 0 && n < 256; }],
   [ShortStr, function(s) { return typeof s === 'string' && s.length < 256; }],
   [LongStr, function(s) { return Buffer.isBuffer(s); }],
@@ -160,10 +159,10 @@ suite("Domains", function() {
 
 // For methods and properties (as opposed to field table values) it's
 // easier just to accept and produce numbers for timestamps.
-var ArgTimestamp = label('timestamp', ULongLong);
+const ArgTimestamp = label('timestamp', ULongLong);
 
 // These are the domains used in method arguments
-var ARG_TYPES = {
+const ARG_TYPES = {
   'octet': Octet,
   'shortstr': ShortStr,
   'longstr': LongStr,
@@ -185,29 +184,29 @@ function argtype(thing) {
 }
 
 function zipObject(vals, names) {
-  var obj = {};
+  const obj = {};
   vals.forEach(function(v, i) { obj[names[i]] = v; });
   return obj;
 }
 
 function name(arg) { return arg.name; }
 
-var defs = require('../lib/defs');
+import * as defs from '../lib/defs.js';
 
 function method(info) {
-  var domain = sequence.apply(null, info.args.map(argtype));
-  var names = info.args.map(name);
+  const domain = sequence.apply(null, info.args.map(argtype));
+  const names = info.args.map(name);
   return label(info.name, transform(function(fieldVals) {
     return {id: info.id,
             fields: zipObject(fieldVals, names)};
   }, domain));
 }
 
-function properties(info) {
-  var types = info.args.map(argtype);
+function getProperties(info) {
+  const types = info.args.map(argtype);
   types.unshift(ULongLong); // size
-  var domain = sequence.apply(null, types);
-  var names = info.args.map(name);
+  const domain = sequence.apply(null, types);
+  const names = info.args.map(name);
   return label(info.name, transform(function(fieldVals) {
     return {id: info.id,
             size: fieldVals[0],
@@ -215,40 +214,38 @@ function properties(info) {
   }, domain));
 }
 
-var methods = [];
-var propertieses = [];
+const methods = [];
+const properties = [];
 
-for (var k in defs) {
+for (let k in defs) {
   if (k.substr(0, 10) === 'methodInfo') {
     methods.push(method(defs[k]));
     methods[defs[k].name] = method(defs[k]);
   }
   else if (k.substr(0, 14) === 'propertiesInfo') {
-    propertieses.push(properties(defs[k]));
-    propertieses[defs[k].name] = properties(defs[k]);
+    properties.push(getProperties(defs[k]));
+    properties[defs[k].name] = getProperties(defs[k]);
   }
 };
 
-module.exports = {
-  Octet: Octet,
-  ShortStr: ShortStr,
-  LongStr: LongStr,
-  UShort: UShort,
-  ULong: ULong,
-  ULongLong: ULongLong,
-  Short: Short,
-  Long: Long,
-  LongLong: LongLong,
-  Bit: Bit,
-  Double: Double,
-  Float: Float,
-  Timestamp: Timestamp,
-  Decimal: Decimal,
-  FieldArray: FieldArray,
-  FieldTable: FieldTable,
+export {
+  Octet,
+  ShortStr,
+  LongStr,
+  UShort,
+  ULong,
+  ULongLong,
+  Short,
+  Long,
+  LongLong,
+  Bit,
+  Double,
+  Float,
+  Timestamp,
+  Decimal,
+  FieldArray,
+  FieldTable,
 
-  methods: methods,
-  properties: propertieses
-};
-
-module.exports.rangeInt = rangeInt;
+  methods,
+  properties
+}

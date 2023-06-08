@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const amqp = require('../');
+import amqp from '../';
 
 const queue = 'rpc_queue';
 

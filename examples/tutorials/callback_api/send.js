@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const amqp = require('amqplib/callback_api');
+import amqp from 'amqplib/callback_api';
 
 const queue = 'hello';
 const text = 'Hello World!';

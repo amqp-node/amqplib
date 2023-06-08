@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Post a new task to the work queue
 
-const amqp = require('amqplib');
+import amqp from 'amqplib';
 
 const queue = 'task_queue';
 const text = process.argv.slice(2).join(' ') || "Hello World!";

@@ -37,7 +37,7 @@ Still working on:
 ## Callback API example
 
 ```javascript
-const amqplib = require('amqplib/callback_api');
+import * as amqplib from 'amqplib/callback_api';
 const queue = 'tasks';
 
 amqplib.connect('amqp://localhost', (err, conn) => {
@@ -75,7 +75,7 @@ amqplib.connect('amqp://localhost', (err, conn) => {
 ## Promise/Async API example
 
 ```javascript
-const amqplib = require('amqplib');
+import * as amqplib from 'amqplib';
 
 (async () => {
   const queue = 'tasks';

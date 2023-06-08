@@ -1,11 +1,11 @@
-var raw_connect = require('./lib/connect').connect;
-var CallbackModel = require('./lib/callback_model').CallbackModel;
+import { connect as raw_connect } from "./lib/connect.js"
+import { CallbackModel } from "./lib/callback_model.js"
 
 // Supports three shapes:
 // connect(url, options, callback)
 // connect(url, callback)
 // connect(callback)
-function connect(url, options, cb) {
+export function connect(url, options, cb) {
   if (typeof url === 'function')
     cb = url, url = false, options = false;
   else if (typeof options === 'function')
@@ -17,6 +17,5 @@ function connect(url, options, cb) {
   });
 };
 
-module.exports.connect = connect;
-module.exports.credentials = require('./lib/credentials');
-module.exports.IllegalOperationError = require('./lib/error').IllegalOperationError;
+export * as credentials from './lib/credentials.js';
+export { IllegalOperationError } from './lib/error.js';

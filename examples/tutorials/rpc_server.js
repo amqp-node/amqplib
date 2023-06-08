@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const amqp = require('amqplib');
+import amqp from 'amqplib';
 
 const queue = 'rpc_queue';
 

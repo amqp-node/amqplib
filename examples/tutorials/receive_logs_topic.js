@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const amqp = require('../..');
-const { basename } = require('path');
+import amqp from '../..'
+import { basename } from 'path';
 
 const exchange = 'topic_logs';
 const bindingKeys = process.argv.slice(2);

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const amqp = require('amqplib/callback_api');
-const { basename } = require('path');
+import amqp from 'amqplib/callback_api';
+import { basename } from 'path';
 
 const exchange = 'direct_logs';
 const severities = process.argv.slice(2);

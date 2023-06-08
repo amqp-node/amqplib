@@ -8,8 +8,9 @@
     "type": "git",
     "url": "https://github.com/amqp-node/amqplib.git"
   },
+  "type": "module",
   "engines": {
-    "node": ">=10"
+    "node": ">=14"
   },
   "dependencies": {
     "@acuminous/bitsyntax": "^0.1.2",
@@ -21,7 +22,7 @@
     "claire": "0.4.1",
     "mocha": "^9.2.2",
     "nyc": "^15.1.0",
-    "uglify-js": "2.8.x"
+    "uglify-js": "3.17.4"
   },
   "scripts": {
     "test": "make test",

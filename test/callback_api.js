@@ -1,15 +1,14 @@
-'use strict';
 
-var assert = require('assert');
-var crypto = require('crypto');
-var api = require('../callback_api');
-var util = require('./util');
-var schedule = util.schedule;
-var randomString = util.randomString;
-var kCallback = util.kCallback;
-var domain = require('domain');
+import assert from 'assert';
+import crypto from 'crypto';
+import * as api from '../callback_api.js'
+import * as util from './util.js';
+const schedule = util.schedule;
+const randomString = util.randomString;
+const kCallback = util.kCallback;
+import * as domain from 'domain';
 
-var URL = process.env.URL || 'amqp://localhost';
+const URL = process.env.URL || 'amqp://localhost';
 
 function connect(cb) {
   api.connect(URL, {}, cb);
@@ -26,11 +25,11 @@ function doneCallback(done) {
 function ignore() {}
 
 function twice(done) {
-  var first = function(err) {
+  let first = function(err) {
     if (err == undefined) second = done;
     else second = ignore, done(err);
   };
-  var second = function(err) {
+  let second = function(err) {
     if (err == undefined) first = done;
     else first = ignore, done(err);
   };
@@ -74,8 +73,8 @@ function channel_test_fn(method) {
     });
   };
 }
-var channel_test = channel_test_fn('createChannel');
-var confirm_channel_test = channel_test_fn('createConfirmChannel');
+const channel_test = channel_test_fn('createChannel');
+const confirm_channel_test = channel_test_fn('createConfirmChannel');
 
 suite('channel open', function() {
 
@@ -109,13 +108,13 @@ channel_test('assert, check, delete exchange', function(ch, done) {
 });
 
 channel_test('fail on check non-queue', function(ch, done) {
-  var both = twice(done);
+  const both = twice(done);
   ch.on('error', failCallback(both.first));
   ch.checkQueue('test.cb.nothere', failCallback(both.second));
 });
 
 channel_test('fail on check non-exchange', function(ch, done) {
-  var both = twice(done);
+  const both = twice(done);
   ch.on('error', failCallback(both.first));
   ch.checkExchange('test.cb.nothere', failCallback(both.second));
 });
@@ -151,7 +150,7 @@ channel_test('bind exchange', function(ch, done) {
 suite('sending messages', function() {
 
 channel_test('send to queue and consume noAck', function(ch, done) {
-  var msg = randomString();
+  const msg = randomString();
   ch.assertQueue('', {exclusive: true}, function(e, q) {
     if (e !== null) return done(e);
     ch.consume(q.queue, function(m) {
@@ -164,7 +163,7 @@ channel_test('send to queue and consume noAck', function(ch, done) {
 });
 
 channel_test('send to queue and consume ack', function(ch, done) {
-  var msg = randomString();
+  const msg = randomString();
   ch.assertQueue('', {exclusive: true}, function(e, q) {
     if (e !== null) return done(e);
     ch.consume(q.queue, function(m) {
@@ -182,7 +181,7 @@ channel_test('send to queue and consume ack', function(ch, done) {
 channel_test('send to and get from queue', function(ch, done) {
   ch.assertQueue('', {exclusive: true}, function(e, q) {
     if (e != null) return done(e);
-    var msg = randomString();
+    const msg = randomString();
     ch.sendToQueue(q.queue, Buffer.from(msg));
     waitForMessages(ch, q.queue, function(e, _) {
       if (e != null) return done(e);
@@ -214,7 +213,7 @@ confirm_channel_test('Receive confirmation', function(ch, done) {
 });
 
 confirm_channel_test('Wait for confirms', function(ch, done) {
-  for (var i=0; i < 1000; i++) {
+  for (let i=0; i < 1000; i++) {
     ch.publish('', '', Buffer.from('foo'), {});
   }
   ch.waitForConfirms(done);
@@ -239,7 +238,7 @@ program.
  */
 if (util.versionGreaterThan(process.versions.node, '0.8')) {
   test('Throw error in connection open callback', function(done) {
-    var dom = domain.createDomain();
+    const dom = domain.createDomain();
     dom.on('error', failCallback(done));
     connect(dom.bind(function(err, conn) {
       throw new Error('Spurious connection open callback error');
@@ -250,7 +249,7 @@ if (util.versionGreaterThan(process.versions.node, '0.8')) {
 // TODO: refactor {error_test, channel_test}
 function error_test(name, fun) {
   test(name, function(done) {
-    var dom = domain.createDomain();
+    const dom = domain.createDomain();
     dom.run(function() {
       connect(kCallback(function(c) {
         // Seems like there were some unironed wrinkles in 0.8's
@@ -298,13 +297,13 @@ error_test('Consume callback throws error', function(ch, done, dom) {
 });
 
 error_test('Get from non-queue invokes error k', function(ch, done, dom) {
-  var both = twice(failCallback(done));
+  const both = twice(failCallback(done));
   dom.on('error', both.first);
   ch.get('', {}, both.second);
 });
 
 error_test('Consume from non-queue invokes error k', function(ch, done, dom) {
-  var both = twice(failCallback(done));
+  const both = twice(failCallback(done));
   dom.on('error', both.first);
   ch.consume('', both.second);
 });

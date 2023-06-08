@@ -18,8 +18,8 @@
 //
 //     openssl s_client -connect localhost:5671
 
-const amqp = require('../');
-const fs = require('fs');
+import { amqp } from "../";
+import fs from 'fs';
 
 // Assemble the SSL options; for verification we need at least
 // * a certificate to present to the server ('cert', in PEM format)

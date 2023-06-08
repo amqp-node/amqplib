@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 
-'use strict';
 
 // NB this requires the module 'co':
 //    npm install co
-const co = require('co');
-const amqp = require('amqplib');
+import co from 'co';
+import amqp from 'amqplib';
 
 co(function* () {
   // connection errors are handled in the co .catch handler

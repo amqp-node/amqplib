@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const amqp = require('amqplib');
+import amqp from 'amqplib';
 
 const exchange = 'topic_logs';
 const args = process.argv.slice(2);
