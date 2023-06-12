@@ -1,8 +1,6 @@
-#!/usr/bin/env node
 const amqp = require('amqplib');
 
-
-async function receiveStream() {
+(async () => {
     try {
         const connection = await amqp.connect('amqp://localhost');
         process.once('SIGINT', connection.close);
@@ -30,18 +28,26 @@ async function receiveStream() {
         }, {
             noAck: false,
             arguments: {
-                'x-stream-offset': 'first'  // Here you can specify the offset: : first, last, next, and timestamp
-                                            // with first start consuming always from the beginning
+                /*
+                    Here you can specify the offset: : first, last, next, offset and timestamp, i.e.
+
+                    'x-stream-offset': 'first'
+                    'x-stream-offset': 'last'
+                    'x-stream-offset': 'next'
+                    'x-stream-offset': 5
+                    'x-stream-offset': { '!': 'timestamp', value: 1686519750 }
+
+                    The timestamp must be the desired number of seconds since 00:00:00 UTC, 1970-01-01
+
+                */
+                'x-stream-offset': 'first'
             }
         });
 
         console.log(' [*] Waiting for messages. To exit press CTRL+C');
     }
     // Catch and display any errors in the console
-    catch(e) { console.log(e) }
-}
-
-
-module.exports = {
-    receiveStream
-}
+    catch(e) {
+        console.log(e)
+    }
+})();

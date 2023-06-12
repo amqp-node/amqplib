@@ -1,15 +1,14 @@
-#!/usr/bin/env node
 const amqp = require('amqplib');
 
 
-async function sendStream () {
+(async () => {
     try {
         const connection = await amqp.connect('amqp://localhost');
         process.once('SIGINT', connection.close);
 
         const channel = await connection.createChannel();
         const queue = 'my_first_stream';
-        const msg = 'Hello World!';
+        const msg = `Hello World! ${Date.now()}`;
 
         // Define the queue stream
         // Mandatory: exclusive: false, durable: true  autoDelete: false
@@ -32,10 +31,8 @@ async function sendStream () {
         connection.close();
     }
     // Catch and display any errors in the console
-    catch(e) { console.log(e) }
-}
+    catch(e) {
+        console.log(e)
+    }
+})();
 
-
-module.exports = {
-    sendStream
-}
