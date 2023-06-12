@@ -1,5 +1,9 @@
 # Change log for amqplib
 
+## Unreleased
+
+- Improve stream example as per https://github.com/amqp-node/amqplib/issues/722
+
 ## Changes in v0.10.3
 
     git log v0.10.2..v0.10.3
