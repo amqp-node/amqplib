@@ -29,15 +29,17 @@ const amqp = require('amqplib');
             noAck: false,
             arguments: {
                 /*
-                    Here you can specify the offset: : first, last, next, offset and timestamp, i.e.
+                    Here you can specify the offset: : first, last, next, offset, timestamp and interval, i.e.
 
                     'x-stream-offset': 'first'
                     'x-stream-offset': 'last'
                     'x-stream-offset': 'next'
                     'x-stream-offset': 5
                     'x-stream-offset': { '!': 'timestamp', value: 1686519750 }
+                    'x-stream-offset': '1h'
 
                     The timestamp must be the desired number of seconds since 00:00:00 UTC, 1970-01-01
+                    The interval units can be Y, M, D, h, m, s
 
                 */
                 'x-stream-offset': 'first'
