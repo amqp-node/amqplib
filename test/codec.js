@@ -70,7 +70,7 @@ suite("Implicit encodings", function() {
     test(name, function() {
       var buffer = Buffer.alloc(1000);
       var size = codec.encodeTable(buffer, val, 0);
-      var result = buffer.slice(4, size);
+      var result = buffer.subarray(4, size);
       assert.deepEqual(expect, bufferToArray(result));
     });
   });
@@ -83,7 +83,7 @@ var amqp = require('./data');
 function roundtrip_table(t) {
   var buf = Buffer.alloc(4096);
   var size = codec.encodeTable(buf, t, 0);
-  var decoded = codec.decodeFields(buf.slice(4, size)); // ignore the length-prefix
+  var decoded = codec.decodeFields(buf.subarray(4, size)); // ignore the length-prefix
   try {
     assert.deepEqual(removeExplicitTypes(t), decoded);
   }
@@ -204,7 +204,7 @@ function roundtripMethod(Method) {
   return forAll(Method).satisfy(function(method) {
     var buf = defs.encodeMethod(method.id, 0, method.fields);
     // FIXME depends on framing, ugh
-    var fs1 = defs.decode(method.id, buf.slice(11, buf.length));
+    var fs1 = defs.decode(method.id, buf.subarray(11, buf.length));
     assertEqualModuloDefaults(method, fs1);
     return true;
   });
@@ -215,7 +215,7 @@ function roundtripProperties(Properties) {
     var buf = defs.encodeProperties(properties.id, 0, properties.size,
                                     properties.fields);
     // FIXME depends on framing, ugh
-    var fs1 = defs.decode(properties.id, buf.slice(19, buf.length));
+    var fs1 = defs.decode(properties.id, buf.subarray(19, buf.length));
     assert.equal(properties.size, ints.readUInt64BE(buf, 11));
     assertEqualModuloDefaults(properties, fs1);
     return true;
