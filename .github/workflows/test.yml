@@ -36,3 +36,6 @@ jobs:
 
       # Run the tests
       - run: make test
+
+      # Run linting
+      - run: npm run lint
