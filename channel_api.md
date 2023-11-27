@@ -679,10 +679,9 @@ is ready for writes again).
 `#assertQueue([queue, [options, [function(err, ok) {...}]]])`
 
 Assert a queue into existence. This operation is idempotent given
-identical arguments; however, it will bork the channel if the queue
+identical arguments; however, it will break the channel if the queue
 already exists but has different properties (values supplied in the
-`arguments` field may or may not count for borking purposes; check the
-borker's, I mean broker's, documentation).
+`arguments` field may or may not matter; check the broker's, documentation).
 
 `queue` is a string; if you supply an empty string or other falsey
 value (including `null` and `undefined`), the server will create a
@@ -749,7 +748,7 @@ consumer count, and a recent message count; e.g.,
 
 `#checkQueue(queue, [function(err, ok) {...}])`
 
-Check whether a queue exists. This will bork the channel if the named
+Check whether a queue exists. This will break the channel if the named
 queue *doesn't* exist; if it does exist, you go through to the next
 round!  There's no options, unlike `#assertQueue()`, just the queue
 name. The reply from the server is the same as for `#assertQueue()`.
@@ -862,8 +861,8 @@ all[1][rabbitmq-idempotent-delete]. Good ol' RabbitMQ).
 
 Assert an exchange into existence. As with queues, if the exchange
 exists already and has properties different to those supplied, the
-channel will 'splode; fields in the arguments object may or may not be
-'splodey, depending on the type of exchange. Unlike queues, you must
+channel will break; fields in the arguments object may or may not matter,
+depending on the type of exchange. Unlike queues, you must
 supply a name, and it can't be the empty string. You must also supply
 an exchange type, which determines how messages will be routed through
 the exchange.
@@ -1221,7 +1220,7 @@ omitted, only the message supplied is acknowledged.
 
 It's an error to supply a message that either doesn't require
 acknowledgement, or has already been acknowledged. Doing so will
-errorise the channel. If you want to acknowledge all the messages and
+break the channel. If you want to acknowledge all the messages and
 you don't have a specific message around, use `#ackAll`.
 
 
