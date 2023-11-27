@@ -2,7 +2,7 @@
 layout: default
 title: Channel API reference
 ---
-<a name="top"></a>
+
 # Channel-oriented API reference
 
  * [Overview](#overview)
@@ -77,7 +77,6 @@ argument (and usually some value as the second argument). Likewise,
 "reject" etc., will mean rejecting a promise or calling the callback
 with an `Error` as the first argument (and no value).
 
-[^top](#top)
 
 ## <a name="overview"></a>Overview
 
@@ -102,7 +101,6 @@ server. These return either nothing (`ack[All]`, `nack[All]`, `reject`) or a
 boolean (`publish` and `sendToQueue`); see [flow
 control](#flowcontrol).
 
-[^top](#top)
 
 ## <a name="failure"></a>Dealing with failure
 
@@ -142,7 +140,6 @@ connection.createChannel().then(function(ch) {
 });
 ```
 
-[^top](#top)
 
 ### <a name="failure_promises"></a>Exceptions and promises
 
@@ -178,7 +175,6 @@ amqp.connect().then(function(conn) {
 });
 ```
 
-[^top](#top)
 
 ### <a name="failure_callbacks"></a>Exceptions and callbacks
 
@@ -214,7 +210,6 @@ dom.run(function() {
 });
 ```
 
-[^top](#top)
 
 ## <a name="flowcontrol"></a>Flow control
 
@@ -316,7 +311,6 @@ aliases for most encodings, as shown in the examples.
 
 NB AMQP only has signed integers in tables.
 
-[^top](#top)
 
 ## <a name="api_reference"></a>API reference
 
@@ -455,7 +449,6 @@ the server value is also `0`. See
 NOTE: Please consider NOT disabling heartbeats because they exist for a
 [reason](http://www.rabbitmq.com/heartbeats.html).
 
-[^top](#top)
 
 ## <a name="models"></a>ChannelModel and CallbackModel
 
@@ -464,7 +457,6 @@ take as an argument a `connection.Connection`. It is better to use
 `connect()`, which will open the connection for you. The constructors
 are exported as potential extension points.
 
-[^top](#top)
 
 ### <a name="model_close"></a>{Channel,Callback}Model#close
 
@@ -523,7 +515,6 @@ open.then(function(conn) {
 **NB** it's no good using `process.on('exit', ...)`, since `close()` needs
 to do I/O.
 
-[^top](#top)
 
 ### <a name="model_events"></a>{Channel,Callback}Model events
 
@@ -572,7 +563,6 @@ extension][rabbitmq-connection-blocked] for details.
 Emitted at some time after `'blocked'`, once the resource shortage has
 alleviated.
 
-[^top](#top)
 
 ### <a name="model_createChannel"></a>{Channel,Callback}Model#createChannel
 
@@ -589,7 +579,6 @@ channel; but it is not usable before the callback has been
 invoked). May fail if there are no more channels available (i.e., if
 there are already `channelMax` channels open).
 
-[^top](#top)
 
 ### <a name="model_createConfirmChannel"></a>{Channel,Callback}Model#createConfirmChannel
 
@@ -604,7 +593,6 @@ there are already `channelMax` channels open).
 Open a fresh channel, switched to "confirmation mode". See
 `ConfirmChannel` below.
 
-[^top](#top)
 
 ## <a name="channel"></a>Channels
 
@@ -623,7 +611,6 @@ point. When using a client API, obtain an open `Channel` by opening a
 connection (`connect()` above) and calling `#createChannel` or
 `#createConfirmChannel`.
 
-[^top](#top)
 
 ### <a name="channel_close"></a>Channel#close
 
@@ -645,7 +632,6 @@ channels, and thereby other things such as exclusive locks on queues,
 so it is occasionally worth being deliberate about opening and closing
 channels.
 
-[^top](#top)
 
 ### <a name="channel_events"></a>Channel events
 
@@ -684,7 +670,6 @@ if it has previously returned `false` from `#publish` or
 `#sendToQueue`, once its write buffer has been emptied (i.e., once it
 is ready for writes again).
 
-[^top](#top)
 
 ### <a name="channel_assertQueue"></a>Channel#assertQueue
 
@@ -763,7 +748,6 @@ consumer count, and a recent message count; e.g.,
 }
 ```
 
-[^top](#top)
 
 ### <a name="channel_checkQueue"></a>Channel#checkQueue
 
@@ -780,7 +764,6 @@ queue *doesn't* exist; if it does exist, you go through to the next
 round!  There's no options, unlike `#assertQueue()`, just the queue
 name. The reply from the server is the same as for `#assertQueue()`.
 
-[^top](#top)
 
 ### <a name="channel_deleteQueue"></a>Channel#deleteQueue
 
@@ -813,7 +796,6 @@ queue unconditionally.
 The server reply contains a single field, `messageCount`, with the
 number of messages deleted or dead-lettered along with the queue.
 
-[^top](#top)
 
 ### <a name="channel_purgeQueue"></a>Channel#purgeQueue
 
@@ -834,7 +816,6 @@ closes without acknowledging them).
 The server reply contains a single field, `messageCount`, containing
 the number of messages purged from the queue.
 
-[^top](#top)
 
 ### <a name="channel_bindQueue"></a>Channel#bindQueue
 
@@ -859,7 +840,6 @@ it's the last argument, which is equivalent to an empty object.
 
 The server reply has no fields.
 
-[^top](#top)
 
 ### <a name="channel_unbindQueue"></a>Channel#unbindQueue
 
@@ -880,7 +860,6 @@ mistake; RabbitMQ before version 3.2.0 softens this to a channel
 error, and from version 3.2.0, doesn't treat it as an error at
 all[1][rabbitmq-idempotent-delete]. Good ol' RabbitMQ).
 
-[^top](#top)
 
 ### <a name="channel_assertExchange"></a>Channel#assertExchange
 
@@ -925,7 +904,6 @@ The options:
 
 The server reply echoes the exchange name, in the field `exchange`.
 
-[^top](#top)
 
 ### <a name="channel_checkExchange"></a>Channel#checkExchange
 
@@ -940,7 +918,6 @@ The server reply echoes the exchange name, in the field `exchange`.
 Check that an exchange exists. If it doesn't exist, the channel will
 be closed with an error. If it does exist, happy days.
 
-[^top](#top)
 
 ### <a name="channel_deleteExchange"></a>Channel#deleteExchange
 
@@ -963,7 +940,6 @@ error[1][rabbitmq-idempotent-delete]).
 
 The server reply has no fields.
 
-[^top](#top)
 
 ### <a name="channel_bindExchange"></a>Channel#bindExchange
 
@@ -985,7 +961,6 @@ a routing key equal to the pattern.
 
 The server reply has no fields.
 
-[^top](#top)
 
 ### <a name="channel_unbindExchange"></a>Channel#unbindExchange
 
@@ -1004,7 +979,6 @@ exists, it's &ndash; you guessed it &ndash; a channel error, except in
 RabbitMQ >= version 3.2.0, for which it succeeds
 trivially[1][rabbitmq-idempotent-delete].
 
-[^top](#top)
 
 ### <a name="channel_publish"></a>Channel#publish
 
@@ -1123,7 +1097,6 @@ its return value; it will return `false` if the channel's write buffer
 is 'full', and `true` otherwise. If it returns `false`, it will emit a
 `'drain'` event at some later time.
 
-[^top](#top)
 
 ### <a name="channel_sendToQueue"></a>Channel#sendToQueue
 
@@ -1138,7 +1111,6 @@ Send a single message with the `content` given as a buffer to the
 specific `queue` named, bypassing routing. The options and return
 value are exactly the same as for `#publish`.
 
-[^top](#top)
 
 ### <a name="channel_consume"></a>Channel#consume
 
@@ -1217,7 +1189,6 @@ sent in the `headers` table so will appear there in deliveries.
 If the [consumer is cancelled][rabbitmq-consumer-cancel] by RabbitMQ,
 the message callback will be invoked with `null`.
 
-[^top](#top)
 
 ### <a name="channel_cancel"></a>Channel#cancel
 
@@ -1238,7 +1209,6 @@ will no longer be invoked.
 The `consumerTag` is the string given in the reply to `#consume`,
 which may have been generated by the server.
 
-[^top](#top)
 
 ### <a name="channel_get"></a>Channel#get
 
@@ -1262,7 +1232,6 @@ Options:
    the wire. Default is false, that is, you will be expected to
    acknowledge the message.
 
-[^top](#top)
 
 ### <a name="channel_ack"></a>Channel#ack
 
@@ -1289,7 +1258,6 @@ acknowledgement, or has already been acknowledged. Doing so will
 errorise the channel. If you want to acknowledge all the messages and
 you don't have a specific message around, use `#ackAll`.
 
-[^top](#top)
 
 ### <a name="channel_ackAll"></a>Channel#ackAll
 
@@ -1303,7 +1271,6 @@ Acknowledge all outstanding messages on the channel. This is a "safe"
 operation, in that it won't result in an error even if there are no
 such messages.
 
-[^top](#top)
 
 ### <a name="channel_nack"></a>Channel#nack
 
@@ -1328,7 +1295,6 @@ dead-lettered or discarded, supply `false` here.
 This and `#nackAll` use a [RabbitMQ-specific
 extension][rabbitmq-nack].
 
-[^top](#top)
 
 ### <a name="channel_nackAll"></a>Channel#nackAll
 
@@ -1341,7 +1307,6 @@ extension][rabbitmq-nack].
 Reject all messages outstanding on this channel. If `requeue` is
 truthy, or omitted, the server will try to re-enqueue the messages.
 
-[^top](#top)
 
 ### <a name="channel_reject"></a>Channel#reject
 
@@ -1354,7 +1319,6 @@ truthy, or omitted, the server will try to re-enqueue the messages.
 Reject a message. Equivalent to `#nack(message, false, requeue)`, but
 works in older versions of RabbitMQ (< v2.3.0) where `#nack` does not.
 
-[^top](#top)
 
 ### <a name="channel_prefetch"></a>Channel#prefetch
 
@@ -1380,7 +1344,6 @@ Use the `global` flag to get the per-channel behaviour. To keep life
 interesting, using the `global` flag with an RabbitMQ older than
 v3.3.0 will bring down the whole connection.
 
-[^top](#top)
 
 ### <a name="channel_recover"></a>Channel#recover
 
@@ -1395,7 +1358,6 @@ v3.3.0 will bring down the whole connection.
 Requeue unacknowledged messages on this channel. The server will reply
 (with an empty object) once all messages are requeued.
 
-[^top](#top)
 
 ## <a name="confirmchannel"></a>ConfirmChannel
 
@@ -1450,7 +1412,6 @@ This constructor is a channel that uses confirms. It is exported as an
 extension point. To obtain such a channel, use `connect` to get a
 connection, then call `#createConfirmChannel`.
 
-[^top](#top)
 
 ### <a name="confirmchannel_publish"></a>ConfirmChannel#publish
 
@@ -1463,7 +1424,6 @@ connection, then call `#createConfirmChannel`.
 
 `options` argument must be supplied, at least as an empty object.
 
-[^top](#top)
 
 ### <a name="confirmchannel_sendToQueue"></a>ConfirmChannel#sendToQueue
 
@@ -1476,7 +1436,6 @@ connection, then call `#createConfirmChannel`.
 
 `options` argument must be supplied, at least as an empty object.
 
-[^top](#top)
 
 ### <a name="confirmchannel_waitForConfirms"></a>ConfirmChannel#waitForConfirms
 
@@ -1495,7 +1454,6 @@ way, the channel is still usable afterwards. It is also possible to
 call waitForConfirms multiple times without waiting for previous
 invocations to complete.
 
-[^top](#top)
 
 ---------
 
@@ -1509,7 +1467,6 @@ This does not apply to preconditions given to the operations. For
 example deleting a queue with `{ifEmpty: true}` will still fail if
 there are messages in the queue.
 
-[^top](#top)
 
 [amqpurl]: http://www.rabbitmq.com/uri-spec.html
 [rabbitmq-tutes]: http://www.rabbitmq.com/getstarted.html
