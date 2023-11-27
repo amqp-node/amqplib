@@ -1287,18 +1287,20 @@ works in older versions of RabbitMQ (< v2.3.0) where `#nack` does not.
 
 ### <a name="channel_prefetch"></a>Channel#prefetch
 
-##### Promises and callback APIs
+##### Promises API
 
 `#prefetch(count, [global])`
 
-**NOTE**: Does not return a promise in the promises API, or accept a callback in the callback API.
+##### Callback API
+
+`#prefetch(count, [[global], [function(err, ok) {...}]])`
 
 Set the prefetch count for this channel. The `count` given is the
 maximum number of messages sent over the channel that can be awaiting
 acknowledgement; once there are `count` messages outstanding, the
 server will not send more messages on this channel until one or more
 have been acknowledged. A falsey value for `count` indicates no such
-limit.
+limit. The server will reply (with an empty object) if successful.
 
 **NB** RabbitMQ v3.3.0 changes the meaning of prefetch (basic.qos) to
 apply per-*consumer*, rather than per-channel. It will apply to
