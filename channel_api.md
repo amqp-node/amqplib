@@ -362,17 +362,14 @@ URI, e.g., as in `'amqp://localhost?frameMax=0x1000'`. These are:
    connection. `0` means no limit (but since frames have a size field
    which is an unsigned 32 bit integer, it's perforce `2^32 - 1`); I
    default it to 0x1000, i.e. 4kb, which is the allowed minimum, will
-   fit many purposes, and not chug through Node.JS's buffer pooling.
-
+   fit many purposes, and not chug through Node.JS's buffer pooling.<br/><br/>
  * `channelMax`, the maximum number of channels allowed. Default is
-   `0`, meaning `2^16 - 1`.
-
+   `0`, meaning `2^16 - 1`.<br/><br/>
  * `heartbeat`: the period of the connection heartbeat, in
-   seconds. Defaults to `0`; see [heartbeating](#heartbeating)
-
+   seconds. Defaults to `0`; see [heartbeating](#heartbeating)<br/><br/>
  * `locale`: the desired locale for error messages, I
    suppose. RabbitMQ only ever uses `en_US`; which, happily, is the
-   default.
+   default.<br/><br/>
 
 ###### Connecting with an object instead of a URL
 
@@ -695,17 +692,14 @@ random name for you.
 if it's the last argument. The relevant fields in options are:
 
  * `exclusive`: if true, scopes the queue to the connection (defaults
-  to false)
-
+  to false)<br/><br/>
  * `durable`: if true, the queue will survive broker restarts, modulo
   the effects of `exclusive` and `autoDelete`; this defaults to true
-  if not supplied, unlike the others
-
+  if not supplied, unlike the others<br/><br/>
  * `autoDelete`: if true, the queue will be deleted when the number of
-  consumers drops to zero (defaults to false)
-
+  consumers drops to zero (defaults to false)<br/><br/>
  * `arguments`: additional arguments, usually parameters for some kind
-  of broker-specific extension e.g., high availability, TTL.
+  of broker-specific extension e.g., high availability, TTL.<br/><br/>
 
 RabbitMQ extensions can also be supplied as options. These typically
 require non-standard `x-*` keys and values, sent in the `arguments`
@@ -715,26 +709,22 @@ prefix for the key is removed; e.g., `'expires'`. Values supplied in
 `options.arguments`.
 
  * `messageTtl` (0 <= n < 2^32): expires messages arriving in the
-  queue after n milliseconds
-
+  queue after n milliseconds<br/><br/>
  * `expires` (0 < n < 2^32): the queue will be destroyed after n
   milliseconds of disuse, where use means having consumers, being
   declared (asserted or checked, in this API), or being polled with a
-  `#get`.
-
+  `#get`.<br/><br/>
  * `deadLetterExchange` (string): an exchange to which messages
   discarded from the queue will be resent. Use `deadLetterRoutingKey`
   to set a routing key for discarded messages; otherwise, the
   message's routing key (and CC and BCC, if present) will be
   preserved. A message is discarded when it expires or is rejected or
-  nacked, or the queue limit is reached.
-
+  nacked, or the queue limit is reached.<br/><br/>
  * `maxLength` (positive integer): sets a maximum number of messages
   the queue will hold. Old messages will be discarded (dead-lettered
-  if that's set) to make way for new messages.
-
+  if that's set) to make way for new messages.<br/><br/>
  * `maxPriority` (positive integer): makes the queue a [priority
-   queue][rabbitmq-priority-queue].
+   queue][rabbitmq-priority-queue].<br/><br/>
 
 Resolves to the "ok" reply from the server, which includes fields for
 the queue name (important if you let the server name it), a recent
@@ -781,11 +771,10 @@ RabbitMQ version 3.2.0 and after[1][rabbitmq-idempotent-delete]). The
 options here are:
 
  * `ifUnused` (boolean): if true and the queue has consumers, it will
-   not be deleted and the channel will be closed. Defaults to false.
-
+   not be deleted and the channel will be closed. Defaults to false.<br/><br/>
  * `ifEmpty` (boolean): if true and the queue contains messages, the
    queue will not be deleted and the channel will be closed. Defaults
-   to false.
+   to false.<br/><br/>
 
 Note the obverse semantics of the options: if both are true, the queue
 will be deleted only if it has no consumers *and* no messages.
@@ -886,21 +875,18 @@ use the `arguments` table to supply parameters.
 The options:
 
  * `durable` (boolean): if true, the exchange will survive broker
-  restarts. Defaults to true.
-
+  restarts. Defaults to true.<br/><br/>
  * `internal` (boolean): if true, messages cannot be published
   directly to the exchange (i.e., it can only be the target of
-  bindings, or possibly create messages ex-nihilo). Defaults to false.
+  bindings, or possibly create messages ex-nihilo). Defaults to false.<br/><br/>s
 
  * `autoDelete` (boolean): if true, the exchange will be destroyed
   once the number of bindings for which it is the source drop to
-  zero. Defaults to false.
-
+  zero. Defaults to false.<br/><br/>
  * `alternateExchange` (string): an exchange to send messages to if
-  this exchange can't route them to any queues.
-
+  this exchange can't route them to any queues.<br/><br/>
  * `arguments` (object): any additional arguments that may be needed
-   by an exchange type.
+   by an exchange type.<br/><br/>
 
 The server reply echoes the exchange name, in the field `exchange`.
 
@@ -932,7 +918,7 @@ be closed with an error. If it does exist, happy days.
 Delete an exchange. The only meaningful field in `options` is:
 
  * `ifUnused` (boolean): if true and the exchange has bindings, it
-  will not be deleted and the channel will be closed.
+  will not be deleted and the channel will be closed.<br/><br/>
 
 If the exchange does not exist, a channel error is raised (RabbitMQ
 version 3.2.0 and after will not raise an
@@ -996,63 +982,56 @@ Publish a single message to an exchange. The mandatory parameters are:
  (or undefined) as the exchange, which will send directly to the queue 
  named by the routing key; `#sendToQueue` below is equivalent to this special
  case. If the named exchange does not exist, the channel will be
- closed.
-
+ closed.<br/><br/>
  * `content`: a buffer containing the message content. This will be
  copied during encoding, so it is safe to mutate it once this method
- has returned.
+ has returned.<br/><br/>
 
 The remaining parameters are provided as fields in `options`, and are
 divided into those that have some meaning to RabbitMQ and those that
 will be ignored by RabbitMQ but passed on to consumers. `options` may
-be omitted altogether, in which case defaults as noted will apply.
+be omitted altogether, in which case defaults as noted will apply.<br/><br/>
 
 The "meaningful" options are a mix of fields in BasicDeliver (the
 method used to publish a message), BasicProperties (in the message
 header frame) and RabbitMQ extensions which are given in the `headers`
-table in BasicProperties.
+table in BasicProperties.<br/><br/>
 
 Used by RabbitMQ and sent on to consumers:
 
  * `expiration` (string): if supplied, the message will be discarded
    from a queue once it's been there longer than the given number of
    milliseconds. In the specification this is a string; numbers
-   supplied here will be coerced to strings for transit.
-
+   supplied here will be coerced to strings for transit.<br/><br/>
  * `userId` (string): If supplied, RabbitMQ will compare it to the
    username supplied when opening the connection, and reject messages
-   for which it does not match.
-
+   for which it does not match.<br/><br/>
  * `CC` (string or array of string): an array of routing keys as
    strings; messages will be routed to these routing keys in addition
    to that given as the `routingKey` parameter. A string will be
    implicitly treated as an array containing just that string. This
    will override any value given for `CC` in the `headers`
    parameter. **NB** The property names `CC` and `BCC` are
-   case-sensitive.
-
+   case-sensitive.<br/><br/>
  * `priority` (positive integer): a priority for the message; ignored
     by versions of RabbitMQ older than 3.5.0, or if the queue is not a
     [priority queue][rabbitmq-priority-queue] (see `maxPriority`
-    above).
-
+    above).<br/><br/>
  * `persistent` (boolean): If truthy, the message will survive broker
    restarts provided it's in a queue that also survives
    restarts. Corresponds to, and overrides, the property
-   `deliveryMode`.
-
+   `deliveryMode`.<br/><br/>
  * `deliveryMode` (boolean or numeric): Either `1` or falsey, meaning
    non-persistent; or, `2` or truthy, meaning persistent. That's just
-   obscure though. Use the option `persistent` instead.
+   obscure though. Use the option `persistent` instead.<br/><br/>
 
 Used by RabbitMQ but not sent on to consumers:
 
  * `mandatory` (boolean): if true, the message will be returned if it
    is not routed to a queue (i.e., if there are no bindings that match
-   its routing key).
-
+   its routing key).<br/><br/>
  * `BCC` (string or array of string): like `CC`, except that the value
-   will not be sent in the message headers to consumers.
+   will not be sent in the message headers to consumers.<br/><br/>
 
 Not used by RabbitMQ and not sent to consumers:
 
@@ -1060,37 +1039,29 @@ Not used by RabbitMQ and not sent to consumers:
    server to return the message if it is not able to be sent
    immediately to a consumer. No longer implemented in RabbitMQ, and
    if true, will provoke a channel error, so it's best to leave it
-   out.
+   out.<br/><br/>
 
 Ignored by RabbitMQ (but may be useful for applications):
 
- * `contentType` (string): a MIME type for the message content
-
- * `contentEncoding` (string): a MIME encoding for the message content
-
+ * `contentType` (string): a MIME type for the message content<br/><br/>
+ * `contentEncoding` (string): a MIME encoding for the message content<br/><br/>
  * `headers` (object): application specific headers to be carried
    along with the message content. The value as sent may be augmented
    by extension-specific fields if they are given in the parameters,
    for example, 'CC', since these are encoded as message headers; the
-   supplied value won't be mutated.
-
+   supplied value won't be mutated.<br/><br/>
  * `correlationId` (string): usually used to match replies to
-   requests, or similar
-
+   requests, or similar<br/><br/>
  * `replyTo` (string): often used to name a queue to which the
    receiving application must send replies, in an RPC scenario (many
-   libraries assume this pattern)
-
+   libraries assume this pattern)<br/><br/>
  * `messageId` (string): arbitrary application-specific identifier for
-   the message
-
- * `timestamp` (positive number): a timestamp for the message
-
+   the message<br/><br/>
+ * `timestamp` (positive number): a timestamp for the message<br/><br/>
  * `type` (string): an arbitrary application-specific type for the
-   message
-
+   message<br/><br/>
  * `appId` (string): an arbitrary identifier for the originating
-   application
+   application<br/><br/>
 
 `#publish` mimics the [`stream.Writable`][nodejs-write] interface in
 its return value; it will return `false` if the channel's write buffer
@@ -1130,30 +1101,25 @@ Options (which may be omitted if the last argument):
   distinguish message deliveries for the consumer; mustn't be already
   in use on the channel. It's usually easier to omit this, in which
   case the server will create a random name and supply it in the
-  reply.
-
+  reply.<br/><br/>
  * `noLocal` (boolean): in theory, if true then the broker won't
   deliver messages to the consumer if they were also published on this
   connection; RabbitMQ doesn't implement it though, and will ignore
-  it. Defaults to false.
-
+  it. Defaults to false.<br/><br/>
  * `noAck` (boolean): if true, the broker won't expect an
   acknowledgement of messages delivered to this consumer; i.e., it
   will dequeue messages as soon as they've been sent down the
   wire. Defaults to false (i.e., you will be expected to acknowledge
-  messages).
-
+  messages).<br/><br/>
  * `exclusive` (boolean): if true, the broker won't let anyone else
   consume from this queue; if there already is a consumer, there goes
   your channel (so usually only useful if you've made a 'private'
-  queue by letting the server choose its name).
-
+  queue by letting the server choose its name).<br/><br/>
  * `priority` (integer): gives a priority to the consumer; higher
    priority consumers get messages in preference to lower priority
    consumers. See [this RabbitMQ extension's
-   documentation][rabbitmq-consumer-priority]
-
- * `arguments` (object): arbitrary arguments. Go to town.
+   documentation][rabbitmq-consumer-priority]<br/><br/>
+ * `arguments` (object): arbitrary arguments. Go to town.<br/><br/>
 
 The server reply contains one field, `consumerTag`. It is necessary to
 remember this somewhere if you will later want to cancel this consume
@@ -1230,7 +1196,7 @@ Options:
  * `noAck` (boolean): if true, the message will be assumed by the server
    to be acknowledged (i.e., dequeued) as soon as it's been sent over
    the wire. Default is false, that is, you will be expected to
-   acknowledge the message.
+   acknowledge the message.<br/><br/>
 
 
 ### <a name="channel_ack"></a>Channel#ack
