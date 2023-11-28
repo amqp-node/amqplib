@@ -38,9 +38,9 @@ suite("Explicit parsing", function() {
   test('Parse partitioned', function() {
     var input = inputs();
     var frames = new Frames(input);
-    input.write(HB.slice(0, 3));
+    input.write(HB.subarray(0, 3));
     assert(!frames.recvFrame());
-    input.write(HB.slice(3));
+    input.write(HB.subarray(3));
     assert(frames.recvFrame() === HEARTBEAT);
     assert(!frames.recvFrame());
   });
@@ -143,9 +143,9 @@ suite("Parsing", function() {
          var onethird = Math.floor(full.length / 3);
          var twothirds = 2 * onethird;
          return [
-           full.slice(0, onethird),
-           full.slice(onethird, twothirds),
-           full.slice(twothirds)
+           full.subarray(0, onethird),
+           full.subarray(onethird, twothirds),
+           full.subarray(twothirds)
          ];
        }));
 });
