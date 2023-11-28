@@ -495,7 +495,7 @@ function decoderFn(method) {
       break;
     case 'longstr':
       println('len = buffer.readUInt32BE(offset); offset += 4;');
-      println('val = buffer.slice(offset, offset + len);');
+      println('val = buffer.subarray(offset, offset + len);');
       println('offset += len;');
       break;
     case 'shortstr':
@@ -505,7 +505,7 @@ function decoderFn(method) {
       break;
     case 'table':
       println('len = buffer.readUInt32BE(offset); offset += 4;');
-      println('val = decodeFields(buffer.slice(offset, offset + len));');
+      println('val = decodeFields(buffer.subarray(offset, offset + len));');
       println('offset += len;');
       break;
     default:
@@ -657,7 +657,7 @@ function encodePropsFn(props) {
   // size does not include the frame header or frame end byte
   println('buffer.writeUInt32BE(offset - 7, 3);');
   println('buffer.writeUInt16BE(flags, 19);');
-  println('return buffer.slice(0, offset + 1);');
+  println('return buffer.subarray(0, offset + 1);');
   println('}');
 }
 
@@ -697,7 +697,7 @@ function decodePropsFn(props) {
         break;
       case 'longstr':
         println('len = buffer.readUInt32BE(offset); offset += 4;');
-        println('val = buffer.slice(offset, offset + len);');
+        println('val = buffer.subarray(offset, offset + len);');
         println('offset += len;');
         break;
       case 'shortstr':
@@ -707,7 +707,7 @@ function decodePropsFn(props) {
         break;
       case 'table':
         println('len = buffer.readUInt32BE(offset); offset += 4;');
-        println('val = decodeFields(buffer.slice(offset, offset + len));');
+        println('val = decodeFields(buffer.subarray(offset, offset + len));');
         println('offset += len;');
         break;
       default:
