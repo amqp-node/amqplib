@@ -59,10 +59,10 @@ suite("connect", function() {
 
 });
 
-suite('updateSecret', function() {
-  test('updateSecret', function(done) {
+suite("updateSecret", function() {
+  test("updateSecret", function(done) {
     connect().then(function(c) {
-      c.updateSecret(Buffer.from('new secret'), 'no reason')
+      c.updateSecret(Buffer.from("new secret"), "no reason")
         .then(succeed(done), fail(done))
         .finally(function() { c.close(); });
     });
