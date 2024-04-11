@@ -1,8 +1,9 @@
 # Change log for amqplib
 
-## Unreleased
+## Changes in v0.10.4
 
 - Improve stream example as per https://github.com/amqp-node/amqplib/issues/722
+- Added support for RabbitMQ's connection update-secret operation. See https://github.com/amqp-node/amqplib/issues/755
 
 ## Changes in v0.10.3
 
