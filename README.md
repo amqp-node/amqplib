@@ -13,7 +13,6 @@
  * [Troubleshooting][gh-pages-trouble]
  * [Examples from RabbitMQ tutorials][tutes]
 
-
 A library for making AMQP 0-9-1 clients for Node.JS, and an AMQP 0-9-1 client for Node.JS v10+.
 
 This library does not implement [AMQP
