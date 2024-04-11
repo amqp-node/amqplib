@@ -6,7 +6,7 @@
   "description": "An AMQP 0-9-1 (e.g., RabbitMQ) library and client.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/amqp-node/amqplib.git"
+    "url": "git+https://github.com/amqp-node/amqplib.git"
   },
   "engines": {
     "node": ">=10"
