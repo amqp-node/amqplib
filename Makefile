@@ -9,32 +9,35 @@ _MOCHA=./node_modules/.bin/_mocha
 UGLIFY=./node_modules/.bin/uglifyjs
 NYC=./node_modules/.bin/nyc
 
-.PHONY: test test-all-nodejs all clean coverage
+.PHONY: test test-all-nodejs coverage lib/defs.js
 
-all: lib/defs.js
+error:
+	@echo "Please choose one of the following targets: test, test-all-nodejs, coverage, lib/defs.js"
+	@exit 1
 
-clean:
-	rm lib/defs.js bin/amqp-rabbitmq-0.9.1.json
-	rm -rf ./coverage
-
-lib/defs.js: $(UGLIFY) bin/generate-defs.js bin/amqp-rabbitmq-0.9.1.json
-	(cd bin; node ./generate-defs.js > ../lib/defs.js)
-	$(UGLIFY) ./lib/defs.js -o ./lib/defs.js \
-		-c 'sequences=false' --comments \
-		-b 'indent-level=2' 2>&1 | (grep -v 'WARN' || true)
-
-test: lib/defs.js
+test:
 	$(MOCHA) --check-leaks -u tdd --exit test/
 
-test-all-nodejs: lib/defs.js
+test-all-nodejs:
 	for v in $(NODEJS_VERSIONS); \
 		do echo "-- Node version $$v --"; \
 		nave use $$v $(MOCHA) -u tdd --exit -R progress test; \
 		done
 
-coverage: $(NYC) lib/defs.js
-	$(NYC) --reporter=lcov --reporter=text $(_MOCHA) -u tdd -R progress test/
+coverage: $(NYC)
+	$(NYC) --clean --reporter=lcov --reporter=text $(_MOCHA) -u tdd --exit -R progress test/
 	@echo "HTML report at file://$$(pwd)/coverage/lcov-report/index.html"
+
+lib/defs.js: clean bin/generate-defs test
+
+clean:
+	rm -f lib/defs.js bin/amqp-rabbitmq-0.9.1.json
+
+bin/generate-defs: $(UGLIFY) bin/generate-defs.js bin/amqp-rabbitmq-0.9.1.json
+	(cd bin; node ./generate-defs.js > ../lib/defs.js)
+	$(UGLIFY) ./lib/defs.js -o ./lib/defs.js \
+		-c 'sequences=false' --comments \
+		-b 'indent-level=2' 2>&1 | (grep -v 'WARN' || true)
 
 bin/amqp-rabbitmq-0.9.1.json:
 	curl -L $(AMQP_JSON) > $@
