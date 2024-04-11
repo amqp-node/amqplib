@@ -15,6 +15,7 @@ title: Channel API reference
    * [connect](#connect)
    * [ChannelModel and CallbackModel](#models)
      * [connection.close](#model_close)
+     * [connection.updateSecret](#model_updateSecret)
      * [events](#model_events)
      * [connection.createChannel](#model_createChannel)
      * [connection.createConfirmChannel](#model_createConfirmChannel)
@@ -512,6 +513,17 @@ open.then(function(conn) {
 **NB** it's no good using `process.on('exit', ...)`, since `close()` needs
 to do I/O.
 
+### <a name="model_updateSecret"></a>{Channel,Callback}Model#updateSecret
+
+##### Promises API
+
+`#updateSecret(secret, reason)`
+
+##### Callback API
+
+`#updateSecret(secret, reason, function(err) {...})`
+
+Updates the secret used to authenticate this connection. The secret must be a buffer, the reason must be a string.
 
 ### <a name="model_events"></a>{Channel,Callback}Model events
 
@@ -560,6 +572,9 @@ extension][rabbitmq-connection-blocked] for details.
 Emitted at some time after `'blocked'`, once the resource shortage has
 alleviated.
 
+`#on('update-secret-ok', function() {...})`
+
+Emitted after receiving confirmation from the broker that the connection secret was successfully updated.
 
 ### <a name="model_createChannel"></a>{Channel,Callback}Model#createChannel
 
