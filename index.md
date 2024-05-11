@@ -86,7 +86,7 @@ connection.on('error', (err) => {
 const channel = await connection.createChannel();
 channel.on('error', (err) => {
   // recover or exit
-})l
+});
 ```
 
 ### How do I recover from a connection or channel error?
