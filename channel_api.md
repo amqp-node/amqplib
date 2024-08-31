@@ -1461,7 +1461,6 @@ there are messages in the queue.
 [nodejs-writable]: https://nodejs.org/api/stream.html#stream_class_stream_writable
 [rabbitmq-consumer-priority]: http://www.rabbitmq.com/docs/consumer-priority
 [rabbitmq-connection-blocked]: http://www.rabbitmq.com/docs/connection-blocked
-[rabbitmq-idempotent-delete]: doc/channel_api.html#idempotent-deletes
 [rabbitmq-prefetch]: http://www.rabbitmq.com/docs/consumer-prefetch
 [wikipedia-nagling]: http://en.wikipedia.org/wiki/Nagle%27s_algorithm
 [rabbitmq-priority-queue]: http://www.rabbitmq.com/docs/priority
