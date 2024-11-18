@@ -24,8 +24,7 @@
     "uglify-js": "2.8.x"
   },
   "scripts": {
-    "test": "make test",
-    "prepare": "make"
+    "test": "make test"
   },
   "keywords": [
     "AMQP",
