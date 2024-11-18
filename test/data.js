@@ -89,6 +89,18 @@ var Decimal = label('decimal', transform(
   function(args) {
     return {'!': 'decimal', value: {places: args[1], digits: args[0]}};
   }, sequence(arb.UInt, Octet)));
+var UnsignedByte = label('unsignedbyte', transform(
+  function(n) {
+    return {'!': 'unsignedbyte', value: n};
+  }, Octet));
+var UnsignedShort = label('unsignedshort', transform(
+  function(n) {
+    return {'!': 'unsignedshort', value: n};
+  }, UShort));
+var UnsignedInt = label('unsignedint', transform(
+  function(n) {
+    return {'!': 'unsignedint', value: n};
+  }, ULong));
 
 // Signed 8 bit int
 var Byte = rangeInt('byte', -128, 127);
@@ -244,6 +256,9 @@ module.exports = {
   Float: Float,
   Timestamp: Timestamp,
   Decimal: Decimal,
+  UnsignedByte: UnsignedByte,
+  UnsignedShort: UnsignedShort,
+  UnsignedInt: UnsignedInt,
   FieldArray: FieldArray,
   FieldTable: FieldTable,
 
