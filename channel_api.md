@@ -303,7 +303,7 @@ aliases for most encodings, as shown in the examples.
 |                       | `{'!': 'byte', value: 64}`   |
 | signed 16-bit integer | `{'!': 'int16', value: 64}`  |
 |                       | `{'!': 'short', value: 64}`  |
-| signed 32-bit integer | `{"!': 'int32', value: 64}`  |
+| signed 32-bit integer | `{'!': 'int32', value: 64}`  |
 |                       | `{'!': 'int', value: 64}`    |
 | signed 64-bit integer | `{'!': 'int64', value: 64}`  |
 |                       | `{'!': 'long', value: 64}`   |
@@ -337,7 +337,7 @@ with factory settings, on localhost.
 
 The auth section (`guest:guest` above) is treated as one section for
 the purpose of default values. If nothing appears there, the defaults
-will be used. If anything appears there, it will taken as giving both
+will be used. If anything appears there, it will be taken as giving both
 the username and password (and if either is absent, it will be treated
 as empty i.e., `''`).
 
@@ -442,10 +442,10 @@ send heartbeats to the server (in the absence of other data).
 If you supply `0` as the `heartbeat` parameter (or defaults to `0`), the
 server value is used. This means that you can only disable heartbeat if
 the server value is also `0`. See
-[here](https://www.rabbitmq.com/configure.html) for more details.
+[here](https://www.rabbitmq.com/docs/configure) for more details.
 
 NOTE: Please consider NOT disabling heartbeats because they exist for a
-[reason](http://www.rabbitmq.com/heartbeats.html).
+[reason](http://www.rabbitmq.com/docs/heartbeats).
 
 
 ## <a name="models"></a>ChannelModel and CallbackModel
@@ -781,7 +781,7 @@ name. The reply from the server is the same as for `#assertQueue()`.
 
 Delete the queue named. Naming a queue that doesn't exist will result
 in the server closing the channel, to teach you a lesson (except in
-RabbitMQ version 3.2.0 and after[1][rabbitmq-idempotent-delete]). The
+RabbitMQ version 3.2.0 and after[1](#idempotent-deletes)). The
 options here are:
 
  * `ifUnused` (boolean): if true and the queue has consumers, it will
@@ -861,7 +861,7 @@ attempting to unbind when there is no such binding may result in a
 punitive error (the AMQP specification says it's a connection-killing
 mistake; RabbitMQ before version 3.2.0 softens this to a channel
 error, and from version 3.2.0, doesn't treat it as an error at
-all[1][rabbitmq-idempotent-delete]. Good ol' RabbitMQ).
+all[1](#idempotent-deletes). Good ol' RabbitMQ).
 
 
 ### <a name="channel_assertExchange"></a>Channel#assertExchange
@@ -892,8 +892,7 @@ The options:
   restarts. Defaults to true.<br/><br/>
  * `internal` (boolean): if true, messages cannot be published
   directly to the exchange (i.e., it can only be the target of
-  bindings, or possibly create messages ex-nihilo). Defaults to false.<br/><br/>s
-
+  bindings, or possibly create messages ex-nihilo). Defaults to false.<br/><br/>
  * `autoDelete` (boolean): if true, the exchange will be destroyed
   once the number of bindings for which it is the source drop to
   zero. Defaults to false.<br/><br/>
@@ -936,7 +935,7 @@ Delete an exchange. The only meaningful field in `options` is:
 
 If the exchange does not exist, a channel error is raised (RabbitMQ
 version 3.2.0 and after will not raise an
-error[1][rabbitmq-idempotent-delete]).
+error[1](#idempotent-deletes)).
 
 The server reply has no fields.
 
@@ -977,7 +976,7 @@ the exact `source` exchange, `destination` exchange, routing key
 `pattern`, and extension `args` will be removed. If no such binding
 exists, it's &ndash; you guessed it &ndash; a channel error, except in
 RabbitMQ >= version 3.2.0, for which it succeeds
-trivially[1][rabbitmq-idempotent-delete].
+trivially[1](#idempotent-deletes).
 
 
 ### <a name="channel_publish"></a>Channel#publish
@@ -1450,20 +1449,19 @@ example deleting a queue with `{ifEmpty: true}` will still fail if
 there are messages in the queue.
 
 
-[amqpurl]: http://www.rabbitmq.com/uri-spec.html
-[rabbitmq-tutes]: http://www.rabbitmq.com/getstarted.html
-[rabbitmq-confirms]: http://www.rabbitmq.com/confirms.html
-[rabbitmq-docs]: http://www.rabbitmq.com/documentation.html
+[amqpurl]: http://www.rabbitmq.com/docs/uri-spec
+[rabbitmq-tutes]: http://www.rabbitmq.com/tutorials
+[rabbitmq-confirms]: http://www.rabbitmq.com/docs/confirms
+[rabbitmq-docs]: http://www.rabbitmq.com/docs
 [ssl-doc]: ssl.html
-[rabbitmq-consumer-cancel]: http://www.rabbitmq.com/consumer-cancel.html
-[rabbitmq-nack]: http://www.rabbitmq.com/nack.html
+[rabbitmq-consumer-cancel]: http://www.rabbitmq.com/docs/consumer-cancel
+[rabbitmq-nack]: http://www.rabbitmq.com/docs/nack
 [nodejs-write]: http://nodejs.org/api/stream.html#stream_writable_write_chunk_encoding_callback
 [nodejs-drain]: http://nodejs.org/api/stream.html#stream_event_drain
 [nodejs-writable]: https://nodejs.org/api/stream.html#stream_class_stream_writable
-[rabbitmq-consumer-priority]: http://www.rabbitmq.com/consumer-priority.html
-[rabbitmq-connection-blocked]: http://www.rabbitmq.com/connection-blocked.html
-[rabbitmq-idempotent-delete]: doc/channel_api.html#idempotent-deletes
-[rabbitmq-prefetch]: http://www.rabbitmq.com/consumer-prefetch.html
+[rabbitmq-consumer-priority]: http://www.rabbitmq.com/docs/consumer-priority
+[rabbitmq-connection-blocked]: http://www.rabbitmq.com/docs/connection-blocked
+[rabbitmq-prefetch]: http://www.rabbitmq.com/docs/consumer-prefetch
 [wikipedia-nagling]: http://en.wikipedia.org/wiki/Nagle%27s_algorithm
-[rabbitmq-priority-queue]: http://www.rabbitmq.com/priority.html
+[rabbitmq-priority-queue]: http://www.rabbitmq.com/docs/priority
 [percent-encoded]: https://developer.mozilla.org/en-US/docs/Glossary/percent-encoding
