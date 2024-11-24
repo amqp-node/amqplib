@@ -72,10 +72,14 @@ suite('updateSecret', function() {
 });
 
 function channel_test_fn(method) {
-  return function(name, chfun) {
+  return function(name, options, chfun) {
+    if (arguments.length === 2) {
+      chfun = options;
+      options = {};
+    }
     test(name, function(done) {
       connect(kCallback(function(c) {
-        c[method](kCallback(function(ch) {
+        c[method](options, kCallback(function(ch) {
           chfun(ch, done);
         }, done));
       }, done));
@@ -210,6 +214,34 @@ suite('sending messages', function() {
     });
   });
 
+  channel_test('saturate buffer', function(ch, done) {
+    var msg = randomString();
+    ch.assertQueue('', {exclusive: true}, function(e, q) {
+      if (e !== null) return done(e);
+      let ok;
+      for (let i = 0; i < 2047; i++) {
+        ok = ch.sendToQueue(q.queue, Buffer.from(msg));
+        if (!ok) break;
+      }
+
+      assert.equal(ok, false);
+      done();
+    });
+  });
+
+  channel_test('set high watermark (making it harder to saturate the buffer', { highWaterMark: 4092 }, function(ch, done) {
+    var msg = randomString();
+    ch.assertQueue('', {exclusive: true}, function(e, q) {
+      if (e !== null) return done(e);
+      let ok;
+      for (let i = 0; i < 4092; i++) {
+        ok = ch.sendToQueue(q.queue, Buffer.from(msg));
+        assert.equal(ok, true);
+      }
+      done();
+    });
+  });
+
 });
 
 suite('ConfirmChannel', function() {
@@ -226,6 +258,34 @@ suite('ConfirmChannel', function() {
       ch.publish('', '', Buffer.from('foo'), {});
     }
     ch.waitForConfirms(done);
+  });
+
+  confirm_channel_test('saturate buffer', function(ch, done) {
+    var msg = randomString();
+    ch.assertQueue('', {exclusive: true}, function(e, q) {
+      if (e !== null) return done(e);
+      let ok;
+      for (let i = 0; i < 2047; i++) {
+        ok = ch.sendToQueue(q.queue, Buffer.from(msg));
+        if (!ok) break;
+      }
+
+      assert.equal(ok, false);
+      done();
+    });
+  });
+
+  confirm_channel_test('set high watermark (making it harder to saturate the buffer', { highWaterMark: 4092 }, function(ch, done) {
+    var msg = randomString();
+    ch.assertQueue('', {exclusive: true}, function(e, q) {
+      if (e !== null) return done(e);
+      let ok;
+      for (let i = 0; i < 4092; i++) {
+        ok = ch.sendToQueue(q.queue, Buffer.from(msg));
+        assert.equal(ok, true);
+      }
+      done();
+    });
   });
 
 });
