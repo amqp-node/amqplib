@@ -7,8 +7,7 @@ var connection = require('../lib/connection');
 var Frames = connection.Connection;
 var HEARTBEAT = require('../lib/frame').HEARTBEAT;
 var Stream = require('stream');
-var PassThrough = Stream.PassThrough ||
-    require('readable-stream/passthrough');
+var PassThrough = Stream.PassThrough;
 
 var defs = require('../lib/defs');
 

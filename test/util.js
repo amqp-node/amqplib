@@ -2,9 +2,7 @@
 
 var crypto = require('crypto');
 var Connection = require('../lib/connection').Connection;
-var PassThrough =
-  require('stream').PassThrough ||
-  require('readable-stream/passthrough');
+var PassThrough = require('stream').PassThrough;
 var defs = require('../lib/defs');
 var assert = require('assert');
 

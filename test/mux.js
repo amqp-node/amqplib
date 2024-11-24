@@ -2,8 +2,7 @@
 
 var assert = require('assert');
 var Mux = require('../lib/mux').Mux;
-var PassThrough = require('stream').PassThrough ||
-  require('readable-stream/passthrough');
+var PassThrough = require('stream').PassThrough;
 
 var latch = require('./util').latch;
 var schedule = require('./util').schedule;
