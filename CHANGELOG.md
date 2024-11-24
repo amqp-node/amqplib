@@ -1,5 +1,13 @@
 # Change log for amqplib
 
+## Changes in v0.10.5
+
+    git log v0.10.4..v0.10.5
+
+- Removed readable stream - See https://github.com/amqp-node/amqplib/issues/729
+- Added support for unsigned integers - See https://github.com/amqp-node/amqplib/pull/773
+- Committed protocol definitions - See https://github.com/amqp-node/amqplib/commit/0a87ee480311633cff41e43350a90cb3c1221506
+
 ## Changes in v0.10.4
 
 - Improve stream example as per https://github.com/amqp-node/amqplib/issues/722
