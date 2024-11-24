@@ -72,10 +72,14 @@ suite('updateSecret', function() {
 });
 
 function channel_test_fn(method) {
-  return function(name, chfun) {
+  return function(name, options, chfun) {
+    if (arguments.length === 2) {
+      chfun = options;
+      options = {};
+    }
     test(name, function(done) {
       connect(kCallback(function(c) {
-        c[method](kCallback(function(ch) {
+        c[method](options, kCallback(function(ch) {
           chfun(ch, done);
         }, done));
       }, done));
@@ -210,6 +214,33 @@ suite('sending messages', function() {
     });
   });
 
+  var channelOptions = {};
+
+  channel_test('find high watermark', function(ch, done) {
+    var msg = randomString();
+    var baseline = 0;
+    ch.assertQueue('', {exclusive: true}, function(e, q) {
+      if (e !== null) return done(e);
+      while (ch.sendToQueue(q.queue, Buffer.from(msg))) {
+        baseline++;
+      };
+      channelOptions.highWaterMark = baseline * 2;
+      done();
+    })
+  });
+
+  channel_test('set high watermark', channelOptions, function(ch, done) {
+    var msg = randomString();
+    ch.assertQueue('', {exclusive: true}, function(e, q) {
+      if (e !== null) return done(e);
+      var ok;
+      for (var i = 0; i < channelOptions.highWaterMark; i++) {
+        ok = ch.sendToQueue(q.queue, Buffer.from(msg));
+        assert.equal(ok, true);
+      }
+      done();
+    });
+  });
 });
 
 suite('ConfirmChannel', function() {
@@ -226,6 +257,34 @@ suite('ConfirmChannel', function() {
       ch.publish('', '', Buffer.from('foo'), {});
     }
     ch.waitForConfirms(done);
+  });
+
+  var channelOptions = {};
+
+  confirm_channel_test('find high watermark', function(ch, done) {
+    var msg = randomString();
+    var baseline = 0;
+    ch.assertQueue('', {exclusive: true}, function(e, q) {
+      if (e !== null) return done(e);
+      while (ch.sendToQueue(q.queue, Buffer.from(msg))) {
+        baseline++;
+      };
+      channelOptions.highWaterMark = baseline * 2;
+      done();
+    })
+  });
+
+  confirm_channel_test('set high watermark', channelOptions, function(ch, done) {
+    var msg = randomString();
+    ch.assertQueue('', {exclusive: true}, function(e, q) {
+      if (e !== null) return done(e);
+      var ok;
+      for (var i = 0; i < channelOptions.highWaterMark; i++) {
+        ok = ch.sendToQueue(q.queue, Buffer.from(msg));
+        assert.equal(ok, true);
+      }
+      done();
+    });
   });
 
 });
