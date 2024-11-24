@@ -214,34 +214,33 @@ suite('sending messages', function() {
     });
   });
 
-  channel_test('saturate buffer', function(ch, done) {
+  var channelOptions = {};
+
+  channel_test('find high watermark', function(ch, done) {
     var msg = randomString();
+    var baseline = 0;
     ch.assertQueue('', {exclusive: true}, function(e, q) {
       if (e !== null) return done(e);
-      let ok;
-      for (let i = 0; i < 2047; i++) {
-        ok = ch.sendToQueue(q.queue, Buffer.from(msg));
-        if (!ok) break;
-      }
-
-      assert.equal(ok, false);
+      while (ch.sendToQueue(q.queue, Buffer.from(msg))) {
+        baseline++;
+      };
+      channelOptions.highWaterMark = baseline * 2;
       done();
-    });
+    })
   });
 
-  channel_test('set high watermark (making it harder to saturate the buffer', { highWaterMark: 4092 }, function(ch, done) {
+  channel_test('set high watermark', channelOptions, function(ch, done) {
     var msg = randomString();
     ch.assertQueue('', {exclusive: true}, function(e, q) {
       if (e !== null) return done(e);
-      let ok;
-      for (let i = 0; i < 4092; i++) {
+      var ok;
+      for (var i = 0; i < channelOptions.highWaterMark; i++) {
         ok = ch.sendToQueue(q.queue, Buffer.from(msg));
         assert.equal(ok, true);
       }
       done();
     });
   });
-
 });
 
 suite('ConfirmChannel', function() {
@@ -260,27 +259,27 @@ suite('ConfirmChannel', function() {
     ch.waitForConfirms(done);
   });
 
-  confirm_channel_test('saturate buffer', function(ch, done) {
+  var channelOptions = {};
+
+  confirm_channel_test('find high watermark', function(ch, done) {
     var msg = randomString();
+    var baseline = 0;
     ch.assertQueue('', {exclusive: true}, function(e, q) {
       if (e !== null) return done(e);
-      let ok;
-      for (let i = 0; i < 2047; i++) {
-        ok = ch.sendToQueue(q.queue, Buffer.from(msg));
-        if (!ok) break;
-      }
-
-      assert.equal(ok, false);
+      while (ch.sendToQueue(q.queue, Buffer.from(msg))) {
+        baseline++;
+      };
+      channelOptions.highWaterMark = baseline * 2;
       done();
-    });
+    })
   });
 
-  confirm_channel_test('set high watermark (making it harder to saturate the buffer', { highWaterMark: 4092 }, function(ch, done) {
+  confirm_channel_test('set high watermark', channelOptions, function(ch, done) {
     var msg = randomString();
     ch.assertQueue('', {exclusive: true}, function(e, q) {
       if (e !== null) return done(e);
-      let ok;
-      for (let i = 0; i < 4092; i++) {
+      var ok;
+      for (var i = 0; i < channelOptions.highWaterMark; i++) {
         ok = ch.sendToQueue(q.queue, Buffer.from(msg));
         assert.equal(ok, true);
       }
