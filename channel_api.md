@@ -1325,7 +1325,7 @@ Use the `global` flag to get the per-channel behaviour. To keep life
 interesting, using the `global` flag with an RabbitMQ older than
 v3.3.0 will bring down the whole connection.
 
-**NB** RabbitMQ v4.0 has deprecated global prefetch. See [removal-of-global-qos)(https://www.rabbitmq.com/blog/2021/08/21/4.0-deprecation-announcements#removal-of-global-qos)
+**NB** RabbitMQ v4.0 has deprecated global prefetch. See [removal-of-global-qos](https://www.rabbitmq.com/blog/2021/08/21/4.0-deprecation-announcements#removal-of-global-qos)
 
 ### <a name="channel_recover"></a>Channel#recover
 
