@@ -16,8 +16,8 @@
 A library for making AMQP 0-9-1 clients for Node.JS, and an AMQP 0-9-1 client for Node.JS v10+.
 
 This library does not implement [AMQP
-1.0](https://github.com/squaremo/amqp.node/issues/63) or [AMQP
-0-10](https://github.com/squaremo/amqp.node/issues/94).
+1.0](https://github.com/amqp-node/amqplib/issues/63) or [AMQP
+0-10](https://github.com/amqp-node/amqplib/issues/94).
 
 Project status:
 

@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## Unreleased
+- Replace references to the old squaremo/amqp.name repo with ones to amqp-node/amqplib
+
 ## Changes in v0.10.5
 
     git log v0.10.4..v0.10.5
