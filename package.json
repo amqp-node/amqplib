@@ -12,7 +12,6 @@
     "node": ">=10"
   },
   "dependencies": {
-    "@acuminous/bitsyntax": "^0.1.2",
     "buffer-more-ints": "~1.0.0",
     "url-parse": "~1.5.10"
   },
