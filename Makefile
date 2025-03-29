@@ -2,7 +2,7 @@ RABBITMQ_SRC_VERSION=v3.12.13
 JSON=amqp-rabbitmq-0.9.1.json
 AMQP_JSON=https://raw.githubusercontent.com/rabbitmq/rabbitmq-server/$(RABBITMQ_SRC_VERSION)/deps/rabbitmq_codegen/$(JSON)
 
-NODEJS_VERSIONS='10.21' '11.15' '12.18' '13.14' '14.5' '15.8' '16.3.0' '18.1.0' '20.10.0'
+NODEJS_VERSIONS='10.21' '11.15' '12.18' '13.14' '14.5' '15.8' '16.3.0' '18.1.0' '20.10.0' '22.14.0'
 
 MOCHA=./node_modules/.bin/mocha
 _MOCHA=./node_modules/.bin/_mocha
