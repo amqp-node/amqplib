@@ -2,10 +2,7 @@
 
 ## Unreleased
 - Remove bitsyntax dependency - See https://github.com/amqp-node/amqplib/pull/785. Thanks @ikenfin
-<<<<<<< HEAD
-=======
 - Stop checking if frame max is exceeded when parsing frames - See https://github.com/amqp-node/amqplib/pull/784. Thanks @ohroy
->>>>>>> ohroy-main
 
 ## v0.10.6
 - Replace references to the old squaremo/amqp.name repo with ones to amqp-node/amqplib
