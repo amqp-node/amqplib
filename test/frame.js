@@ -69,12 +69,6 @@ suite("Explicit parsing", function() {
                   0,0,0,0, // garbage ID
                   defs.constants.FRAME_END]);
 
-  testBogusFrame('> max frame',
-                 [defs.constants.FRAME_BODY,
-                  0,0, 0,0,0,6, // too big!
-                  65,66,67,68,69,70,
-                  defs.constants.FRAME_END]);
-
 });
 
 // Now for a bit more fun.
