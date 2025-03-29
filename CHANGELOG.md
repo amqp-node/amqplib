@@ -1,7 +1,8 @@
 # Change log for amqplib
 
-## Unreleased
+## v0.10.6
 - Replace references to the old squaremo/amqp.name repo with ones to amqp-node/amqplib
+- Use a frame_max of 131072 by default for RabbitMQ 4.1.0 compatibility
 
 ## Changes in v0.10.5
 
