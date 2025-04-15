@@ -1,6 +1,6 @@
 # Change log for amqplib
 
-## Unreleased
+## v0.10.7
 - Remove bitsyntax dependency - See https://github.com/amqp-node/amqplib/pull/785. Thanks @ikenfin
 - Stop checking if frame max is exceeded when parsing frames - See https://github.com/amqp-node/amqplib/pull/784. Thanks @ohroy
 
