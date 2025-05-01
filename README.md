@@ -12,8 +12,7 @@ A library for making AMQP 0-9-1 clients for Node.JS, and an AMQP 0-9-1 client fo
 ## ❤️ Help Support Jack
 One of my close friends, Jack, was recently diagnosed with terminal brain cancer (grade 4 astrocytoma). He’s a young father facing an unimaginably tough road with remarkable courage. Thanks to chemotherapy, radiotherapy, and your support, two of his tumours have stopped showing activity. Donations help Jack continue accessing promising complementary therapies, attend hospital appointments, and spend meaningful time with his children.
 
-If you’ve benefited from amqplib, please consider supporting Jack’s journey through his [J Crushing Cancer](https://www.gofundme.com/f/j-crushing-cancer) gofundme page.
-<br/>Thank you - @cressie176
+If you’ve benefited from amqplib, please consider supporting Jack’s journey through his [J Crushing Cancer](https://www.gofundme.com/f/j-crushing-cancer) gofundme page. Thank you - @cressie176
 
 ## Links
  * [Change log][changelog]
