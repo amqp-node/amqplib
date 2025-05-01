@@ -5,21 +5,24 @@
 [![Node.js CI](https://github.com/amqp-node/amqplib/workflows/Node.js%20CI/badge.svg)](https://github.com/amqp-node/amqplib/actions?query=workflow%3A%22Node.js+CI%22)
 [![amqplib](https://snyk.io/advisor/npm-package/amqplib/badge.svg)](https://snyk.io/advisor/npm-package/amqplib)
 
+A library for making AMQP 0-9-1 clients for Node.JS, and an AMQP 0-9-1 client for Node.JS v10+. This library does not implement [AMQP1.0](https://github.com/amqp-node/amqplib/issues/63) or [AMQP0-10](https://github.com/amqp-node/amqplib/issues/94).
+
     npm install amqplib
 
+## ❤️ Help Support Jack
+One of my close friends, Jack, was recently diagnosed with terminal brain cancer (grade 4 astrocytoma). He’s a young father facing an unimaginably tough road with remarkable courage. Thanks to chemotherapy, radiotherapy, and your support, two of his tumours have stopped showing activity. Donations help Jack continue accessing promising complementary therapies, attend hospital appointments, and spend meaningful time with his children.
+
+If you’ve benefited from amqplib, please consider supporting Jack’s journey through his [J Crushing Cancer](https://www.gofundme.com/f/j-crushing-cancer) gofundme page.
+<br/>Thank you - @cressie176
+
+## Links
  * [Change log][changelog]
  * [GitHub pages][gh-pages]
  * [API reference][gh-pages-apiref]
  * [Troubleshooting][gh-pages-trouble]
  * [Examples from RabbitMQ tutorials][tutes]
 
-A library for making AMQP 0-9-1 clients for Node.JS, and an AMQP 0-9-1 client for Node.JS v10+.
-
-This library does not implement [AMQP
-1.0](https://github.com/amqp-node/amqplib/issues/63) or [AMQP
-0-10](https://github.com/amqp-node/amqplib/issues/94).
-
-Project status:
+## Project status
 
  - Expected to work
  - Complete high-level and low-level APIs (i.e., all bits of the protocol)
