@@ -21,6 +21,11 @@ If you’ve benefited from amqplib, please consider supporting Jack’s journey 
  * [Troubleshooting][gh-pages-trouble]
  * [Examples from RabbitMQ tutorials][tutes]
 
+## RabbitMQ Version Series Compatibility
+
+Only `0.10.7` and later versions of this library are
+compatible with RabbitMQ 4.1.0 (and later releases).
+
 ## Project status
 
  - Expected to work
