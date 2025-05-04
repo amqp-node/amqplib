@@ -14,17 +14,16 @@ One of my close friends, Jack, was recently diagnosed with terminal brain cancer
 
 If you’ve benefited from amqplib, please consider supporting Jack’s journey through his [J Crushing Cancer](https://www.gofundme.com/f/j-crushing-cancer) gofundme page. Thank you - @cressie176
 
+## RabbitMQ Compatibility
+
+Only `0.10.7` and later versions of this library are compatible with RabbitMQ 4.1.0 (and later releases).
+
 ## Links
  * [Change log][changelog]
  * [GitHub pages][gh-pages]
  * [API reference][gh-pages-apiref]
  * [Troubleshooting][gh-pages-trouble]
  * [Examples from RabbitMQ tutorials][tutes]
-
-## RabbitMQ Version Series Compatibility
-
-Only `0.10.7` and later versions of this library are
-compatible with RabbitMQ 4.1.0 (and later releases).
 
 ## Project status
 
