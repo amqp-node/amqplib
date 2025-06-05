@@ -1,0 +1,102 @@
+<header class="banner" style="background: linear-gradient(#333, #222); padding: 0 1rem 2rem 1rem; position: relative;">
+  <style>
+    header.banner h1,
+    header.banner h2,
+    header.banner h3,
+    header.banner h4,
+    header.banner h5,
+    header.banner h6 {
+      color: white;
+    }
+
+    .wrapper {
+      position: relative;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    #downloads {
+      position: absolute;
+      top: -35px;
+      right: 1rem;
+      z-index: 10;
+      width: 210px;
+      height: 70px;
+    }
+
+    #downloads a {
+      display: block;
+      float: right;
+      width: 90px;
+      height: 70px;
+      text-indent: -5000px;
+      overflow: hidden;
+      background-image: url('/images/sprite_download.png');
+      background-repeat: no-repeat;
+    }
+
+    .zip_download_link {
+      background-position: bottom left;
+      margin-left: 10px;
+    }
+
+    .zip_download_link:hover {
+      background-position: top left;
+    }
+
+    .tar_download_link {
+      background-position: bottom right;
+    }
+
+    .tar_download_link:hover {
+      background-position: top right;
+    }
+
+    .post-header {
+      border: none;
+    }
+
+    code {
+      margin: 0 3px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+    }     
+
+    pre code {
+      box-shadow: none;
+    }
+
+    .page-content h2 {
+      border-bottom: 1px dashed #aaa;
+      padding-bottom: 0.25rem;
+      margin-bottom: 1rem;
+    } 
+  </style>
+
+  <div class="wrapper" style="display: flex; flex-direction: column;">
+    <div style="display: flex; justify-content: flex-end;">
+      <a href="https://github.com/squaremo/amqp.node"
+         style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem;
+                border-radius: 0 0 4px 4px; font-weight: bold; text-decoration: none;
+                background-color: #2b8cfe; color: white;">
+        View on GitHub
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/github.svg"
+             alt="GitHub" width="20" height="20"
+             style="filter: invert(100%); vertical-align: middle;" />
+      </a>
+    </div>
+
+    <h1 style="margin: 0 0 0.2rem 0;">amqplib</h1>
+    <h2 style="margin: 0 0 1rem 0; font-weight: normal;">AMQP 0–9–1 library and client for Node.JS</h2>
+  </div>
+</header>
+
+<!-- Download folders (overlapping content area) -->
+<div style="position: relative;">
+  <div class="wrapper">
+    <div id="downloads">
+      <a class="zip_download_link" href="https://github.com/squaremo/amqp.node/zipball/master">Download zip</a>
+      <a class="tar_download_link" href="https://github.com/squaremo/amqp.node/tarball/master">Download tar.gz</a>
+    </div>
+  </div>
+</div>

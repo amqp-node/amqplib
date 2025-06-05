@@ -1,9 +1,7 @@
 ---
-layout: default
+layout: page
 title: Channel API reference
 ---
-
-# Channel-oriented API reference
 
  * [Overview](#overview)
  * [Dealing with failure](#failure)
@@ -79,7 +77,7 @@ argument (and usually some value as the second argument). Likewise,
 with an `Error` as the first argument (and no value).
 
 
-## <a name="overview"></a>Overview
+## Overview {#overview}
 
 The client APIs are based closely on the protocol model. The general
 idea is to connect, then create one or more channels on which to issue
@@ -103,7 +101,7 @@ boolean (`publish` and `sendToQueue`); see [flow
 control](#flowcontrol).
 
 
-## <a name="failure"></a>Dealing with failure
+## Dealing with failure {#failure}
 
 Most operations in AMQP act like assertions, failing if the desired
 conditions cannot be met; for example, if a queue being declared
@@ -142,7 +140,7 @@ connection.createChannel().then(function(ch) {
 ```
 
 
-### <a name="failure_promises"></a>Exceptions and promises
+### Exceptions and promises {#failure_promises}
 
 Promises returned from methods are amenable to composition using, for
 example, when.js's functions:
@@ -177,7 +175,7 @@ amqp.connect().then(function(conn) {
 ```
 
 
-### <a name="failure_callbacks"></a>Exceptions and callbacks
+### Exceptions and callbacks {#failure_callbacks}
 
 The callback API expects callbacks that follow the convention
 `function(err, value) {...}`. This library does not attempt to deal
@@ -212,7 +210,7 @@ dom.run(function() {
 ```
 
 
-## <a name="flowcontrol"></a>Flow control
+## Flow control {#flowcontrol}
 
 Channels act like [`stream.Writable`][nodejs-writable] when you call
 `publish` or `sendToQueue`: they return either `true`, meaning "keep
@@ -224,7 +222,7 @@ not return a promise* in the promises API. The `ConfirmChannel` _does_
 accept a callback in _both_ APIs, called when the server confirms the
 message; as well as returning a boolean.
 
-## <a name="args"></a>Argument handling
+## Argument handling {#args}
 
 Many operations have mandatory arguments as well as optional arguments
 with defaults; in general, the former appear as parameters to the
@@ -270,7 +268,7 @@ ch.consume('bar', console.log, bar_consume_opts);
 // table
 ```
 
-### <a name="tables"></a>Field table values
+### Field table values {#tables}
 
 The aforementioned `arguments` option, and the `headers` option of
 `publish` and `sendToQueue`, are both a "field table" value. This is
@@ -313,9 +311,9 @@ aliases for most encodings, as shown in the examples.
 NB AMQP only has signed integers in tables.
 
 
-## <a name="api_reference"></a>API reference
+## API reference {#api_reference}
 
-### <a name="connect"></a>connect
+### connect {#connect}
 
 ##### Promises API
 
@@ -448,7 +446,7 @@ NOTE: Please consider NOT disabling heartbeats because they exist for a
 [reason](http://www.rabbitmq.com/docs/heartbeats).
 
 
-## <a name="models"></a>ChannelModel and CallbackModel
+## ChannelModel and CallbackModel {#models}
 
 These constructors represent connections in the channel APIs. They
 take as an argument a `connection.Connection`. It is better to use
@@ -456,7 +454,7 @@ take as an argument a `connection.Connection`. It is better to use
 are exported as potential extension points.
 
 
-### <a name="model_close"></a>{Channel,Callback}Model#close
+### {Channel,Callback}Model#close {#model_close}
 
 ##### Promises API
 
@@ -513,7 +511,7 @@ open.then(function(conn) {
 **NB** it's no good using `process.on('exit', ...)`, since `close()` needs
 to do I/O.
 
-### <a name="model_updateSecret"></a>{Channel,Callback}Model#updateSecret
+### {Channel,Callback}Model#updateSecret {#model_updateSecret}
 
 ##### Promises API
 
@@ -525,7 +523,7 @@ to do I/O.
 
 Updates the secret used to authenticate this connection. The secret must be a buffer, the reason must be a string.
 
-### <a name="model_events"></a>{Channel,Callback}Model events
+### {Channel,Callback}Model events {#model_events}
 
 `#on('close', function() {...})`
 
@@ -576,7 +574,7 @@ alleviated.
 
 Emitted after receiving confirmation from the broker that the connection secret was successfully updated.
 
-### <a name="model_createChannel"></a>{Channel,Callback}Model#createChannel
+### {Channel,Callback}Model#createChannel {#model_createChannel}
 
 ##### Promises API
 
@@ -592,7 +590,7 @@ invoked). May fail if there are no more channels available (i.e., if
 there are already `channelMax` channels open).
 
 
-### <a name="model_createConfirmChannel"></a>{Channel,Callback}Model#createConfirmChannel
+### {Channel,Callback}Model#createConfirmChannel {#model_createConfirmChannel}
 
 ##### Promises API
 
@@ -606,7 +604,7 @@ Open a fresh channel, switched to "confirmation mode". See
 `ConfirmChannel` below.
 
 
-## <a name="channel"></a>Channels
+## Channels {#channel}
 
 There are channel objects in each of the APIs, and these contain most
 of the methods for getting things done.
@@ -624,7 +622,7 @@ connection (`connect()` above) and calling `#createChannel` or
 `#createConfirmChannel`.
 
 
-### <a name="channel_close"></a>Channel#close
+### Channel#close {#channel_close}
 
 ##### Promises API
 
@@ -645,7 +643,7 @@ so it is occasionally worth being deliberate about opening and closing
 channels.
 
 
-### <a name="channel_events"></a>Channel events
+### Channel events {#channel_events}
 
 `#on('close', function() {...})`
 
@@ -683,7 +681,7 @@ if it has previously returned `false` from `#publish` or
 is ready for writes again).
 
 
-### <a name="channel_assertQueue"></a>Channel#assertQueue
+### Channel#assertQueue {#channel_assertQueue}
 
 ##### Promises API
 
@@ -753,7 +751,7 @@ consumer count, and a recent message count; e.g.,
 ```
 
 
-### <a name="channel_checkQueue"></a>Channel#checkQueue
+### Channel#checkQueue {#channel_checkQueue}
 
 ##### Promises API
 
@@ -769,7 +767,7 @@ round!  There's no options, unlike `#assertQueue()`, just the queue
 name. The reply from the server is the same as for `#assertQueue()`.
 
 
-### <a name="channel_deleteQueue"></a>Channel#deleteQueue
+### Channel#deleteQueue {#channel_deleteQueue}
 
 ##### Promises API
 
@@ -800,7 +798,7 @@ The server reply contains a single field, `messageCount`, with the
 number of messages deleted or dead-lettered along with the queue.
 
 
-### <a name="channel_purgeQueue"></a>Channel#purgeQueue
+### Channel#purgeQueue {#channel_purgeQueue}
 
 ##### Promises API
 
@@ -820,7 +818,7 @@ The server reply contains a single field, `messageCount`, containing
 the number of messages purged from the queue.
 
 
-### <a name="channel_bindQueue"></a>Channel#bindQueue
+### Channel#bindQueue {#channel_bindQueue}
 
 ##### Promises API
 
@@ -844,7 +842,7 @@ it's the last argument, which is equivalent to an empty object.
 The server reply has no fields.
 
 
-### <a name="channel_unbindQueue"></a>Channel#unbindQueue
+### Channel#unbindQueue {#channel_unbindQueue}
 
 ##### Promises API
 
@@ -864,7 +862,7 @@ error, and from version 3.2.0, doesn't treat it as an error at
 all[1](#idempotent-deletes). Good ol' RabbitMQ).
 
 
-### <a name="channel_assertExchange"></a>Channel#assertExchange
+### Channel#assertExchange {#channel_assertExchange}
 
 ##### Promises API
 
@@ -904,7 +902,7 @@ The options:
 The server reply echoes the exchange name, in the field `exchange`.
 
 
-### <a name="channel_checkExchange"></a>Channel#checkExchange
+### Channel#checkExchange {#channel_checkExchange}
 
 ##### Promises API
 
@@ -918,7 +916,7 @@ Check that an exchange exists. If it doesn't exist, the channel will
 be closed with an error. If it does exist, happy days.
 
 
-### <a name="channel_deleteExchange"></a>Channel#deleteExchange
+### Channel#deleteExchange {#channel_deleteExchange}
 
 ##### Promises API
 
@@ -940,7 +938,7 @@ error[1](#idempotent-deletes)).
 The server reply has no fields.
 
 
-### <a name="channel_bindExchange"></a>Channel#bindExchange
+### Channel#bindExchange {#channel_bindExchange}
 
 ##### Promises API
 
@@ -961,7 +959,7 @@ a routing key equal to the pattern.
 The server reply has no fields.
 
 
-### <a name="channel_unbindExchange"></a>Channel#unbindExchange
+### Channel#unbindExchange {#channel_unbindExchange}
 
 ##### Promises API
 
@@ -979,7 +977,7 @@ RabbitMQ >= version 3.2.0, for which it succeeds
 trivially[1](#idempotent-deletes).
 
 
-### <a name="channel_publish"></a>Channel#publish
+### Channel#publish {#channel_publish}
 
 ##### Promises and callback APIs
 
@@ -1082,7 +1080,7 @@ is 'full', and `true` otherwise. If it returns `false`, it will emit a
 `'drain'` event at some later time.
 
 
-### <a name="channel_sendToQueue"></a>Channel#sendToQueue
+### Channel#sendToQueue {#channel_sendToQueue}
 
 ##### Promises and callback APIs
 
@@ -1096,7 +1094,7 @@ specific `queue` named, bypassing routing. The options and return
 value are exactly the same as for `#publish`.
 
 
-### <a name="channel_consume"></a>Channel#consume
+### Channel#consume {#channel_consume}
 
 ##### Promises API
 
@@ -1169,7 +1167,7 @@ If the [consumer is cancelled][rabbitmq-consumer-cancel] by RabbitMQ,
 the message callback will be invoked with `null`.
 
 
-### <a name="channel_cancel"></a>Channel#cancel
+### Channel#cancel {#channel_cancel}
 
 ##### Promises API
 
@@ -1189,7 +1187,7 @@ The `consumerTag` is the string given in the reply to `#consume`,
 which may have been generated by the server.
 
 
-### <a name="channel_get"></a>Channel#get
+### Channel#get {#channel_get}
 
 ##### Promises API
 
@@ -1212,7 +1210,7 @@ Options:
    acknowledge the message.<br/><br/>
 
 
-### <a name="channel_ack"></a>Channel#ack
+### Channel#ack {#channel_ack}
 
 ##### Promises and callback APIs
 
@@ -1238,7 +1236,7 @@ break the channel. If you want to acknowledge all the messages and
 you don't have a specific message around, use `#ackAll`.
 
 
-### <a name="channel_ackAll"></a>Channel#ackAll
+### Channel#ackAll {#channel_ackAll}
 
 ##### Promises and callback APIs
 
@@ -1251,7 +1249,7 @@ operation, in that it won't result in an error even if there are no
 such messages.
 
 
-### <a name="channel_nack"></a>Channel#nack
+### Channel#nack {#channel_nack}
 
 ##### Promises and callback APIs
 
@@ -1275,7 +1273,7 @@ This and `#nackAll` use a [RabbitMQ-specific
 extension][rabbitmq-nack].
 
 
-### <a name="channel_nackAll"></a>Channel#nackAll
+### Channel#nackAll {#channel_nackAll}
 
 ##### Promises and callback APIs
 
@@ -1287,7 +1285,7 @@ Reject all messages outstanding on this channel. If `requeue` is
 truthy, or omitted, the server will try to re-enqueue the messages.
 
 
-### <a name="channel_reject"></a>Channel#reject
+### Channel#reject {#channel_reject}
 
 ##### Promises and callback APIs
 
@@ -1299,7 +1297,7 @@ Reject a message. Equivalent to `#nack(message, false, requeue)`, but
 works in older versions of RabbitMQ (< v2.3.0) where `#nack` does not.
 
 
-### <a name="channel_prefetch"></a>Channel#prefetch
+### Channel#prefetch {#channel_prefetch}
 
 ##### Promises API
 
@@ -1327,7 +1325,7 @@ v3.3.0 will bring down the whole connection.
 
 **NB** RabbitMQ v4.0 has deprecated global prefetch. See [removal-of-global-qos](https://www.rabbitmq.com/blog/2021/08/21/4.0-deprecation-announcements#removal-of-global-qos)
 
-### <a name="channel_recover"></a>Channel#recover
+### Channel#recover {#channel_recover}
 
 ##### Promises API
 
@@ -1341,7 +1339,7 @@ Requeue unacknowledged messages on this channel. The server will reply
 (with an empty object) once all messages are requeued.
 
 
-## <a name="confirmchannel"></a>ConfirmChannel
+## ConfirmChannel {#confirmchannel}
 
 A channel which uses "confirmation mode" (a
 [RabbitMQ extension][rabbitmq-confirms]).
@@ -1395,7 +1393,7 @@ extension point. To obtain such a channel, use `connect` to get a
 connection, then call `#createConfirmChannel`.
 
 
-### <a name="confirmchannel_publish"></a>ConfirmChannel#publish
+### ConfirmChannel#publish {#confirmchannel_publish}
 
 ##### Promises and callback APIs
 
@@ -1407,7 +1405,7 @@ connection, then call `#createConfirmChannel`.
 `options` argument must be supplied, at least as an empty object.
 
 
-### <a name="confirmchannel_sendToQueue"></a>ConfirmChannel#sendToQueue
+### ConfirmChannel#sendToQueue {#confirmchannel_sendToQueue}
 
 ##### Promises and callback APIs
 
@@ -1419,7 +1417,7 @@ connection, then call `#createConfirmChannel`.
 `options` argument must be supplied, at least as an empty object.
 
 
-### <a name="confirmchannel_waitForConfirms"></a>ConfirmChannel#waitForConfirms
+### ConfirmChannel#waitForConfirms {#confirmchannel_waitForConfirms}
 
 ##### Promises API
 
@@ -1436,10 +1434,7 @@ way, the channel is still usable afterwards. It is also possible to
 call waitForConfirms multiple times without waiting for previous
 invocations to complete.
 
-
----------
-
-#### <a name="idempotent-deletes">RabbitMQ and deletion</a>
+## RabbitMQ and deletion {#idempotent-deletes}
 
 RabbitMQ version 3.2.0 makes queue and exchange deletions (and unbind)
 effectively idempotent, by not raising an error if the exchange,

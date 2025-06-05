@@ -1,9 +1,7 @@
 ---
-layout: default
+layout: home
 title: AMQP 0-9-1 library and client for Node.JS
 ---
-
-# AMQP 0-9-1 library and client for Node.JS
 
 `amqplib` implements the machinery needed to make clients for AMQP
 0-9-1, and includes such a client. Why phrase it that way around?

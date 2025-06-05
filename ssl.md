@@ -1,8 +1,7 @@
 ---
-layout: default
+layout: page
 title: SSL guide
 ---
-# Using SSL/TLS
 
 ## Synopsis
 
@@ -142,12 +141,12 @@ s_client`. For example,
 will tell you about the certificate `example.com` supplies when you
 connect.
 
-### [Error: SELF_SIGNED_CERT_IN_CHAIN]
+### Error: SELF_SIGNED_CERT_IN_CHAIN
 
 This usually means you don't trust the server certificate. Check that
 you're supplying the right CA certificate in the `ca` option.
 
-### [Error: Hostname/IP doesn't match certificate's altnames]
+### Error: Hostname/IP doesn't match certificate's altnames
 
 The hostname you gave in the URL when connecting doesn't match that of
 the certificate supplied by the server. To check what the server says,
@@ -160,17 +159,17 @@ look for something like `subject=/CN=example.com/O=Example`. If
 testing things locally, it may be that the server cert got a FQDN but
 you're connecting to `'amqps://localhost'`.
 
-### [Error: connect ECONNREFUSED]
+### Error: connect ECONNREFUSED
 
 The server isn't listening on the port you specified. If you didn't
 mention a port, it defaults to `5671` for `amqps` connections.
 
-### [Error: ... handshake failure: ...]
+### Error: ... handshake failure: ...
 
 Probably means you failed to provide a client certificate and the
 server was expecting one.
 
-### [Error: ... unknown ca: ...]
+### Error: ... unknown ca: ...
 
 The server doesn't recognise the CA that signed your client
 certificate. Make sure the server is told the CA certificate file you
