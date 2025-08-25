@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## v0.10.9
+- Add support for IPv6 urls
+
 ## v0.10.8
 - Updated README
 
