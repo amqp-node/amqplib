@@ -130,6 +130,13 @@ suite("Connect API", function() {
             kCallback(succeed(done), fail(done)));
   });
 
+  test("ipv6", function(done) {
+    connect('amqp://[::1]', {}, function(err, connection) {
+      if (err) { return done(err); }
+      done();
+    });
+  });
+
   test("using unsupported mechanism", function(done) {
     var creds = {
       mechanism: 'UNSUPPORTED',
