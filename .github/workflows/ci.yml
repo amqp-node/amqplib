@@ -49,5 +49,5 @@ jobs:
 
       - run: echo 'HELO\n\n\n\n' | nc localhost 5672 | grep AMQP
 
-      # Run the tests
-      - run: make test
+      - run: npm run test --if-present
+      - run: npm run build --if-present
