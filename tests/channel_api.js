@@ -1,5 +1,3 @@
-'use strict'
-
 import { promisify } from 'node:util'
 import assert from 'node:assert'
 

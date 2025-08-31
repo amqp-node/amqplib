@@ -1,5 +1,3 @@
-'use strict'
-
 import net from 'node:net'
 import assert from 'node:assert'
 import { format } from 'node:util'

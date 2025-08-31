@@ -1,7 +1,4 @@
 // Property-based testing representations of various things in AMQP
-
-'use strict'
-
 import C from 'claire'
 
 import * as defs from '../src/defs.js'
@@ -102,9 +99,12 @@ var Timestamp = label(
 )
 var Decimal = label(
   'decimal',
-  transform(function (args) {
-    return { '!': 'decimal', 'value': { places: args[1], digits: args[0] } }
-  }, sequence(arb.UInt, Octet))
+  transform(
+    function (args) {
+      return { '!': 'decimal', 'value': { places: args[1], digits: args[0] } }
+    },
+    sequence(arb.UInt, Octet)
+  )
 )
 var UnsignedByte = label(
   'unsignedbyte',
@@ -173,34 +173,37 @@ var FieldArray = label(
 var FieldTable = label(
   'table',
   recursive(function () {
-    return sized(function () {
-      return 5
-    }, arb.Object(
-      arb.Null,
-      LongStr,
-      ShortStr,
-      Octet,
-      UShort,
-      ULong,
-      ULongLong,
-      Byte,
-      Short,
-      Long,
-      LongLong,
-      ExByte,
-      ExInt8,
-      ExShort,
-      ExInt16,
-      ExInt,
-      ExInt32,
-      ExLong,
-      ExInt64,
-      Bit,
-      Float,
-      Double,
-      FieldArray,
-      FieldTable
-    ))
+    return sized(
+      function () {
+        return 5
+      },
+      arb.Object(
+        arb.Null,
+        LongStr,
+        ShortStr,
+        Octet,
+        UShort,
+        ULong,
+        ULongLong,
+        Byte,
+        Short,
+        Long,
+        LongLong,
+        ExByte,
+        ExInt8,
+        ExShort,
+        ExInt16,
+        ExInt,
+        ExInt32,
+        ExLong,
+        ExInt64,
+        Bit,
+        Float,
+        Double,
+        FieldArray,
+        FieldTable
+      )
+    )
   })
 )
 

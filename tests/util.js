@@ -1,5 +1,3 @@
-'use strict'
-
 import { createHash, randomBytes } from 'node:crypto'
 import { PassThrough } from 'node:stream'
 import assert from 'node:assert'
@@ -204,7 +202,7 @@ suite('versionGreaterThan', function () {
   test
 })
 
-export default  {
+export default {
   socketPair,
   runServer,
   succeed,

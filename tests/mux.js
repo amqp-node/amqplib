@@ -1,5 +1,3 @@
-'use strict'
-
 import assert from 'node:assert'
 import { PassThrough } from 'node:stream'
 

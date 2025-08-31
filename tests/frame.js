@@ -1,5 +1,3 @@
-'use strict'
-
 import { PassThrough } from 'node:stream'
 import assert from 'node:assert'
 import claire from 'claire'
@@ -19,8 +17,6 @@ var label = claire.label
 var sequence = claire.sequence
 var transform = claire.transform
 var sized = claire.sized
-
-
 
 // We'll need to supply a stream which we manipulate ourselves
 
@@ -179,17 +175,20 @@ var Body = sized(function (_n) {
   return Math.floor(Math.random() * FRAME_MAX_MAX)
 }, repeat(amqp.Octet))
 
-var Content = transform(function (args) {
-  return {
-    method: args[0].fields,
-    header: args[1].fields,
-    body: Buffer.from(args[2])
-  }
-}, sequence(
-  amqp.methods['BasicDeliver'],
-  amqp.properties['BasicProperties'],
-  Body
-))
+var Content = transform(
+  function (args) {
+    return {
+      method: args[0].fields,
+      header: args[1].fields,
+      body: Buffer.from(args[2])
+    }
+  },
+  sequence(
+    amqp.methods['BasicDeliver'],
+    amqp.properties['BasicProperties'],
+    Body
+  )
+)
 
 suite('Content framing', function () {
   test(

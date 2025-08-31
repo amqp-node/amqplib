@@ -1,7 +1,3 @@
-// Test the channel machinery
-
-'use strict'
-
 import { promisify } from 'node:util'
 import assert from 'node:assert'
 
@@ -10,7 +6,10 @@ import { Connection } from '../src/connection.js'
 
 import util from './util.js'
 import * as defs from '../src/defs.js'
-import { connection_handshake as conn_handshake, OPEN_OPTS} from './connection.js'
+import {
+  connection_handshake as conn_handshake,
+  OPEN_OPTS
+} from './connection.js'
 
 let succeed = util.succeed,
   fail = util.fail,

@@ -1,5 +1,3 @@
-'use strict'
-
 import assert from 'node:assert'
 
 import * as defs from '../src/defs.js'
@@ -19,7 +17,6 @@ var kCallback = util.kCallback
 
 var LOG_ERRORS = process.env.LOG_ERRORS
 
-
 export const OPEN_OPTS = {
   // start-ok
   clientProperties: {},
@@ -37,7 +34,6 @@ export const OPEN_OPTS = {
   capabilities: '',
   insist: 0
 }
-
 
 function happy_open(send, wait) {
   // kick it off
@@ -97,7 +93,7 @@ suite('Connection errors', function () {
 
   test('bad frame during open', function (done) {
     var ss = util.socketPair()
-    var conn = new (Connection)(ss.client)
+    var conn = new Connection(ss.client)
     ss.server.on('readable', function () {
       ss.server.write(Buffer.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
     })
@@ -409,7 +405,6 @@ suite('Connection close', function () {
 })
 
 suite('heartbeats', function () {
-
   setup(function () {
     heartbeat.config.UNITS_TO_MS = 20
   })

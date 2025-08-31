@@ -1,5 +1,3 @@
-'use strict'
-
 import claire from 'claire'
 
 import { BitSet } from '../src/bitset.js'
@@ -10,9 +8,12 @@ const PosInt = transform(Math.floor, arb.Positive)
 
 const EmptyBitSet = label(
   'bitset',
-  transform((size) => {
-    return new BitSet(size)
-  }, choice(arb.Nothing, PosInt))
+  transform(
+    (size) => {
+      return new BitSet(size)
+    },
+    choice(arb.Nothing, PosInt)
+  )
 )
 
 suite('BitSet', () => {
