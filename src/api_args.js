@@ -311,4 +311,4 @@ Args.recover = function() {
   return {requeue: true};
 };
 
-module.exports = Object.freeze(Args);
+export default Object.freeze(Args);

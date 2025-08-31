@@ -4,15 +4,15 @@
 
 'use strict';
 
-const EventEmitter = require('events');
-const promisify = require('util').promisify;
-const defs = require('./defs');
-const {BaseChannel} = require('./channel');
-const {acceptMessage} = require('./channel');
-const Args = require('./api_args');
-const {inspect} = require('./format');
+import { EventEmitter } from 'node:events'
+import { promisify } from 'node:util'
 
-class ChannelModel extends EventEmitter {
+import * as defs from './defs.js';
+import { BaseChannel, acceptMessage } from './channel.js'
+import Args from './api_args.js';
+import { inspect } from './format.js';
+
+export class ChannelModel extends EventEmitter {
   constructor(connection) {
     super();
     this.connection = connection;
@@ -48,7 +48,7 @@ class ChannelModel extends EventEmitter {
 
 // Channels
 
-class Channel extends BaseChannel {
+export class Channel extends BaseChannel {
   constructor(connection) {
     super(connection);
     this.on('delivery', this.handleDelivery.bind(this));
@@ -267,7 +267,7 @@ Channel.prototype.prefetch = Channel.prototype.qos
 // with `null` as its argument to signify 'ack', or an exception as
 // its argument to signify 'nack'.
 
-class ConfirmChannel extends Channel {
+export class ConfirmChannel extends Channel {
   publish(exchange, routingKey, content, options, cb) {
     this.pushConfirmCallback(cb);
     return super.publish(exchange, routingKey, content, options);
@@ -302,7 +302,3 @@ class ConfirmChannel extends Channel {
     return Promise.all(awaiting);
   }
 }
-
-module.exports.ConfirmChannel = ConfirmChannel;
-module.exports.Channel = Channel;
-module.exports.ChannelModel = ChannelModel;

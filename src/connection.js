@@ -4,25 +4,21 @@
 
 'use strict';
 
-var defs = require('./defs');
-var constants = defs.constants;
-var frame = require('./frame');
-var HEARTBEAT = frame.HEARTBEAT;
-var Mux = require('./mux').Mux;
+import { EventEmitter } from 'node:events'
+import { Duplex, PassThrough } from 'node:stream'
+import { format as fmt } from 'node:util'
 
-var Duplex = require('stream').Duplex;
-var EventEmitter = require('events');
-var Heart = require('./heartbeat').Heart;
+import * as defs from './defs.js'
+import * as frame from './frame.js';
+import { Mux } from './mux.js'
+import { Heart } from './heartbeat.js'
 
-var methodName = require('./format').methodName;
-var closeMsg = require('./format').closeMessage;
-var inspect = require('./format').inspect;
+import { closeMessage as closeMsg, inspect, methodName } from './format.js'
+import { BitSet } from './bitset.js'
+import { IllegalOperationError, stackCapture } from './error.js'
 
-var BitSet = require('./bitset').BitSet;
-var fmt = require('util').format;
-var PassThrough = require('stream').PassThrough;
-var IllegalOperationError = require('./error').IllegalOperationError;
-var stackCapture = require('./error').stackCapture;
+const constants = defs.constants;
+const HEARTBEAT = frame.HEARTBEAT;
 
 // High-water mark for channel write buffers, in 'objects' (which are
 // encoded frames as buffers).
@@ -33,7 +29,7 @@ var DEFAULT_WRITE_HWM = 1024;
 // was greater, we might have to fragment the content.
 var SINGLE_CHUNK_THRESHOLD = 2048;
 
-class Connection extends EventEmitter {
+export class Connection extends EventEmitter {
   constructor (underlying) {
     super();
 
@@ -661,7 +657,7 @@ function wrapStream(s) {
   }
 }
 
-function isFatalError(error) {
+export function isFatalError(error) {
   switch (error && error.code) {
   case defs.constants.CONNECTION_FORCED:
   case defs.constants.REPLY_SUCCESS:
@@ -670,6 +666,3 @@ function isFatalError(error) {
     return true;
   }
 }
-
-module.exports.Connection = Connection;
-module.exports.isFatalError = isFatalError;

@@ -6,17 +6,15 @@
 
 'use strict';
 
-var defs = require('./defs');
-var closeMsg = require('./format').closeMessage;
-var inspect = require('./format').inspect;
-var methodName = require('./format').methodName;
-var assert = require('assert');
-var EventEmitter = require('events');
-var fmt = require('util').format;
-var IllegalOperationError = require('./error').IllegalOperationError;
-var stackCapture = require('./error').stackCapture;
+import { EventEmitter } from 'node:events'
+import { format as fmt } from 'node:util';
+import assert from 'node:assert'
 
-class Channel extends EventEmitter {
+import * as defs from './defs.js';
+import { closeMessage as closeMsg, inspect, methodName } from './format.js'
+import { IllegalOperationError, stackCapture } from './error.js'
+
+export class Channel extends EventEmitter {
   constructor (connection) {
     super();
 
@@ -398,7 +396,7 @@ function acceptDeliveryOrReturn(f) {
 
 // Move to the state of waiting for message frames (headers, then
 // one or more content frames)
-function acceptMessage(continuation) {
+export function acceptMessage(continuation) {
   var totalSize = 0, remaining = 0;
   var buffers = null;
 
@@ -466,7 +464,7 @@ function acceptMessage(continuation) {
 
 // This adds just a bit more stuff useful for the APIs, but not
 // low-level machinery.
-class BaseChannel extends Channel {
+export class BaseChannel extends Channel {
   constructor (connection) {
     super(connection);
     this.consumers = new Map();
@@ -504,7 +502,3 @@ class BaseChannel extends Channel {
     return result;
   }
 }
-
-module.exports.acceptMessage = acceptMessage;
-module.exports.BaseChannel = BaseChannel;
-module.exports.Channel = Channel;

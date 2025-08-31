@@ -1,16 +1,10 @@
-//
-//
-//
+import { EventEmitter } from 'node:events';
 
-'use strict';
+import * as defs from './defs.js';
+import Args from './api_args.js'
+import { BaseChannel, acceptMessage } from './channel.js'
 
-var defs = require('./defs');
-var EventEmitter = require('events');
-var BaseChannel = require('./channel').BaseChannel;
-var acceptMessage = require('./channel').acceptMessage;
-var Args = require('./api_args');
-
-class CallbackModel extends EventEmitter {
+export class CallbackModel extends EventEmitter {
   constructor (connection) {
     super();
     this.connection = connection;
@@ -68,7 +62,7 @@ class CallbackModel extends EventEmitter {
   }
 }
 
-class Channel extends BaseChannel {
+export class Channel extends BaseChannel {
   constructor (connection) {
     super(connection);
     this.on('delivery', this.handleDelivery.bind(this));
@@ -299,7 +293,7 @@ function callbackWrapper(ch, cb) {
   } : function() {};
 }
 
-class ConfirmChannel extends Channel {
+export class ConfirmChannel extends Channel {
   publish (exchange, routingKey,
     content, options, cb) {
     this.pushConfirmCallback(cb);
@@ -336,7 +330,3 @@ class ConfirmChannel extends Channel {
       function (err) { k(err); });
   }
 }
-
-module.exports.CallbackModel = CallbackModel;
-module.exports.Channel = Channel;
-module.exports.ConfirmChannel = ConfirmChannel;

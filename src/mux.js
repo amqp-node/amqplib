@@ -8,12 +8,12 @@
 // it then writes 'packets' from the upstreams to the given
 // downstream.
 
-var assert = require('assert');
+import assert from 'node:assert'
 
 var schedule = (typeof setImmediate === 'function') ?
   setImmediate : process.nextTick;
 
-class Mux {
+export class Mux {
   constructor (downstream) {
     this.newStreams = [];
     this.oldStreams = [];
@@ -122,5 +122,3 @@ class Mux {
     readable.emit('unpipeFrom', this);
   }
 }
-
-module.exports.Mux = Mux;

@@ -6,22 +6,23 @@
 
 'use strict';
 
-var defs = require('./defs');
-var format = require('util').format;
-var HEARTBEAT = require('./frame').HEARTBEAT;
+import { format } from 'node:util'
 
-module.exports.closeMessage = function(close) {
+import * as defs from './defs.js'
+import { HEARTBEAT } from './frame.js'
+
+export function closeMessage(close) {
   var code = close.fields.replyCode;
   return format('%d (%s) with message "%s"',
                 code, defs.constant_strs[code],
                 close.fields.replyText);
 }
 
-module.exports.methodName = function(id) {
+export function methodName(id) {
   return defs.info(id).name;
 };
 
-module.exports.inspect = function(frame, showFields) {
+export function inspect(frame, showFields) {
   if (frame === HEARTBEAT) {
     return '<Heartbeat>';
   }

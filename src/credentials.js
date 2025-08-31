@@ -8,9 +8,9 @@
 //  * PLAIN (send username and password in the plain)
 //  * EXTERNAL (assume the server will figure out who you are from
 //    context, i.e., your SSL certificate)
-var codec = require('./codec')
+import * as codec from './codec.js'
 
-module.exports.plain = function(user, passwd) {
+export function plain(user, passwd) {
   return {
     mechanism: 'PLAIN',
     response: function() {
@@ -21,7 +21,7 @@ module.exports.plain = function(user, passwd) {
   }
 }
 
-module.exports.amqplain = function(user, passwd) {
+export function amqplain(user, passwd) {
   return {
     mechanism: 'AMQPLAIN',
     response: function() {
@@ -34,7 +34,7 @@ module.exports.amqplain = function(user, passwd) {
   }
 }
 
-module.exports.external = function() {
+export function external () {
   return {
     mechanism: 'EXTERNAL',
     response: function() { return Buffer.from(''); }

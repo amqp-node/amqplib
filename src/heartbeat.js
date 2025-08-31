@@ -47,18 +47,23 @@
 
 'use strict';
 
-var EventEmitter = require('events');
+import { EventEmitter } from 'node:events'
+
 
 // Exported so that we can mess with it in tests
-module.exports.UNITS_TO_MS = 1000;
+//export let UNITS_TO_MS = 1000;
 
-class Heart extends EventEmitter {
+export const config = {
+  UNITS_TO_MS: 1000
+}
+
+export class Heart extends EventEmitter {
   constructor (interval, checkSend, checkRecv) {
     super();
 
     this.interval = interval;
 
-    var intervalMs = interval * module.exports.UNITS_TO_MS;
+    var intervalMs = interval * config.UNITS_TO_MS;
     // Function#bind is my new best friend
     var beat = this.emit.bind(this, 'beat');
     var timeout = this.emit.bind(this, 'timeout');
@@ -88,5 +93,3 @@ class Heart extends EventEmitter {
       fail();
   }
 }
-
-module.exports.Heart = Heart;

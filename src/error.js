@@ -1,10 +1,10 @@
-var inherits = require('util').inherits;
+import { inherits } from 'node:util'
 
 function trimStack(stack, num) {
   return stack && stack.split('\n').slice(num).join('\n');
 }
 
-function IllegalOperationError(msg, stack) {
+export function IllegalOperationError(msg, stack) {
   var tmp = new Error();
   this.message = msg;
   this.stack = this.toString() + '\n' + trimStack(tmp.stack, 2);
@@ -14,11 +14,8 @@ inherits(IllegalOperationError, Error);
 
 IllegalOperationError.prototype.name = 'IllegalOperationError';
 
-function stackCapture(reason) {
+export function stackCapture(reason) {
   var e = new Error();
   return 'Stack capture: ' + reason + '\n' +
     trimStack(e.stack, 2);
 }
-
-module.exports.IllegalOperationError = IllegalOperationError;
-module.exports.stackCapture = stackCapture;

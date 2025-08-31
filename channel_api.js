@@ -1,16 +1,16 @@
-var raw_connect = require('./lib/connect').connect;
-var ChannelModel = require('./lib/channel_model').ChannelModel;
-var promisify = require('util').promisify;
+import { promisify } from 'node:util'
 
-function connect(url, connOptions) {
-  return promisify(function(cb) {
-    return raw_connect(url, connOptions, cb);
-  })()
-  .then(function(conn) {
-    return new ChannelModel(conn);
-  });
-};
+import { connect as raw_connect } from './src/connect.js'
 
-module.exports.connect = connect;
-module.exports.credentials = require('./lib/credentials');
-module.exports.IllegalOperationError = require('./lib/error').IllegalOperationError;
+import { ChannelModel } from './src/channel_model.js'
+
+export * as credentials from './src/credentials.js'
+export { IllegalOperationError } from './src/error.js'
+
+export function connect(url, connOptions) {
+  return promisify(function (cb) {
+    return raw_connect(url, connOptions, cb)
+  })().then(function (conn) {
+    return new ChannelModel(conn)
+  })
+}

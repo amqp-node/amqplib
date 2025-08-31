@@ -2,14 +2,14 @@
 // Silt and twigs, gravel and leaves
 // Driving the wheel on
 
-'use strict';
+'use strict'
 
-const ints = require('buffer-more-ints')
-var defs = require('./defs');
-var constants = defs.constants;
-var decode = defs.decode;
+import * as defs from './defs.js'
 
-module.exports.PROTOCOL_HEADER = "AMQP" + String.fromCharCode(0, 0, 9, 1);
+var constants = defs.constants
+var decode = defs.decode
+
+export const PROTOCOL_HEADER = 'AMQP' + String.fromCharCode(0, 0, 9, 1)
 
 /*
   Frame format:
@@ -27,10 +27,10 @@ module.exports.PROTOCOL_HEADER = "AMQP" + String.fromCharCode(0, 0, 9, 1);
 
 // framing constants
 var FRAME_METHOD = constants.FRAME_METHOD,
-FRAME_HEARTBEAT = constants.FRAME_HEARTBEAT,
-FRAME_HEADER = constants.FRAME_HEADER,
-FRAME_BODY = constants.FRAME_BODY,
-FRAME_END = constants.FRAME_END;
+  FRAME_HEARTBEAT = constants.FRAME_HEARTBEAT,
+  FRAME_HEADER = constants.FRAME_HEADER,
+  FRAME_BODY = constants.FRAME_BODY,
+  FRAME_END = constants.FRAME_END
 
 // expected byte sizes for frame parts
 const TYPE_BYTES = 1
@@ -55,17 +55,6 @@ const FRAME_END_BYTES = 1
  * @arg { number } offset
  * @returns { number }
  */
-function readInt64BE(buffer, offset) {
-  /**
-   * We try to use native implementation if available here because
-   * buffer-more-ints does not
-   */
-  if (typeof Buffer.prototype.readBigInt64BE === 'function') {
-    return Number(buffer.readBigInt64BE(offset))
-  }
-
-  return ints.readInt64BE(buffer, offset)
-}
 
 // %%% TESTME possibly better to cons the first bit and write the
 // second directly, in the absence of IO lists
@@ -74,7 +63,7 @@ function readInt64BE(buffer, offset) {
  * @arg { number } channel
  * @arg { Buffer } payload
  */
-module.exports.makeBodyFrame = function (channel, payload) {
+export function makeBodyFrame(channel, payload) {
   const frameSize = FRAME_HEADER_BYTES + payload.length + FRAME_END_BYTES
 
   const frame = Buffer.alloc(frameSize)
@@ -91,7 +80,7 @@ module.exports.makeBodyFrame = function (channel, payload) {
   frame.writeUInt8(FRAME_END, offset)
 
   return frame
-};
+}
 
 /**
  * Parse an AMQP frame
@@ -99,7 +88,7 @@ module.exports.makeBodyFrame = function (channel, payload) {
  * @arg { number } max
  * @returns { FrameStructure | boolean }
  */
-function parseFrame(bin) {
+export function parseFrame(bin) {
   if (bin.length < FRAME_HEADER_BYTES) {
     return false
   }
@@ -129,16 +118,14 @@ function parseFrame(bin) {
   }
 }
 
-module.exports.parseFrame = parseFrame;
-
-var HEARTBEAT = {channel: 0};
+export const HEARTBEAT = { channel: 0 }
 
 /**
  * Decode AMQP frame into JS object
  * @param { FrameStructure } frame
  * @returns
  */
-module.exports.decodeFrame = (frame) => {
+export function decodeFrame(frame) {
   const payload = frame.payload
   const channel = frame.channel
 
@@ -152,7 +139,7 @@ module.exports.decodeFrame = (frame) => {
     case FRAME_HEADER: {
       const id = payload.readUInt16BE(0)
       // const weight = payload.readUInt16BE(2)
-      const size = readInt64BE(payload, 4)
+      const size = Number(payload.readBigInt64BE(4))
       const flagsAndfields = payload.subarray(12)
       const fields = decode(id, flagsAndfields)
       return { id, channel, size, fields }
@@ -167,9 +154,13 @@ module.exports.decodeFrame = (frame) => {
 }
 
 // encoded heartbeat
-module.exports.HEARTBEAT_BUF = Buffer.from([constants.FRAME_HEARTBEAT,
-                                           0, 0, 0, 0, // size = 0
-                                           0, 0, // channel = 0
-                                           constants.FRAME_END]);
-
-module.exports.HEARTBEAT = HEARTBEAT;
+export const HEARTBEAT_BUF = Buffer.from([
+  constants.FRAME_HEARTBEAT,
+  0,
+  0,
+  0,
+  0, // size = 0
+  0,
+  0, // channel = 0
+  constants.FRAME_END
+])
