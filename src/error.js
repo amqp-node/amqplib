@@ -1,21 +1,20 @@
-import { inherits } from 'node:util'
-
 function trimStack(stack, num) {
-  return stack && stack.split('\n').slice(num).join('\n');
+  return stack && stack.split('\n').slice(num).join('\n')
 }
 
-export function IllegalOperationError(msg, stack) {
-  var tmp = new Error();
-  this.message = msg;
-  this.stack = this.toString() + '\n' + trimStack(tmp.stack, 2);
-  this.stackAtStateChange = stack;
-}
-inherits(IllegalOperationError, Error);
+export class IllegalOperationError extends Error {
+  constructor(msg, stackAtStateChange) {
+    super(msg)
+    this.name = 'IllegalOperationError'
 
-IllegalOperationError.prototype.name = 'IllegalOperationError';
+    const tmpStack = new Error().stack
+    this.stack = `${this.toString()}\n${trimStack(tmpStack, 2)}`
+
+    this.stackAtStateChange = stackAtStateChange
+  }
+}
 
 export function stackCapture(reason) {
-  var e = new Error();
-  return 'Stack capture: ' + reason + '\n' +
-    trimStack(e.stack, 2);
+  const e = new Error()
+  return 'Stack capture: ' + reason + '\n' + trimStack(e.stack, 2)
 }
