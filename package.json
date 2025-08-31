@@ -9,7 +9,10 @@
   ],
   "exports": {
     ".": {
-      "default": "./dist/esm/index.js",
+      "default": {
+        "import": "./dist/esm/index.js",
+        "require": "./dist/cjs/index.js"
+      },
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js"
     }
@@ -40,7 +43,7 @@
   },
   "author": "Michael Bridgen <mikeb@squaremobius.net>",
   "engines": {
-    "node": ">=10"
+    "node": ">=14"
   },
   "license": "MIT"
 }
