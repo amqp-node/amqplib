@@ -1,5 +1,6 @@
 import { readdir, stat, rm, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { transform } from '@swc/core'
 
 async function* scan(pathname) {
@@ -19,7 +20,10 @@ async function bootstrap() {
   const sourceRoot = 'src'
   const outDir = 'dist'
 
-  await rm(join(import.meta.dirname, outDir), { recursive: true, force: true })
+  await rm(join(fileURLToPath(import.meta.url), '..', outDir), {
+    recursive: true,
+    force: true
+  })
 
   for await (const entry of scan(sourceRoot)) {
     const source = await readFile(entry, 'utf-8')
@@ -27,7 +31,7 @@ async function bootstrap() {
     {
       const { code } = await transform(source, {
         jsc: {
-          baseUrl: import.meta.dirname,
+          baseUrl: join(fileURLToPath(import.meta.url), '..'),
           parser: {
             syntax: 'ecmascript'
           },
@@ -54,7 +58,8 @@ async function bootstrap() {
 
       await writeFile(
         join(
-          import.meta.dirname,
+          fileURLToPath(import.meta.url),
+          '..',
           entry.replace(sourceRoot, join(outDir, 'esm'))
         ),
         code
@@ -64,7 +69,7 @@ async function bootstrap() {
     {
       const { code } = await transform(source, {
         jsc: {
-          baseUrl: import.meta.dirname,
+          baseUrl: join(fileURLToPath(import.meta.url), '..'),
           parser: {
             syntax: 'ecmascript'
           },
@@ -96,7 +101,8 @@ async function bootstrap() {
 
       await writeFile(
         join(
-          import.meta.dirname,
+          fileURLToPath(import.meta.url),
+          '..',
           entry.replace(sourceRoot, join(outDir, 'cjs'))
         ),
         code
