@@ -3,7 +3,7 @@
 import assert from 'node:assert'
 import domain from 'domain'
 
-import * as api from '../callback_api.js'
+import * as api from '../src/index.js'
 import util from './util.js'
 
 const schedule = util.schedule

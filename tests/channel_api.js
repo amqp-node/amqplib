@@ -3,7 +3,7 @@
 import { promisify } from 'node:util'
 import assert from 'node:assert'
 
-import * as api from '../channel_api.js'
+import * as api from '../src/index.js'
 import util from './util.js'
 
 var succeed = util.succeed,
