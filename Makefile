@@ -16,7 +16,7 @@ error:
 	@exit 1
 
 test:
-	$(MOCHA) --check-leaks -u tdd --exit test/
+	$(MOCHA) --check-leaks -u tdd --exit tests/
 
 test-all-nodejs:
 	for v in $(NODEJS_VERSIONS); \
@@ -34,7 +34,7 @@ clean:
 	rm -f lib/defs.js bin/amqp-rabbitmq-0.9.1.json
 
 bin/generate-defs: $(UGLIFY) bin/generate-defs.js bin/amqp-rabbitmq-0.9.1.json
-	(cd bin; node ./generate-defs.js > ../lib/defs.js)
+	(cd bin; node ./generate-defs.js > ../src/defs.js)
 	$(UGLIFY) ./lib/defs.js -o ./lib/defs.js \
 		-c 'sequences=false' --comments \
 		-b 'indent-level=2' 2>&1 | (grep -v 'WARN' || true)
