@@ -1,9 +1,3 @@
-//
-//
-//
-
-'use strict';
-
 /**
  * A bitset implementation, after that in java.util.  Yes there
  * already exist such things, but none implement next{Clear|Set}Bit or

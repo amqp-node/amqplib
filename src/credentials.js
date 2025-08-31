@@ -13,7 +13,7 @@ import * as codec from './codec.js'
 export function plain(user, passwd) {
   return {
     mechanism: 'PLAIN',
-    response: function() {
+    response() {
       return Buffer.from(['', user, passwd].join(String.fromCharCode(0)))
     },
     username: user,
@@ -24,19 +24,25 @@ export function plain(user, passwd) {
 export function amqplain(user, passwd) {
   return {
     mechanism: 'AMQPLAIN',
-    response: function() {
-      const buffer = Buffer.alloc(16384);
-      const size = codec.encodeTable(buffer, { LOGIN: user, PASSWORD: passwd}, 0);
-      return buffer.subarray(4, size);
+    response() {
+      const buffer = Buffer.alloc(16384)
+      const size = codec.encodeTable(
+        buffer,
+        { LOGIN: user, PASSWORD: passwd },
+        0
+      )
+      return buffer.subarray(4, size)
     },
     username: user,
     password: passwd
   }
 }
 
-export function external () {
+export function external() {
   return {
     mechanism: 'EXTERNAL',
-    response: function() { return Buffer.from(''); }
+    response() {
+      return Buffer.from('')
+    }
   }
 }

@@ -3,8 +3,6 @@
  * distribution, but is available in the source repository e.g. at
  * https://github.com/squaremo/amqp.node/
  */
-'use strict'
-
 import * as codec from './codec.js'
 
 function decodeBasicQos(buffer) {
@@ -5019,7 +5017,7 @@ export const methodInfoConnectionStart = {
 
 export const ConnectionStartOk = 655371
 
-export const methodInfoConnectionStartOk ={
+export const methodInfoConnectionStartOk = {
   id: 655371,
   classId: 10,
   methodId: 11,
@@ -5973,64 +5971,64 @@ export const methodInfoConfirmSelectOk = {
 export const BasicProperties = 60
 
 export const propertiesInfoBasicProperties = {
-    id: 60,
-    name: 'BasicProperties',
-    args: [
-      {
-        type: 'shortstr',
-        name: 'contentType'
-      },
-      {
-        type: 'shortstr',
-        name: 'contentEncoding'
-      },
-      {
-        type: 'table',
-        name: 'headers'
-      },
-      {
-        type: 'octet',
-        name: 'deliveryMode'
-      },
-      {
-        type: 'octet',
-        name: 'priority'
-      },
-      {
-        type: 'shortstr',
-        name: 'correlationId'
-      },
-      {
-        type: 'shortstr',
-        name: 'replyTo'
-      },
-      {
-        type: 'shortstr',
-        name: 'expiration'
-      },
-      {
-        type: 'shortstr',
-        name: 'messageId'
-      },
-      {
-        type: 'timestamp',
-        name: 'timestamp'
-      },
-      {
-        type: 'shortstr',
-        name: 'type'
-      },
-      {
-        type: 'shortstr',
-        name: 'userId'
-      },
-      {
-        type: 'shortstr',
-        name: 'appId'
-      },
-      {
-        type: 'shortstr',
-        name: 'clusterId'
-      }
-    ]
-  }
+  id: 60,
+  name: 'BasicProperties',
+  args: [
+    {
+      type: 'shortstr',
+      name: 'contentType'
+    },
+    {
+      type: 'shortstr',
+      name: 'contentEncoding'
+    },
+    {
+      type: 'table',
+      name: 'headers'
+    },
+    {
+      type: 'octet',
+      name: 'deliveryMode'
+    },
+    {
+      type: 'octet',
+      name: 'priority'
+    },
+    {
+      type: 'shortstr',
+      name: 'correlationId'
+    },
+    {
+      type: 'shortstr',
+      name: 'replyTo'
+    },
+    {
+      type: 'shortstr',
+      name: 'expiration'
+    },
+    {
+      type: 'shortstr',
+      name: 'messageId'
+    },
+    {
+      type: 'timestamp',
+      name: 'timestamp'
+    },
+    {
+      type: 'shortstr',
+      name: 'type'
+    },
+    {
+      type: 'shortstr',
+      name: 'userId'
+    },
+    {
+      type: 'shortstr',
+      name: 'appId'
+    },
+    {
+      type: 'shortstr',
+      name: 'clusterId'
+    }
+  ]
+}

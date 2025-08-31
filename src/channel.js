@@ -1,11 +1,3 @@
-//
-//
-//
-
-// Channel machinery.
-
-'use strict';
-
 import { EventEmitter } from 'node:events'
 import { format as fmt } from 'node:util';
 import assert from 'node:assert'

@@ -44,11 +44,7 @@
 
 // %% Yes, I could apply the same 'actually passage of time' thing to
 // %% send as well as to recv.
-
-'use strict';
-
 import { EventEmitter } from 'node:events'
-
 
 // Exported so that we can mess with it in tests
 //export let UNITS_TO_MS = 1000;
@@ -58,38 +54,43 @@ export const config = {
 }
 
 export class Heart extends EventEmitter {
-  constructor (interval, checkSend, checkRecv) {
-    super();
+  constructor(interval, checkSend, checkRecv) {
+    super()
 
-    this.interval = interval;
+    this.interval = interval
 
-    var intervalMs = interval * config.UNITS_TO_MS;
+    var intervalMs = interval * config.UNITS_TO_MS
     // Function#bind is my new best friend
-    var beat = this.emit.bind(this, 'beat');
-    var timeout = this.emit.bind(this, 'timeout');
+    var beat = this.emit.bind(this, 'beat')
+    var timeout = this.emit.bind(this, 'timeout')
 
     this.sendTimer = setInterval(
-      this.runHeartbeat.bind(this, checkSend, beat), intervalMs / 2);
+      this.runHeartbeat.bind(this, checkSend, beat),
+      intervalMs / 2
+    )
 
     // A timeout occurs if I see nothing for *two consecutive* intervals
-    var recvMissed = 0;
-    function missedTwo () {
-      if (!checkRecv())
-        return (++recvMissed < 2);
-      else { recvMissed = 0; return true; }
+    var recvMissed = 0
+    function missedTwo() {
+      if (!checkRecv()) return ++recvMissed < 2
+      else {
+        recvMissed = 0
+        return true
+      }
     }
     this.recvTimer = setInterval(
-      this.runHeartbeat.bind(this, missedTwo, timeout), intervalMs);
+      this.runHeartbeat.bind(this, missedTwo, timeout),
+      intervalMs
+    )
   }
 
-  clear () {
-    clearInterval(this.sendTimer);
-    clearInterval(this.recvTimer);
+  clear() {
+    clearInterval(this.sendTimer)
+    clearInterval(this.recvTimer)
   }
 
-  runHeartbeat (check, fail) {
+  runHeartbeat(check, fail) {
     // Have we seen activity?
-    if (!check())
-      fail();
+    if (!check()) fail()
   }
 }

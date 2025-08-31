@@ -4,9 +4,6 @@
 
 // General-purpose API for glueing everything together.
 
-'use strict'
-
-import QS from 'node:querystring'
 import { format as fmt } from 'node:util'
 import { connect as connectInsecure } from 'node:net'
 import { connect as connectSecure } from 'node:tls'
@@ -47,9 +44,9 @@ var CLIENT_PROPERTIES = {
 // Construct the main frames used in the opening handshake
 function openFrames(vhost, query, credentials, extraClientProperties) {
   if (!vhost) vhost = '/'
-  else vhost = QS.unescape(vhost)
+  else vhost = decodeURIComponent(vhost.replace(/\+/g, ' '))
 
-  var query = query || {}
+  query = query || {}
 
   function intOrDefault(val, def) {
     return val === undefined ? def : parseInt(val)

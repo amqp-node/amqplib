@@ -51,8 +51,6 @@ properties are present. This scheme can save ones of bytes per message
 
 */
 
-'use strict'
-
 // JavaScript uses only doubles so what I'm testing for is whether
 // it's *better* to encode a number as a float or double. This really
 // just amounts to testing whether there's a fractional part to the

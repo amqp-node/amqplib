@@ -1,9 +1,6 @@
 // The river sweeps through
 // Silt and twigs, gravel and leaves
 // Driving the wheel on
-
-'use strict'
-
 import * as defs from './defs.js'
 
 var constants = defs.constants

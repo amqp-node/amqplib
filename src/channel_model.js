@@ -1,9 +1,3 @@
-//
-//
-//
-
-'use strict';
-
 import { EventEmitter } from 'node:events'
 import { promisify } from 'node:util'
 
