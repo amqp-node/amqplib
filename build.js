@@ -90,6 +90,11 @@ async function bootstrap() {
       })
 
       await writeFile(
+        join(dir.replace(sourceRoot, join(outDir, 'cjs')), 'package.json'),
+        JSON.stringify({ type: 'commonjs' }, null, 2)
+      )
+
+      await writeFile(
         join(
           import.meta.dirname,
           entry.replace(sourceRoot, join(outDir, 'cjs'))
