@@ -6,3 +6,6 @@ coverage
 .idea
 .nyc_output
 dist
+
+.env*
+!.env.example
