@@ -1,7 +1,11 @@
 *~
 scratch
-node_modules/
-etc/
-coverage/
-/.idea/
-.nyc_output/
+node_modules
+etc
+coverage
+.idea
+.nyc_output
+dist
+
+.env*
+!.env.example
