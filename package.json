@@ -1,29 +1,46 @@
 {
   "name": "amqplib",
-  "homepage": "http://amqp-node.github.io/amqplib/",
-  "main": "./channel_api.js",
   "version": "0.10.9",
   "description": "An AMQP 0-9-1 (e.g., RabbitMQ) library and client.",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/amqp-node/amqplib.git"
-  },
-  "engines": {
-    "node": ">=10"
-  },
-  "devDependencies": {
-    "claire": "^0.4.1",
-    "mocha": "^11.7.2",
-    "nyc": "^17.1.0"
-  },
-  "scripts": {
-    "test": "make test"
-  },
   "keywords": [
     "AMQP",
     "AMQP 0-9-1",
     "RabbitMQ"
   ],
+  "exports": {
+    ".": {
+      "default": {
+        "import": "./dist/esm/index.js",
+        "require": "./dist/cjs/index.js"
+      },
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "test": "make test"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.13.5",
+    "claire": "^0.4.1",
+    "mocha": "^11.7.2",
+    "nyc": "^17.1.0"
+  },
   "author": "Michael Bridgen <mikeb@squaremobius.net>",
+  "homepage": "http://amqp-node.github.io/amqplib/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amqp-node/amqplib.git"
+  },
+  "bugs": {
+    "url": "https://github.com/amqp-node/amqplib/issues"
+  },
+  "engines": {
+    "node": ">=14"
+  },
   "license": "MIT"
 }
