@@ -9,7 +9,7 @@
     "url": "git+https://github.com/amqp-node/amqplib.git"
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "dependencies": {
     "buffer-more-ints": "~1.0.0",
