@@ -15,19 +15,24 @@ amqp.connect((err, connection) => {
       });
     });
 
-    channel.assertExchange(exchange, 'fanout', { durable: false }, (err, { queue }) => {
+    channel.assertExchange(exchange, 'fanout', {durable: false}, (err, {queue}) => {
       if (err) return bail(err, connection);
-      channel.assertQueue('', { exclusive: true }, (err, { queue }) => {
+      channel.assertQueue('', {exclusive: true}, (err, {queue}) => {
         if (err) return bail(err, connection);
         channel.bindQueue(queue, exchange, '', {}, (err) => {
           if (err) return bail(err, connection);
-          channel.consume(queue, (message) => {
-            if (message) console.log(" [x] '%s'", message.content.toString());
-            else console.warn(' [x] Consumer cancelled');
-          }, { noAck: true }, (err) => {
-            if (err) return bail(err, connection);
-            console.log(" [*] Waiting for logs. To exit press CTRL+C.");
-          });
+          channel.consume(
+            queue,
+            (message) => {
+              if (message) console.log(" [x] '%s'", message.content.toString());
+              else console.warn(' [x] Consumer cancelled');
+            },
+            {noAck: true},
+            (err) => {
+              if (err) return bail(err, connection);
+              console.log(' [*] Waiting for logs. To exit press CTRL+C.');
+            },
+          );
         });
       });
     });
@@ -36,7 +41,8 @@ amqp.connect((err, connection) => {
 
 function bail(err, connection) {
   console.error(err);
-  if (connection) connection.close(() => {
-    process.exit(1);
-  });
+  if (connection)
+    connection.close(() => {
+      process.exit(1);
+    });
 }

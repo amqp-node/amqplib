@@ -6,9 +6,9 @@ const amqp = require('../');
     connection = await amqp.connect();
     const channel = await connection.createConfirmChannel();
 
-    for (var i=0; i < 20; i++) {
+    for (var i = 0; i < 20; i++) {
       channel.publish('amq.topic', 'whatever', Buffer.from('blah'));
-    };
+    }
 
     await channel.waitForConfirms();
     console.log('All messages done');

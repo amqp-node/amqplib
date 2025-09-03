@@ -3,13 +3,12 @@ var ChannelModel = require('./lib/channel_model').ChannelModel;
 var promisify = require('util').promisify;
 
 function connect(url, connOptions) {
-  return promisify(function(cb) {
+  return promisify(function (cb) {
     return raw_connect(url, connOptions, cb);
-  })()
-  .then(function(conn) {
+  })().then(function (conn) {
     return new ChannelModel(conn);
   });
-};
+}
 
 module.exports.connect = connect;
 module.exports.credentials = require('./lib/credentials');

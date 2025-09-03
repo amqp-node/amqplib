@@ -9,20 +9,23 @@
     "url": "git+https://github.com/amqp-node/amqplib.git"
   },
   "engines": {
-    "node": ">=10"
+    "node": ">=16"
   },
   "dependencies": {
     "buffer-more-ints": "~1.0.0",
     "url-parse": "~1.5.10"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.2.2",
     "claire": "0.4.1",
+    "lefthook": "^1.12.3",
     "mocha": "^9.2.2",
     "nyc": "^15.1.0",
     "uglify-js": "2.8.x"
   },
   "scripts": {
-    "test": "make test"
+    "test": "make test",
+    "format": "biome format . --write"
   },
   "keywords": [
     "AMQP",

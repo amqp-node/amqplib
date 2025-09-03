@@ -1,0 +1,6 @@
+pre-commit:
+  commands:
+    format:
+      glob: "**/*.js"
+      run: npx biome format {staged_files} --write
+      stage_fixed: true

@@ -29,14 +29,11 @@ co(function* () {
     console.log(" [x] Sent '%s'", msg);
 
     channel.close();
-  }
-  catch (e) {
+  } catch (e) {
     throw e;
-  }
-  finally {
+  } finally {
     conn.close();
   }
-
-}).catch(err => {
+}).catch((err) => {
   console.warn('Error:', err);
 });

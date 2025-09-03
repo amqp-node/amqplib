@@ -21,18 +21,17 @@ co(function* () {
     channel.sendToQueue(q, Buffer.from(msg));
     console.log(" [x] Sent '%s'", msg);
     // consume the message
-    yield channel.consume(q, myConsumer, { noAck: true });
-  }
-  catch (e) {
+    yield channel.consume(q, myConsumer, {noAck: true});
+  } catch (e) {
     throw e;
   }
-}).catch(err => {
+}).catch((err) => {
   console.warn('Error:', err);
 });
 
 const rl = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
 });
 
 // pend until message is consumed
