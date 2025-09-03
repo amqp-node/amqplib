@@ -6,6 +6,9 @@
 - Add automated formatting via pre-commit hooks using Lefthook
 - Format entire codebase with standardised formatting rules
 - Add npm format script for manual code formatting
+- Clean up source file headers by removing empty comment blocks
+- Remove obsolete 'use strict' directives from all source files
+- Add Biome linting with baseline configuration (all existing issues ignored)
 
 ## v0.10.9
 - Add support for IPv6 urls
