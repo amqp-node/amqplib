@@ -1,18 +1,20 @@
-'use strict';
+import assert from 'node:assert'
 
-var assert = require('assert');
-var defs = require('../lib/defs');
-var Connection = require('../lib/connection').Connection;
-var HEARTBEAT = require('../lib/frame').HEARTBEAT;
-var HB_BUF = require('../lib/frame').HEARTBEAT_BUF;
-var util = require('./util');
+import * as defs from '../lib/defs.js'
+
+import { Connection } from '../lib/connection.js'
+
+import * as heartbeat from '../lib/heartbeat.js'
+
+import { HEARTBEAT, HEARTBEAT_BUF as HB_BUF  } from '../lib/frame.js'
+import util from './util.js'
 var succeed = util.succeed, fail = util.fail, latch = util.latch;
 var completes = util.completes;
 var kCallback = util.kCallback;
 
 var LOG_ERRORS = process.env.LOG_ERRORS;
 
-var OPEN_OPTS = {
+export const OPEN_OPTS = {
   // start-ok
   'clientProperties': {},
   'mechanism': 'PLAIN',
@@ -29,7 +31,6 @@ var OPEN_OPTS = {
   'capabilities': '',
   'insist': 0
 };
-module.exports.OPEN_OPTS = OPEN_OPTS;
 
 function happy_open(send, wait) {
   // kick it off
@@ -53,7 +54,8 @@ function happy_open(send, wait) {
            {knownHosts: ''});
     });
 }
-module.exports.connection_handshake = happy_open;
+
+export const connection_handshake = happy_open;
 
 function connectionTest(client, server) {
   return function(done) {
@@ -90,7 +92,7 @@ suite("Connection errors", function() {
 
   test("bad frame during open", function(done) {
     var ss = util.socketPair();
-    var conn = new (require('../lib/connection').Connection)(ss.client);
+    var conn = new Connection(ss.client);
     ss.server.on('readable', function() {
       ss.server.write(Buffer.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
     });
@@ -337,14 +339,12 @@ test("double close", connectionTest(
 
 suite("heartbeats", function() {
 
-var heartbeat = require('../lib/heartbeat');
-
 setup(function() {
-  heartbeat.UNITS_TO_MS = 20;
+  heartbeat.config.UNITS_TO_MS = 20;
 });
 
 teardown(function() {
-  heartbeat.UNITS_TO_MS = 1000;
+  heartbeat.config.UNITS_TO_MS = 1000;
 });
 
 test("send heartbeat after open", connectionTest(
@@ -364,7 +364,7 @@ test("send heartbeat after open", connectionTest(
       .then(function() {
         timer = setInterval(function() {
           socket.write(HB_BUF);
-        }, heartbeat.UNITS_TO_MS);
+        }, heartbeat.config.UNITS_TO_MS);
       })
       .then(wait())
       .then(function(hb) {

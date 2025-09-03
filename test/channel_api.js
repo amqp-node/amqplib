@@ -1,17 +1,18 @@
-'use strict';
+import assert from 'node:assert'
+import { promisify } from 'node:util'
 
-var assert = require('assert');
-var api = require('../channel_api');
-var util = require('./util');
+import api from '../lib/api.js'
+import util from './util.js'
+
 var succeed = util.succeed, fail = util.fail;
 var schedule = util.schedule;
 var randomString = util.randomString;
-var promisify = require('util').promisify;
 
-var URL = process.env.URL || 'amqp://localhost';
+
+var connectionString = process.env.URL || 'amqp://localhost';
 
 function connect() {
-  return api.connect(URL);
+  return api.connect(connectionString);
 }
 
 // Expect this promise to fail, and flip the results accordingly.

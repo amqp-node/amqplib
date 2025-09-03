@@ -1,17 +1,16 @@
 // Test the channel machinery
 
-'use strict';
+import assert from 'node:assert'
+import { promisify } from 'node:util'
 
-var assert = require('assert');
-var promisify = require('util').promisify;
-var Channel = require('../lib/channel').Channel;
-var Connection = require('../lib/connection').Connection;
-var util = require('./util');
+import { Channel } from '../lib/channel.js'
+import { Connection } from '../lib/connection.js'
+import { connection_handshake as conn_handshake, OPEN_OPTS } from './connection.js'
+import util from './util.js'
+import * as defs from '../lib/defs.js';
+
 var succeed = util.succeed, fail = util.fail, latch = util.latch;
 var completes = util.completes;
-var defs = require('../lib/defs');
-var conn_handshake = require('./connection').connection_handshake;
-var OPEN_OPTS = require('./connection').OPEN_OPTS;
 
 var LOG_ERRORS = process.env.LOG_ERRORS;
 

@@ -1,19 +1,17 @@
-'use strict';
+import assert from 'node:assert'
+import net from 'net';
+import { format } from 'node:util'
 
-var connect = require('../lib/connect').connect;
-var credentialsFromUrl = require('../lib/connect').credentialsFromUrl;
-var defs = require('../lib/defs');
-var assert = require('assert');
-var util = require('./util');
-var net = require('net');
+import { connect, credentialsFromUrl } from '../lib/connect.js'
+import { amqplain, plain } from '../lib/credentials.js'
+import * as defs from '../lib/defs.js'
+import util from './util.js'
+
 var fail = util.fail, succeed = util.succeed, latch = util.latch,
     kCallback = util.kCallback,
     succeedIfAttributeEquals = util.succeedIfAttributeEquals;
-var format = require('util').format;
 
-var URL = process.env.URL || 'amqp://localhost';
-
-var urlparse = require('url-parse');
+var connectionString = process.env.URL || 'amqp://localhost';
 
 suite("Credentials", function() {
 
@@ -29,27 +27,27 @@ suite("Credentials", function() {
   }
 
   test("no creds", function(done) {
-    var parts = urlparse('amqp://localhost');
+    var parts = new URL('amqp://localhost');
     var creds = credentialsFromUrl(parts);
     checkCreds(creds, 'guest', 'guest', done);
   });
   test("usual user:pass", function(done) {
-    var parts = urlparse('amqp://user:pass@localhost')
+    var parts = new URL('amqp://user:pass@localhost')
     var creds = credentialsFromUrl(parts);
     checkCreds(creds, 'user', 'pass', done);
   });
   test("missing user", function(done) {
-    var parts = urlparse('amqps://:password@localhost');
+    var parts = new URL('amqps://:password@localhost');
     var creds = credentialsFromUrl(parts);
     checkCreds(creds, '', 'password', done);
   });
   test("missing password", function(done) {
-    var parts = urlparse('amqps://username:@localhost');
+    var parts = new URL('amqps://username:@localhost');
     var creds = credentialsFromUrl(parts);
     checkCreds(creds, 'username', '', done);
   });
   test("escaped colons", function(done) {
-    var parts = urlparse('amqp://user%3Aname:pass%3Aword@localhost')
+    var parts = new URL('amqp://user%3Aname:pass%3Aword@localhost')
     var creds = credentialsFromUrl(parts);
     checkCreds(creds, 'user:name', 'pass:word', done);
   });
@@ -70,18 +68,16 @@ suite("Connect API", function() {
   });
 
   test("wrongly typed open option", function(done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
+    const parts = new URL('amqp://localhost:56752')
     var q = parts.query || {};
     q.frameMax = 'NOT A NUMBER';
     parts.query = q;
-    var u = url.format(parts);
-    connect(u, {}, kCallback(fail(done), succeed(done)));
+    const url = parts.toString()
+    connect(url, {}, kCallback(fail(done), succeed(done)));
   });
 
   test("serverProperties", function(done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
+    const parts = new URL(connectionString)
     var config = parts.query || {};
     connect(config, {}, function(err, connection) {
       if (err) { return done(err); }
@@ -91,42 +87,38 @@ suite("Connect API", function() {
   });
 
   test("using custom heartbeat option", function(done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
+    const parts = new URL(connectionString)
     var config = parts.query || {};
     config.heartbeat = 20;
     connect(config, {}, kCallback(succeedIfAttributeEquals('heartbeat', 20, done), fail(done)));
   });
 
   test("wrongly typed heartbeat option", function(done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
+    const parts = new URL(connectionString)
     var config = parts.query || {};
     config.heartbeat = 'NOT A NUMBER';
     connect(config, {}, kCallback(fail(done), succeed(done)));
   });
 
   test("using plain credentials", function(done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
+    const parts = new URL(connectionString)
     var u = 'guest', p = 'guest';
     if (parts.auth) {
       var auth = parts.auth.split(":");
       u = auth[0], p = auth[1];
     }
-    connect(URL, {credentials: require('../lib/credentials').plain(u, p)},
+    connect(connectionString, {credentials: plain(u, p)},
             kCallback(succeed(done), fail(done)));
   });
 
   test("using amqplain credentials", function(done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
+    const parts = new URL(connectionString)
     var u = 'guest', p = 'guest';
     if (parts.auth) {
       var auth = parts.auth.split(":");
       u = auth[0], p = auth[1];
     }
-    connect(URL, {credentials: require('../lib/credentials').amqplain(u, p)},
+    connect(connectionString, {credentials: amqplain(u, p)},
             kCallback(succeed(done), fail(done)));
   });
 
@@ -142,7 +134,7 @@ suite("Connect API", function() {
       mechanism: 'UNSUPPORTED',
       response: function() { return Buffer.from(''); }
     };
-    connect(URL, {credentials: creds},
+    connect(connectionString, {credentials: creds},
             kCallback(fail(done), succeed(done)));
   });
 

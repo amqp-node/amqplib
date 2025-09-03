@@ -1,12 +1,12 @@
-'use strict';
+import assert from 'node:assert'
+import crypto from 'node:crypto'
+import { PassThrough } from 'node:stream'
 
-var crypto = require('crypto');
-var Connection = require('../lib/connection').Connection;
-var PassThrough = require('stream').PassThrough;
-var defs = require('../lib/defs');
-var assert = require('assert');
+import { Connection } from '../lib/connection.js'
 
-var schedule = (typeof setImmediate === 'function') ?
+import * as defs from '../lib/defs.js'
+
+export const schedule = (typeof setImmediate === 'function') ?
   setImmediate : process.nextTick;
 
 function randomString() {
@@ -100,7 +100,7 @@ function runServer(socket, run) {
 }
 
 // Produce a callback that will complete the test successfully
-function succeed(done) {
+export function succeed(done) {
   return function() { done(); }
 }
 
@@ -120,7 +120,7 @@ function succeedIfAttributeEquals(attribute, value, done) {
 // Produce a callback that will fail the test, given either an error
 // (to be used as a failure continuation) or any other value (to be
 // used as a success continuation when failure is expected)
-function fail(done) {
+export function fail(done) {
   return function(err) {
     if (err instanceof Error) done(err);
     else done(new Error("Expected to fail, instead got " + err.toString()));
@@ -130,7 +130,7 @@ function fail(done) {
 // Create a function that will call done once it's been called itself
 // `count` times. If it's called with an error value, it will
 // immediately call done with that error value.
-function latch(count, done) {
+export function latch(count, done) {
   var awaiting = count;
   var alive = true;
   return function(err) {
@@ -150,7 +150,7 @@ function latch(count, done) {
 
 // Call a thunk with a continuation that will be called with an error
 // if the thunk throws one, or nothing if it runs to completion.
-function completes(thunk, done) {
+export function completes(thunk, done) {
   try {
     thunk();
     done();
@@ -160,7 +160,7 @@ function completes(thunk, done) {
 
 // Construct a Node.JS-style callback from a success continuation and
 // an error continuation
-function kCallback(k, ek) {
+export function kCallback(k, ek) {
   return function(err, val) {
     if (err === null) k && k(val);
     else ek && ek(err);
@@ -168,7 +168,7 @@ function kCallback(k, ek) {
 }
 
 // A noddy way to make tests depend on the node version.
-function versionGreaterThan(actual, spec) {
+export function versionGreaterThan(actual, spec) {
 
   function int(e) { return parseInt(e); }
 
@@ -202,16 +202,16 @@ test
 
 });
 
-module.exports = {
-  socketPair: socketPair,
-  runServer: runServer,
-  succeed: succeed,
-  succeedIfAttributeEquals: succeedIfAttributeEquals,
-  fail: fail,
-  latch: latch,
-  completes: completes,
-  kCallback: kCallback,
-  schedule: schedule,
-  randomString: randomString,
-  versionGreaterThan: versionGreaterThan
+export default {
+  socketPair,
+  runServer,
+  succeed,
+  succeedIfAttributeEquals,
+  fail,
+  latch,
+  completes,
+  kCallback,
+  schedule,
+  randomString,
+  versionGreaterThan
 };

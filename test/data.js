@@ -1,8 +1,9 @@
 // Property-based testing representations of various things in AMQP
 
-'use strict';
+import C from 'claire'
 
-var C = require('claire');
+import * as defs from '../lib/defs.js';
+
 var forAll = C.forAll;
 var arb = C.data;
 var transform = C.transform;
@@ -29,7 +30,7 @@ function chooseInt(a, b) {
   return Math.floor(choose(a, b));
 }
 
-function rangeInt(name, a, b) {
+export function rangeInt(name, a, b) {
   return label(name,
                asGenerator(function(_) { return chooseInt(a, b); }));
 }
@@ -204,8 +205,6 @@ function zipObject(vals, names) {
 
 function name(arg) { return arg.name; }
 
-var defs = require('../lib/defs');
-
 function method(info) {
   var domain = sequence.apply(null, info.args.map(argtype));
   var names = info.args.map(name);
@@ -227,43 +226,42 @@ function properties(info) {
   }, domain));
 }
 
-var methods = [];
-var propertieses = [];
+const methods = [];
+const propertieses = [];
 
 for (var k in defs) {
-  if (k.substr(0, 10) === 'methodInfo') {
+  if (k.substring(0, 10) === 'methodInfo') {
     methods.push(method(defs[k]));
     methods[defs[k].name] = method(defs[k]);
   }
-  else if (k.substr(0, 14) === 'propertiesInfo') {
+  else if (k.substring(0, 14) === 'propertiesInfo') {
     propertieses.push(properties(defs[k]));
     propertieses[defs[k].name] = properties(defs[k]);
   }
 };
 
-module.exports = {
-  Octet: Octet,
-  ShortStr: ShortStr,
-  LongStr: LongStr,
-  UShort: UShort,
-  ULong: ULong,
-  ULongLong: ULongLong,
-  Short: Short,
-  Long: Long,
-  LongLong: LongLong,
-  Bit: Bit,
-  Double: Double,
-  Float: Float,
-  Timestamp: Timestamp,
-  Decimal: Decimal,
-  UnsignedByte: UnsignedByte,
-  UnsignedShort: UnsignedShort,
-  UnsignedInt: UnsignedInt,
-  FieldArray: FieldArray,
-  FieldTable: FieldTable,
+export default {
+  Octet,
+  ShortStr,
+  LongStr,
+  UShort,
+  ULong,
+  ULongLong,
+  Short,
+  Long,
+  LongLong,
+  Bit,
+  Double,
+  Float,
+  Timestamp,
+  Decimal,
+  UnsignedByte,
+  UnsignedShort,
+  UnsignedInt,
+  FieldArray,
+  FieldTable,
+  rangeInt,
 
-  methods: methods,
-  properties: propertieses
+  methods,
+  propertieses
 };
-
-module.exports.rangeInt = rangeInt;

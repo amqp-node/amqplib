@@ -1,11 +1,9 @@
-'use strict';
+import assert from 'node:assert'
+import { PassThrough } from 'node:stream'
 
-var assert = require('assert');
-var Mux = require('../lib/mux').Mux;
-var PassThrough = require('stream').PassThrough;
+import { Mux } from '../lib/mux.js'
 
-var latch = require('./util').latch;
-var schedule = require('./util').schedule;
+import { latch, schedule } from './util.js'
 
 function stream() {
   return new PassThrough({objectMode: true});

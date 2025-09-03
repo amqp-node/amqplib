@@ -1,15 +1,20 @@
-'use strict';
+import assert from 'node:assert';
+import { PassThrough } from 'node:stream'
+import claire from 'claire';
 
-var assert = require('assert');
-var succeed = require('./util').succeed;
-var fail = require('./util').fail;
-var connection = require('../lib/connection');
-var Frames = connection.Connection;
-var HEARTBEAT = require('../lib/frame').HEARTBEAT;
-var Stream = require('stream');
-var PassThrough = Stream.PassThrough;
+import { Connection as Frames } from '../lib/connection.js'
+import { HEARTBEAT } from '../lib/frame.js'
+import * as defs from '../lib/defs.js';
+import amqp from './data.js';
+import { assertEqualModuloDefaults } from './codec.js'
 
-var defs = require('../lib/defs');
+var choice = claire.choice;
+var forAll = claire.forAll;
+var repeat = claire.repeat;
+var label = claire.label;
+var sequence = claire.sequence;
+var transform = claire.transform;
+var sized = claire.sized;
 
 // We'll need to supply a stream which we manipulate ourselves
 
@@ -73,18 +78,6 @@ suite("Explicit parsing", function() {
 
 // Now for a bit more fun.
 
-var amqp = require('./data');
-var claire = require('claire');
-var choice = claire.choice;
-var forAll = claire.forAll;
-var repeat = claire.repeat;
-var label = claire.label;
-var sequence = claire.sequence;
-var transform = claire.transform;
-var sized = claire.sized;
-
-var assertEqualModuloDefaults =
-  require('./codec').assertEqualModuloDefaults;
 
 var Trace = label('frame trace',
                   repeat(choice.apply(choice, amqp.methods)));
@@ -161,7 +154,7 @@ var Content = transform(function(args) {
     body: Buffer.from(args[2])
   }
 }, sequence(amqp.methods['BasicDeliver'],
-            amqp.properties['BasicProperties'], Body));
+            amqp.propertieses['BasicProperties'], Body));
 
 suite("Content framing", function() {
   test("Adhere to frame max",

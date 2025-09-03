@@ -1,18 +1,16 @@
-'use strict';
+import assert from 'node:assert'
+import domain from 'node:domain'
 
-var assert = require('assert');
-var crypto = require('crypto');
-var api = require('../callback_api');
-var util = require('./util');
+import api from '../lib/api.js'
+import util from './util.js'
 var schedule = util.schedule;
 var randomString = util.randomString;
 var kCallback = util.kCallback;
-var domain = require('domain');
 
-var URL = process.env.URL || 'amqp://localhost';
+var connectionString = process.env.URL || 'amqp://localhost';
 
 function connect(cb) {
-  api.connect(URL, {}, cb);
+  api.connect(connectionString, {}, cb);
 }
 
 // Construct a node-style callback from a `done` function

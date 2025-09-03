@@ -1,10 +1,11 @@
-'use strict';
+import assert from 'node:assert'
+import C from 'claire';
 
-var codec = require('../lib/codec');
-var defs = require('../lib/defs');
-var assert = require('assert');
-var ints = require('buffer-more-ints');
-var C = require('claire');
+import * as codec from '../lib/codec.js'
+import * as defs from '../lib/defs.js'
+
+import amqp from './data.js'
+
 var forAll = C.forAll;
 
 // These just test known encodings; to generate the answers I used
@@ -72,10 +73,6 @@ suite("Implicit encodings", function() {
     });
   });
 });
-
-// Whole frames
-
-var amqp = require('./data');
 
 function roundtrip_table(t) {
   var buf = Buffer.alloc(4096);
@@ -167,7 +164,7 @@ function removeExplicitTypes(input) {
 // fields may be absent in the encoded value, so a default is
 // substituted for missing fields when decoding. The effect is the
 // same so far as these tests are concerned.
-function assertEqualModuloDefaults(original, decodedFields) {
+export function assertEqualModuloDefaults(original, decodedFields) {
   var args = defs.info(original.id).args;
   for (var i=0; i < args.length; i++) {
     var arg = args[i];
@@ -197,9 +194,6 @@ function assertEqualModuloDefaults(original, decodedFields) {
   return true;
 }
 
-// This is handy for elsewhere
-module.exports.assertEqualModuloDefaults = assertEqualModuloDefaults;
-
 function roundtripMethod(Method) {
   return forAll(Method).satisfy(function(method) {
     var buf = defs.encodeMethod(method.id, 0, method.fields);
@@ -216,7 +210,7 @@ function roundtripProperties(Properties) {
                                     properties.fields);
     // FIXME depends on framing, ugh
     var fs1 = defs.decode(properties.id, buf.subarray(19, buf.length));
-    assert.equal(properties.size, ints.readUInt64BE(buf, 11));
+    assert.equal(properties.size, Number(buf.readBigUint64BE(11)));
     assertEqualModuloDefaults(properties, fs1);
     return true;
   });
@@ -230,7 +224,7 @@ suite("Roundtrip methods", function() {
 });
 
 suite("Roundtrip properties", function() {
-  amqp.properties.forEach(function(Properties) {
+  amqp.propertieses.forEach(function(Properties) {
     test(Properties.toString() + ' roundtrip',
          roundtripProperties(Properties).asTest());
   });
