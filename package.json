@@ -12,9 +12,9 @@
     "node": ">=10"
   },
   "devDependencies": {
-    "claire": "0.4.1",
-    "mocha": "^9.2.2",
-    "nyc": "^15.1.0"
+    "claire": "^0.4.1",
+    "mocha": "^11.7.2",
+    "nyc": "^17.1.0"
   },
   "scripts": {
     "test": "make test"
