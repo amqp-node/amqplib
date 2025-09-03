@@ -25,7 +25,8 @@
   },
   "scripts": {
     "test": "make test",
-    "format": "biome format . --write"
+    "format": "biome format . --write",
+    "lint": "biome lint ."
   },
   "keywords": [
     "AMQP",
