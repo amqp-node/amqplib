@@ -11,10 +11,6 @@
   "engines": {
     "node": ">=10"
   },
-  "dependencies": {
-    "buffer-more-ints": "~1.0.0",
-    "url-parse": "~1.5.10"
-  },
   "devDependencies": {
     "claire": "0.4.1",
     "mocha": "^9.2.2",
