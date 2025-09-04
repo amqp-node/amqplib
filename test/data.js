@@ -268,13 +268,13 @@ const domainProps = [
   [
     Double,
     function (f) {
-      return !Number.isNaN(f) && isFinite(f);
+      return !Number.isNaN(f) && Number.isFinite(f);
     },
   ],
   [
     Float,
     function (f) {
-      return !Number.isNaN(f) && isFinite(f) && Math.log(Math.abs(f)) * Math.LOG10E < 309;
+      return !Number.isNaN(f) && Number.isFinite(f) && Math.log(Math.abs(f)) * Math.LOG10E < 309;
     },
   ],
   [

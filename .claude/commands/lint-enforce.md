@@ -10,3 +10,5 @@ Please follow the following process when I ask you to enfore a new lint rule usi
 8. Add the changes
 9. Commit the changes
 10. Push the changes
+
+You do not need to ask before updating biome.json, running tests, using --fix in safe mode, fetching coment from biomejs.dev, or updating the changelog
