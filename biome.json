@@ -16,7 +16,7 @@
         "noUselessCatch": "error",
         "useArrowFunction": "error",
         "useOptionalChain": "off",
-        "noArguments": "off",
+        "noArguments": "error",
         "useLiteralKeys": "off"
       },
       "suspicious": {
