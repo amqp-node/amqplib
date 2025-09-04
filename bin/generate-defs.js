@@ -1,4 +1,3 @@
-var FS = require('fs');
 var format = require('util').format;
 
 var defs = require('./amqp-rabbitmq-0.9.1.json');
@@ -23,14 +22,6 @@ function nl() {
 function println() {
   printf.apply(printf, arguments);
   nl();
-}
-
-function isEmptyObject(val) {
-  return val != null && typeof val === 'object' && Object.keys(val).length === 0;
-}
-
-function stringifyValue(val) {
-  return isEmptyObject(val) ? 'EMPTY_OBJECT' : JSON.stringify(val);
 }
 
 var constants = {};
