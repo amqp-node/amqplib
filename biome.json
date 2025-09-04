@@ -13,7 +13,7 @@
     "rules": {
       "complexity": {
         "noCommaOperator": "off",
-        "noUselessCatch": "off",
+        "noUselessCatch": "error",
         "useArrowFunction": "error",
         "useOptionalChain": "off",
         "noArguments": "off",

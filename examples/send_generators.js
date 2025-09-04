@@ -9,7 +9,6 @@ co(function* () {
   // connection errors are handled in the co .catch handler
   const conn = yield amqp.connect('amqp://localhost');
 
-  // try catch will throw any errors from the yielding the following promises to the co .catch handler
   try {
     const q = 'hello';
     const msg = 'Hello World!';
@@ -27,8 +26,6 @@ co(function* () {
     console.log(" [x] Sent '%s'", msg);
 
     channel.close();
-  } catch (e) {
-    throw e;
   } finally {
     conn.close();
   }

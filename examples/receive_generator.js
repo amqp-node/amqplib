@@ -10,19 +10,15 @@ co(function* () {
     }
   };
   const conn = yield amqp.connect('amqp://localhost');
-  try {
-    // create a message to consume
-    const q = 'hello';
-    const msg = 'Hello World!';
-    const channel = yield conn.createChannel();
-    yield channel.assertQueue(q);
-    channel.sendToQueue(q, Buffer.from(msg));
-    console.log(" [x] Sent '%s'", msg);
-    // consume the message
-    yield channel.consume(q, myConsumer, {noAck: true});
-  } catch (e) {
-    throw e;
-  }
+  // create a message to consume
+  const q = 'hello';
+  const msg = 'Hello World!';
+  const channel = yield conn.createChannel();
+  yield channel.assertQueue(q);
+  channel.sendToQueue(q, Buffer.from(msg));
+  console.log(" [x] Sent '%s'", msg);
+  // consume the message
+  yield channel.consume(q, myConsumer, {noAck: true});
 }).catch((err) => {
   console.warn('Error:', err);
 });
