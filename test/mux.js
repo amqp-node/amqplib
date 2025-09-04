@@ -1,5 +1,3 @@
-'use strict';
-
 const assert = require('node:assert');
 const Mux = require('../lib/mux').Mux;
 const PassThrough = require('node:stream').PassThrough;

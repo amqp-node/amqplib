@@ -1,5 +1,3 @@
-'use strict';
-
 const assert = require('node:assert');
 const api = require('../channel_api');
 const util = require('./util');

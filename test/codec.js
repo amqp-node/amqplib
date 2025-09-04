@@ -1,5 +1,3 @@
-'use strict';
-
 const codec = require('../lib/codec');
 const defs = require('../lib/defs');
 const assert = require('node:assert');

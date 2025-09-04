@@ -1,5 +1,3 @@
-'use strict';
-
 const claire = require('claire');
 const {BitSet} = require('../lib/bitset');
 

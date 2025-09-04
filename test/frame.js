@@ -1,5 +1,3 @@
-'use strict';
-
 const assert = require('node:assert');
 const connection = require('../lib/connection');
 const Frames = connection.Connection;

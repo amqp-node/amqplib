@@ -1,7 +1,3 @@
-// Test the channel machinery
-
-'use strict';
-
 const assert = require('node:assert');
 const promisify = require('node:util').promisify;
 const Channel = require('../lib/channel').Channel;

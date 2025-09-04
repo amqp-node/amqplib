@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-'use strict';
-
 // NB this requires the module 'co':
 //    npm install co
 const co = require('co');
