@@ -17,10 +17,10 @@ const urlparse = require('url-parse');
 
 suite('Credentials', function () {
   function checkCreds(creds, user, pass, done) {
-    if (creds.mechanism != 'PLAIN') {
+    if (creds.mechanism !== 'PLAIN') {
       return done('expected mechanism PLAIN');
     }
-    if (creds.username != user || creds.password != pass) {
+    if (creds.username !== user || creds.password !== pass) {
       return done(format("expected '%s', '%s'; got '%s', '%s'", user, pass, creds.username, creds.password));
     }
     done();

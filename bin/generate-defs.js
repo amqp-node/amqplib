@@ -330,7 +330,7 @@ function encoderFn(method) {
   for (let i = 0, len = args.length; i < len; i++) {
     const arg = args[i];
 
-    if (arg.type != 'bit') bitsInARow = 0;
+    if (arg.type !== 'bit') bitsInARow = 0;
 
     switch (arg.type) {
       // varying size
@@ -391,7 +391,7 @@ function encoderFn(method) {
     const a = args[i];
 
     // Flush any collected bits before doing a new field
-    if (a.type != 'bit' && bitsInARow > 0) {
+    if (a.type !== 'bit' && bitsInARow > 0) {
       bitsInARow = 0;
       println('buffer[offset] = bits; offset++; bits = 0;');
     }
@@ -476,7 +476,7 @@ function decoderFn(method) {
     const field = `fields['${a.name}']`;
 
     // Flush any collected bits before doing a new field
-    if (a.type != 'bit' && bitsInARow > 0) {
+    if (a.type !== 'bit' && bitsInARow > 0) {
       bitsInARow = 0;
       println('offset++;');
     }
