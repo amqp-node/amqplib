@@ -309,7 +309,7 @@ const domainProps = [
 
 suite('Domains', function () {
   domainProps.forEach(function (p) {
-    test(p[0] + ' domain', forAll(p[0]).satisfy(p[1]).asTest({times: 500}));
+    test(`${p[0]} domain`, forAll(p[0]).satisfy(p[1]).asTest({times: 500}));
   });
 });
 

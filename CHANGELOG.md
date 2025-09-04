@@ -15,6 +15,7 @@
 - Enforce const usage for variables that are never reassigned
 - Add node: protocol prefix to Node.js builtin module imports for clarity
 - Use modern exponentiation operator (**) instead of Math.pow()
+- Replace string concatenation with modern template literals
 
 ## v0.10.9
 - Add support for IPv6 urls

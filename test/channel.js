@@ -690,7 +690,7 @@ suite('channel machinery', function () {
 
   function confirmTest(variety, Method) {
     return test(
-      'confirm ' + variety,
+      `confirm ${variety}`,
       channelTest(
         function (ch, done) {
           ch.on(variety, function (f) {

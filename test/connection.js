@@ -64,7 +64,7 @@ function connectionTest(client, server) {
 
     // NB only not a race here because the writes are synchronous
     const protocolHeader = pair.server.read(8);
-    assert.deepEqual(Buffer.from('AMQP' + String.fromCharCode(0, 0, 9, 1)), protocolHeader);
+    assert.deepEqual(Buffer.from(`AMQP${String.fromCharCode(0, 0, 9, 1)}`), protocolHeader);
 
     util.runServer(pair.server, function (send, wait) {
       server(send, wait, bothDone, pair.server);

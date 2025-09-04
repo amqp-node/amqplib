@@ -19,9 +19,6 @@
         "noArguments": "off",
         "useLiteralKeys": "off"
       },
-      "style": {
-        "useTemplate": "off"
-      },
       "suspicious": {
         "noRedundantUseStrict": "off",
         "noAssignInExpressions": "off",

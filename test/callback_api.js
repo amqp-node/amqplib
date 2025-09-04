@@ -46,7 +46,7 @@ function twice(done) {
 // Adapt 'done' to a callback that's expected to fail
 function failCallback(done) {
   return function (err, _) {
-    if (err == null) done(new Error('Expected failure, got ' + val));
+    if (err == null) done(new Error(`Expected failure, got ${val}`));
     else done();
   };
 }
@@ -199,7 +199,7 @@ suite('sending messages', function () {
         q.queue,
         function (m) {
           if (m.content.toString() == msg) done();
-          else done(new Error("message content doesn't match:" + msg + ' =/= ' + m.content.toString()));
+          else done(new Error(`message content doesn't match:${msg} =/= ${m.content.toString()}`));
         },
         {noAck: true, exclusive: true},
       );
@@ -217,7 +217,7 @@ suite('sending messages', function () {
           if (m.content.toString() == msg) {
             ch.ack(m);
             done();
-          } else done(new Error("message content doesn't match:" + msg + ' =/= ' + m.content.toString()));
+          } else done(new Error(`message content doesn't match:${msg} =/= ${m.content.toString()}`));
         },
         {noAck: false, exclusive: true},
       );
@@ -236,7 +236,7 @@ suite('sending messages', function () {
           if (e != null) return done(e);
           else if (!m) return done(new Error('Empty (false) not expected'));
           else if (m.content.toString() == msg) return done();
-          else return done(new Error('Messages do not match: ' + msg + ' =/= ' + m.content.toString()));
+          else return done(new Error(`Messages do not match: ${msg} =/= ${m.content.toString()}`));
         });
       });
     });
