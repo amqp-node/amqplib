@@ -7,7 +7,7 @@ const {v4: uuid} = require('uuid');
 const queue = 'rpc_queue';
 
 const n = parseInt(process.argv[2], 10);
-if (isNaN(n)) {
+if (Number.isNaN(n)) {
   console.warn('Usage: %s number', basename(process.argv[1]));
   process.exit(1);
 }

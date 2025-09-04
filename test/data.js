@@ -43,7 +43,7 @@ function toFloat32(i) {
 function floatChooser(maxExp) {
   return function () {
     let n = Number.NaN;
-    while (isNaN(n)) {
+    while (Number.isNaN(n)) {
       const mantissa = Math.random() * 2 - 1;
       const exponent = chooseInt(0, maxExp);
       n = mantissa ** exponent;
@@ -268,13 +268,13 @@ const domainProps = [
   [
     Double,
     function (f) {
-      return !isNaN(f) && isFinite(f);
+      return !Number.isNaN(f) && isFinite(f);
     },
   ],
   [
     Float,
     function (f) {
-      return !isNaN(f) && isFinite(f) && Math.log(Math.abs(f)) * Math.LOG10E < 309;
+      return !Number.isNaN(f) && isFinite(f) && Math.log(Math.abs(f)) * Math.LOG10E < 309;
     },
   ],
   [
