@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-
-'use strict';
 const co = require('co');
 const amqp = require('amqplib');
 const readline = require('node:readline');

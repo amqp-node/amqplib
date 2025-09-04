@@ -16,6 +16,7 @@
 - Add node: protocol prefix to Node.js builtin module imports for clarity
 - Use modern exponentiation operator (**) instead of Math.pow()
 - Replace string concatenation with modern template literals
+- Remove redundant 'use strict' directives as modules are automatically in strict mode
 
 ## v0.10.9
 - Add support for IPv6 urls

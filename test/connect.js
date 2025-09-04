@@ -1,5 +1,3 @@
-'use strict';
-
 const connect = require('../lib/connect').connect;
 const credentialsFromUrl = require('../lib/connect').credentialsFromUrl;
 const defs = require('../lib/defs');

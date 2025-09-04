@@ -1,5 +1,3 @@
-'use strict';
-
 const crypto = require('node:crypto');
 const Connection = require('../lib/connection').Connection;
 const PassThrough = require('node:stream').PassThrough;

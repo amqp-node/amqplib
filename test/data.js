@@ -1,7 +1,3 @@
-// Property-based testing representations of various things in AMQP
-
-'use strict';
-
 const C = require('claire');
 const forAll = C.forAll;
 const arb = C.data;
