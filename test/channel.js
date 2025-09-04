@@ -2,8 +2,8 @@
 
 'use strict';
 
-const assert = require('assert');
-const promisify = require('util').promisify;
+const assert = require('node:assert');
+const promisify = require('node:util').promisify;
 const Channel = require('../lib/channel').Channel;
 const Connection = require('../lib/connection').Connection;
 const util = require('./util');

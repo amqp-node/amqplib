@@ -2,7 +2,7 @@
 
 const codec = require('../lib/codec');
 const defs = require('../lib/defs');
-const assert = require('assert');
+const assert = require('node:assert');
 const ints = require('buffer-more-ints');
 const C = require('claire');
 const forAll = C.forAll;

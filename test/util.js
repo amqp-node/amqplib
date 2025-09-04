@@ -1,10 +1,10 @@
 'use strict';
 
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const Connection = require('../lib/connection').Connection;
-const PassThrough = require('stream').PassThrough;
+const PassThrough = require('node:stream').PassThrough;
 const defs = require('../lib/defs');
-const assert = require('assert');
+const assert = require('node:assert');
 
 const schedule = typeof setImmediate === 'function' ? setImmediate : process.nextTick;
 

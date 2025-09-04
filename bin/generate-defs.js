@@ -1,4 +1,4 @@
-const format = require('util').format;
+const format = require('node:util').format;
 
 const defs = require('./amqp-rabbitmq-0.9.1.json');
 

@@ -13,6 +13,7 @@
 - Fix precision loss in test data generators by using JavaScript safe integer limits
 - Add block scoping to switch statement cases to prevent variable declaration issues
 - Enforce const usage for variables that are never reassigned
+- Add node: protocol prefix to Node.js builtin module imports for clarity
 
 ## v0.10.9
 - Add support for IPv6 urls

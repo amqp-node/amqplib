@@ -1,13 +1,13 @@
 'use strict';
 
-const assert = require('assert');
+const assert = require('node:assert');
 const api = require('../channel_api');
 const util = require('./util');
 const succeed = util.succeed,
   fail = util.fail;
 const schedule = util.schedule;
 const randomString = util.randomString;
-const promisify = require('util').promisify;
+const promisify = require('node:util').promisify;
 
 const URL = process.env.URL || 'amqp://localhost';
 

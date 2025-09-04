@@ -1,10 +1,10 @@
 'use strict';
 
-const assert = require('assert');
+const assert = require('node:assert');
 const connection = require('../lib/connection');
 const Frames = connection.Connection;
 const HEARTBEAT = require('../lib/frame').HEARTBEAT;
-const Stream = require('stream');
+const Stream = require('node:stream');
 const PassThrough = Stream.PassThrough;
 
 const defs = require('../lib/defs');
