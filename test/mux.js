@@ -179,7 +179,9 @@ test('unpipe', function (done) {
         schedule(function () {
           // exhaust so that 'end' fires
           let v;
-          while ((v = input.read()));
+          do {
+            v = input.read();
+          } while (v);
         });
       });
     });
