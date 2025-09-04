@@ -20,7 +20,6 @@
         "useLiteralKeys": "off"
       },
       "style": {
-        "useConst": "off",
         "useNodejsImportProtocol": "off",
         "useTemplate": "off",
         "useExponentiationOperator": "off"
