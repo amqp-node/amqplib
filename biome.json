@@ -23,7 +23,7 @@
         "noUnusedFunctionParameters": "error",
         "noUnusedVariables": "error",
         "noInnerDeclarations": "error",
-        "useParseIntRadix": "off",
+        "useParseIntRadix": "error",
         "noSwitchDeclarations": "off",
         "noInvalidUseBeforeDeclaration": "error",
         "noPrecisionLoss": "off"

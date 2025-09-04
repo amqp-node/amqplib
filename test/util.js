@@ -163,7 +163,7 @@ function kCallback(k, ek) {
 // A noddy way to make tests depend on the node version.
 function versionGreaterThan(actual, spec) {
   function int(e) {
-    return parseInt(e);
+    return parseInt(e, 10);
   }
 
   const version = actual.split('.').map(int);
