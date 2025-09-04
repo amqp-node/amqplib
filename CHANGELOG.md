@@ -20,6 +20,7 @@
 - Refactor assignment-in-expression patterns to improve code clarity and readability
 - Enforce strict equality checks (=== and !==) instead of loose equality (== and !=)
 - Replace global isNaN with Number.isNaN for safer type checking
+- Ensure no variable redeclarations exist to prevent shadowing issues
 
 ## v0.10.9
 - Add support for IPv6 urls
