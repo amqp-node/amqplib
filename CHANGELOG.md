@@ -19,6 +19,7 @@
 - Remove redundant 'use strict' directives as modules are automatically in strict mode
 - Refactor assignment-in-expression patterns to improve code clarity and readability
 - Enforce strict equality checks (=== and !==) instead of loose equality (== and !=)
+- Replace global isNaN with Number.isNaN for safer type checking
 
 ## v0.10.9
 - Add support for IPv6 urls
