@@ -42,6 +42,6 @@
     }
   },
   "files": {
-    "includes": ["**/*.js", "!lib/defs.js", "!test"]
+    "includes": ["**/*.js", "!lib/defs.js"]
   }
 }
