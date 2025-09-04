@@ -105,11 +105,11 @@ suite('assert, check, delete', function () {
   });
 
   chtest("fail on checking a queue that's not there", function (ch) {
-    return expectFail(ch.checkQueue('test.random-' + randomString()));
+    return expectFail(ch.checkQueue(`test.random-${randomString()}`));
   });
 
   chtest("fail on checking an exchange that's not there", function (ch) {
-    return expectFail(ch.checkExchange('test.random-' + randomString()));
+    return expectFail(ch.checkExchange(`test.random-${randomString()}`));
   });
 
   chtest('fail on reasserting exchange with different type', function (ch) {
@@ -587,7 +587,7 @@ suite('confirms', function () {
 
         return Promise.all(cs).then(function () {
           if (multipleRainbows) return true;
-          else if (num > 500) throw new Error("Couldn't provoke the server" + ' into multi-acking with ' + num + ' messages; giving up');
+          else if (num > 500) throw new Error(`Couldn't provoke the server into multi-acking with ${num} messages; giving up`);
           else {
             //console.warn("Failed with " + num + "; trying " + num * 2);
             return prod(num * 2);

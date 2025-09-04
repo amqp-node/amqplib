@@ -137,7 +137,7 @@ suite('Roundtrip values', function () {
     amqp.FieldArray,
     amqp.FieldTable,
   ].forEach(function (T) {
-    test(T.toString() + ' roundtrip', roundtrips(T).asTest());
+    test(`${T.toString()} roundtrip`, roundtrips(T).asTest());
   });
 });
 
@@ -208,7 +208,7 @@ function assertEqualModuloDefaults(original, decodedFields) {
       }
     } catch (assertionErr) {
       const methodOrProps = defs.info(original.id).name;
-      assertionErr.message += ' (frame ' + methodOrProps + ' field ' + arg.name + ')';
+      assertionErr.message += ` (frame ${methodOrProps} field ${arg.name})`;
       throw assertionErr;
     }
   }
@@ -242,12 +242,12 @@ function roundtripProperties(Properties) {
 
 suite('Roundtrip methods', function () {
   amqp.methods.forEach(function (Method) {
-    test(Method.toString() + ' roundtrip', roundtripMethod(Method).asTest());
+    test(`${Method.toString()} roundtrip`, roundtripMethod(Method).asTest());
   });
 });
 
 suite('Roundtrip properties', function () {
   amqp.properties.forEach(function (Properties) {
-    test(Properties.toString() + ' roundtrip', roundtripProperties(Properties).asTest());
+    test(`${Properties.toString()} roundtrip`, roundtripProperties(Properties).asTest());
   });
 });

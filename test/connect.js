@@ -173,7 +173,7 @@ suite('Errors on connect', function () {
     server = net
       .createServer(function (socket) {
         socket.once('data', function (protocolHeader) {
-          assert.deepStrictEqual(protocolHeader, Buffer.from('AMQP' + String.fromCharCode(0, 0, 9, 1)));
+          assert.deepStrictEqual(protocolHeader, Buffer.from(`AMQP${String.fromCharCode(0, 0, 9, 1)}`));
           util.runServer(socket, function (send, wait) {
             send(defs.ConnectionStart, {
               versionMajor: 0,
@@ -200,7 +200,7 @@ suite('Errors on connect', function () {
       })
       .listen(0);
 
-    connect('amqp://localhost:' + server.address().port, {}, function (err) {
+    connect(`amqp://localhost:${server.address().port}`, {}, function (err) {
       if (!err) bothDone(new Error('Expected authentication error'));
       bothDone();
     });

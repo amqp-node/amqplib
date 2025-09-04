@@ -75,7 +75,7 @@ function runServer(socket, run) {
           frames.step(function (e, f) {
             if (e !== null) return reject(e);
             if (f.id === method) resolve(f);
-            else reject(new Error('Expected method: ' + method + ', got ' + f.id));
+            else reject(new Error(`Expected method: ${method}, got ${f.id}`));
           });
         } else {
           frames.step(function (e, f) {
@@ -106,7 +106,7 @@ function succeedIfAttributeEquals(attribute, value, done) {
       return done();
     }
 
-    done(new Error(attribute + ' is not equal to ' + value));
+    done(new Error(`${attribute} is not equal to ${value}`));
   };
 }
 
@@ -116,7 +116,7 @@ function succeedIfAttributeEquals(attribute, value, done) {
 function fail(done) {
   return function (err) {
     if (err instanceof Error) done(err);
-    else done(new Error('Expected to fail, instead got ' + err.toString()));
+    else done(new Error(`Expected to fail, instead got ${err.toString()}`));
   };
 }
 
