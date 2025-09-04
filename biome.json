@@ -26,7 +26,7 @@
         "useParseIntRadix": "error",
         "noSwitchDeclarations": "off",
         "noInvalidUseBeforeDeclaration": "error",
-        "noPrecisionLoss": "off"
+        "noPrecisionLoss": "error"
       },
       "style": {
         "useConst": "off",
