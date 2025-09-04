@@ -70,7 +70,7 @@ for (let i = 0, len = defs.classes.length; i < len; i++) {
   for (let j = 0, num = clazz.methods.length; j < num; j++) {
     const method = clazz.methods[j];
     const name = methodName(clazz, method);
-    const info = 'methodInfo' + name;
+    const info = `methodInfo${name}`;
 
     methods[name] = {
       id: methodId(clazz, method),
@@ -80,8 +80,8 @@ for (let i = 0, len = defs.classes.length; i < len; i++) {
       clazz: clazz.name,
       args: method['arguments'].map(argument),
       isReply: method.answer,
-      encoder: 'encode' + name,
-      decoder: 'decode' + name,
+      encoder: `encode${name}`,
+      decoder: `decode${name}`,
       info: info,
     };
   }
@@ -91,9 +91,9 @@ for (let i = 0, len = defs.classes.length; i < len; i++) {
     propertieses[name] = {
       id: clazz.id,
       name: name,
-      encoder: 'encode' + name,
-      decoder: 'decode' + name,
-      info: 'propertiesInfo' + name,
+      encoder: `encode${name}`,
+      decoder: `decode${name}`,
+      info: `propertiesInfo${name}`,
       args: props.map(argument),
     };
   }
@@ -203,7 +203,7 @@ function methodId(clazz, method) {
 }
 
 function propertiesName(clazz) {
-  return initial(clazz.name) + 'Properties';
+  return `${initial(clazz.name)}Properties`;
 }
 
 function valTypeTest(arg) {
@@ -298,11 +298,11 @@ function assignTable(a) {
 }
 
 function tableVar(a) {
-  return a.name + '_encoded';
+  return `${a.name}_encoded`;
 }
 
 function stringLenVar(a) {
-  return a.name + '_len';
+  return `${a.name}_len`;
 }
 
 function assignStringLen(a) {
@@ -438,7 +438,7 @@ function encoderFn(method) {
         println('offset += %s.copy(buffer, offset);', tableVar(a));
         break;
       default:
-        throw new Error('Unexpected argument type: ' + a.type);
+        throw new Error(`Unexpected argument type: ${a.type}`);
     }
   }
 
@@ -473,7 +473,7 @@ function decoderFn(method) {
 
   for (let i = 0, num = args.length; i < num; i++) {
     const a = args[i];
-    const field = "fields['" + a.name + "']";
+    const field = `fields['${a.name}']`;
 
     // Flush any collected bits before doing a new field
     if (a.type != 'bit' && bitsInARow > 0) {
@@ -520,7 +520,7 @@ function decoderFn(method) {
         println('offset += len;');
         break;
       default:
-        throw new TypeError('Unexpected type in argument list: ' + a.type);
+        throw new TypeError(`Unexpected type in argument list: ${a.type}`);
     }
     println('%s = val;', field);
   }
@@ -661,7 +661,7 @@ function encodePropsFn(props) {
           println('offset += %s.copy(buffer, offset);', tableVar(p));
           break;
         default:
-          throw new Error('Unexpected argument type: ' + p.type);
+          throw new Error(`Unexpected argument type: ${p.type}`);
       }
     }
     println('}'); // != undefined
@@ -688,7 +688,7 @@ function decodePropsFn(props) {
 
   for (let i = 0, num = args.length; i < num; i++) {
     const p = argument(args[i]);
-    const field = "fields['" + p.name + "']";
+    const field = `fields['${p.name}']`;
 
     println('if (flags & %d) {', flagAt(i));
     if (p.type === 'bit') {
@@ -724,7 +724,7 @@ function decodePropsFn(props) {
           println('offset += len;');
           break;
         default:
-          throw new TypeError('Unexpected type in argument list: ' + p.type);
+          throw new TypeError(`Unexpected type in argument list: ${p.type}`);
       }
       println('%s = val;', field);
     }
