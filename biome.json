@@ -22,7 +22,7 @@
       "correctness": {
         "noUnusedFunctionParameters": "error",
         "noUnusedVariables": "error",
-        "noInnerDeclarations": "off",
+        "noInnerDeclarations": "error",
         "useParseIntRadix": "off",
         "noSwitchDeclarations": "off",
         "noInvalidUseBeforeDeclaration": "off",
