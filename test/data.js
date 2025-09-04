@@ -50,7 +50,7 @@ function floatChooser(maxExp) {
     while (isNaN(n)) {
       const mantissa = Math.random() * 2 - 1;
       const exponent = chooseInt(0, maxExp);
-      n = Math.pow(mantissa, exponent);
+      n = mantissa ** exponent;
     }
     return n;
   };
