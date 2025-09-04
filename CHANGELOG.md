@@ -11,6 +11,7 @@
 - Replace all var declarations with let/const for modern JavaScript standards
 - Ensure parseInt calls use explicit radix parameter for clarity and reliability
 - Fix precision loss in test data generators by using JavaScript safe integer limits
+- Add block scoping to switch statement cases to prevent variable declaration issues
 
 ## v0.10.9
 - Add support for IPv6 urls

@@ -495,7 +495,7 @@ function decoderFn(method) {
       case 'timestamp':
         println('val = ints.readUInt64BE(buffer, offset); offset += 8;');
         break;
-      case 'bit':
+      case 'bit': {
         const bit = 1 << bitsInARow;
         println('val = !!(buffer[offset] & %d);', bit);
         if (bitsInARow === 7) {
@@ -503,6 +503,7 @@ function decoderFn(method) {
           bitsInARow = 0;
         } else bitsInARow++;
         break;
+      }
       case 'longstr':
         println('len = buffer.readUInt32BE(offset); offset += 4;');
         println('val = buffer.subarray(offset, offset + len);');
@@ -644,12 +645,13 @@ function encodePropsFn(props) {
           println('ints.writeUInt64BE(buffer, val, offset);');
           println('offset += 8;');
           break;
-        case 'shortstr':
+        case 'shortstr': {
           const v = stringLenVar(p);
           println('buffer[offset] = %s; offset++;', v);
           println("buffer.write(val, offset, 'utf8');");
           println('offset += %s;', v);
           break;
+        }
         case 'longstr':
           println('buffer.writeUInt32BE(val.length, offset);');
           println('offset += 4;');

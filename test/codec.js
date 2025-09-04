@@ -165,12 +165,13 @@ function removeExplicitTypes(input) {
         case 'decimal':
         case 'float':
           return input;
-        case undefined:
+        case undefined: {
           const newObj = {};
           for (const k in input) {
             newObj[k] = removeExplicitTypes(input[k]);
           }
           return newObj;
+        }
         default:
           return input.value;
       }

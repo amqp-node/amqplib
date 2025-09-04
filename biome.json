@@ -24,7 +24,7 @@
         "noUnusedVariables": "error",
         "noInnerDeclarations": "error",
         "useParseIntRadix": "error",
-        "noSwitchDeclarations": "off",
+        "noSwitchDeclarations": "error",
         "noInvalidUseBeforeDeclaration": "error",
         "noPrecisionLoss": "error"
       },
