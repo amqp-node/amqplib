@@ -14,7 +14,7 @@
       "complexity": {
         "noCommaOperator": "off",
         "noUselessCatch": "off",
-        "useArrowFunction": "off",
+        "useArrowFunction": "error",
         "useOptionalChain": "off",
         "noArguments": "off",
         "useLiteralKeys": "off"
@@ -42,6 +42,6 @@
     }
   },
   "files": {
-    "includes": ["**/*.js", "!lib/defs.js"]
+    "includes": ["**/*.js", "!lib/defs.js", "!test"]
   }
 }

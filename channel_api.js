@@ -3,11 +3,7 @@ const ChannelModel = require('./lib/channel_model').ChannelModel;
 const promisify = require('node:util').promisify;
 
 function connect(url, connOptions) {
-  return promisify(function (cb) {
-    return raw_connect(url, connOptions, cb);
-  })().then(function (conn) {
-    return new ChannelModel(conn);
-  });
+  return promisify((cb) => raw_connect(url, connOptions, cb))().then((conn) => new ChannelModel(conn));
 }
 
 module.exports.connect = connect;

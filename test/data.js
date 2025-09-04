@@ -28,9 +28,7 @@ function chooseInt(a, b) {
 function rangeInt(name, a, b) {
   return label(
     name,
-    asGenerator(function (_) {
-      return chooseInt(a, b);
-    }),
+    asGenerator((_) => chooseInt(a, b)),
   );
 }
 
@@ -41,7 +39,7 @@ function toFloat32(i) {
 }
 
 function floatChooser(maxExp) {
-  return function () {
+  return () => {
     let n = Number.NaN;
     while (Number.isNaN(n)) {
       const mantissa = Math.random() * 2 - 1;
@@ -55,9 +53,7 @@ function floatChooser(maxExp) {
 function explicitType(t, underlying) {
   return label(
     t,
-    transform(function (n) {
-      return {'!': t, value: n};
-    }, underlying),
+    transform((n) => ({'!': t, value: n}), underlying),
   );
 }
 
@@ -66,16 +62,12 @@ function explicitType(t, underlying) {
 const Octet = rangeInt('octet', 0, 255);
 const ShortStr = label(
   'shortstr',
-  transform(function (s) {
-    return s.substr(0, 255);
-  }, arb.Str),
+  transform((s) => s.substr(0, 255), arb.Str),
 );
 
 const LongStr = label(
   'longstr',
-  transform(function (bytes) {
-    return Buffer.from(bytes);
-  }, repeat(Octet)),
+  transform((bytes) => Buffer.from(bytes), repeat(Octet)),
 );
 
 const UShort = rangeInt('short-uint', 0, 0xffff);
@@ -89,36 +81,23 @@ const Double = label('double', asGenerator(floatChooser(308)));
 const Float = label('float', transform(toFloat32, floatChooser(38)));
 const Timestamp = label(
   'timestamp',
-  transform(function (n) {
-    return {'!': 'timestamp', value: n};
-  }, ULongLong),
+  transform((n) => ({'!': 'timestamp', value: n}), ULongLong),
 );
 const Decimal = label(
   'decimal',
-  transform(
-    function (args) {
-      return {'!': 'decimal', value: {places: args[1], digits: args[0]}};
-    },
-    sequence(arb.UInt, Octet),
-  ),
+  transform((args) => ({'!': 'decimal', value: {places: args[1], digits: args[0]}}), sequence(arb.UInt, Octet)),
 );
 const UnsignedByte = label(
   'unsignedbyte',
-  transform(function (n) {
-    return {'!': 'unsignedbyte', value: n};
-  }, Octet),
+  transform((n) => ({'!': 'unsignedbyte', value: n}), Octet),
 );
 const UnsignedShort = label(
   'unsignedshort',
-  transform(function (n) {
-    return {'!': 'unsignedshort', value: n};
-  }, UShort),
+  transform((n) => ({'!': 'unsignedshort', value: n}), UShort),
 );
 const UnsignedInt = label(
   'unsignedint',
-  transform(function (n) {
-    return {'!': 'unsignedint', value: n};
-  }, ULong),
+  transform((n) => ({'!': 'unsignedint', value: n}), ULong),
 );
 
 // Signed 8 bit int
@@ -136,8 +115,8 @@ const ExInt64 = explicitType('int64', LongLong);
 
 const FieldArray = label(
   'field-array',
-  recursive(function () {
-    return arb.Array(
+  recursive(() =>
+    arb.Array(
       arb.Null,
       LongStr,
       ShortStr,
@@ -162,17 +141,15 @@ const FieldArray = label(
       Double,
       FieldTable,
       FieldArray,
-    );
-  }),
+    ),
+  ),
 );
 
 const FieldTable = label(
   'table',
-  recursive(function () {
-    return sized(
-      function () {
-        return 5;
-      },
+  recursive(() =>
+    sized(
+      () => 5,
       arb.Object(
         arb.Null,
         LongStr,
@@ -199,112 +176,32 @@ const FieldTable = label(
         FieldArray,
         FieldTable,
       ),
-    );
-  }),
+    ),
+  ),
 );
 
 // Internal tests of our properties
 const domainProps = [
-  [
-    Octet,
-    function (n) {
-      return n >= 0 && n < 256;
-    },
-  ],
-  [
-    ShortStr,
-    function (s) {
-      return typeof s === 'string' && s.length < 256;
-    },
-  ],
-  [
-    LongStr,
-    function (s) {
-      return Buffer.isBuffer(s);
-    },
-  ],
-  [
-    UShort,
-    function (n) {
-      return n >= 0 && n <= 0xffff;
-    },
-  ],
-  [
-    ULong,
-    function (n) {
-      return n >= 0 && n <= 0xffffffff;
-    },
-  ],
-  [
-    ULongLong,
-    function (n) {
-      return n >= 0 && n <= 0xffffffffffffffff;
-    },
-  ],
-  [
-    Short,
-    function (n) {
-      return n >= -0x8000 && n <= 0x8000;
-    },
-  ],
-  [
-    Long,
-    function (n) {
-      return n >= -0x80000000 && n < 0x80000000;
-    },
-  ],
-  [
-    LongLong,
-    function (n) {
-      return n >= Number.MIN_SAFE_INTEGER && n <= Number.MAX_SAFE_INTEGER;
-    },
-  ],
-  [
-    Bit,
-    function (b) {
-      return typeof b === 'boolean';
-    },
-  ],
-  [
-    Double,
-    function (f) {
-      return !Number.isNaN(f) && Number.isFinite(f);
-    },
-  ],
-  [
-    Float,
-    function (f) {
-      return !Number.isNaN(f) && Number.isFinite(f) && Math.log(Math.abs(f)) * Math.LOG10E < 309;
-    },
-  ],
-  [
-    Decimal,
-    function (d) {
-      return d['!'] === 'decimal' && d.value['places'] <= 255 && d.value['digits'] <= 0xffffffff;
-    },
-  ],
-  [
-    Timestamp,
-    function (t) {
-      return t['!'] === 'timestamp';
-    },
-  ],
-  [
-    FieldTable,
-    function (t) {
-      return typeof t === 'object';
-    },
-  ],
-  [
-    FieldArray,
-    function (a) {
-      return Array.isArray(a);
-    },
-  ],
+  [Octet, (n) => n >= 0 && n < 256],
+  [ShortStr, (s) => typeof s === 'string' && s.length < 256],
+  [LongStr, (s) => Buffer.isBuffer(s)],
+  [UShort, (n) => n >= 0 && n <= 0xffff],
+  [ULong, (n) => n >= 0 && n <= 0xffffffff],
+  [ULongLong, (n) => n >= 0 && n <= 0xffffffffffffffff],
+  [Short, (n) => n >= -0x8000 && n <= 0x8000],
+  [Long, (n) => n >= -0x80000000 && n < 0x80000000],
+  [LongLong, (n) => n >= Number.MIN_SAFE_INTEGER && n <= Number.MAX_SAFE_INTEGER],
+  [Bit, (b) => typeof b === 'boolean'],
+  [Double, (f) => !Number.isNaN(f) && Number.isFinite(f)],
+  [Float, (f) => !Number.isNaN(f) && Number.isFinite(f) && Math.log(Math.abs(f)) * Math.LOG10E < 309],
+  [Decimal, (d) => d['!'] === 'decimal' && d.value['places'] <= 255 && d.value['digits'] <= 0xffffffff],
+  [Timestamp, (t) => t['!'] === 'timestamp'],
+  [FieldTable, (t) => typeof t === 'object'],
+  [FieldArray, (a) => Array.isArray(a)],
 ];
 
-suite('Domains', function () {
-  domainProps.forEach(function (p) {
+suite('Domains', () => {
+  domainProps.forEach((p) => {
     test(`${p[0]} domain`, forAll(p[0]).satisfy(p[1]).asTest({times: 500}));
   });
 });
@@ -336,7 +233,7 @@ function argtype(thing) {
 
 function zipObject(vals, names) {
   const obj = {};
-  vals.forEach(function (v, i) {
+  vals.forEach((v, i) => {
     obj[names[i]] = v;
   });
   return obj;
@@ -353,9 +250,7 @@ function method(info) {
   const names = info.args.map(name);
   return label(
     info.name,
-    transform(function (fieldVals) {
-      return {id: info.id, fields: zipObject(fieldVals, names)};
-    }, domain),
+    transform((fieldVals) => ({id: info.id, fields: zipObject(fieldVals, names)}), domain),
   );
 }
 
@@ -366,9 +261,7 @@ function properties(info) {
   const names = info.args.map(name);
   return label(
     info.name,
-    transform(function (fieldVals) {
-      return {id: info.id, size: fieldVals[0], fields: zipObject(fieldVals.slice(1), names)};
-    }, domain),
+    transform((fieldVals) => ({id: info.id, size: fieldVals[0], fields: zipObject(fieldVals.slice(1), names)}), domain),
   );
 }
 

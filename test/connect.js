@@ -15,7 +15,7 @@ const URL = process.env.URL || 'amqp://localhost';
 
 const urlparse = require('url-parse');
 
-suite('Credentials', function () {
+suite('Credentials', () => {
   function checkCreds(creds, user, pass, done) {
     if (creds.mechanism !== 'PLAIN') {
       return done('expected mechanism PLAIN');
@@ -26,46 +26,46 @@ suite('Credentials', function () {
     done();
   }
 
-  test('no creds', function (done) {
+  test('no creds', (done) => {
     const parts = urlparse('amqp://localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'guest', 'guest', done);
   });
-  test('usual user:pass', function (done) {
+  test('usual user:pass', (done) => {
     const parts = urlparse('amqp://user:pass@localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'user', 'pass', done);
   });
-  test('missing user', function (done) {
+  test('missing user', (done) => {
     const parts = urlparse('amqps://:password@localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, '', 'password', done);
   });
-  test('missing password', function (done) {
+  test('missing password', (done) => {
     const parts = urlparse('amqps://username:@localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'username', '', done);
   });
-  test('escaped colons', function (done) {
+  test('escaped colons', (done) => {
     const parts = urlparse('amqp://user%3Aname:pass%3Aword@localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'user:name', 'pass:word', done);
   });
 });
 
-suite('Connect API', function () {
-  test('Connection refused', function (done) {
+suite('Connect API', () => {
+  test('Connection refused', (done) => {
     connect('amqp://localhost:23450', {}, kCallback(fail(done), succeed(done)));
   });
 
   // %% this ought to fail the promise, rather than throwing an error
-  test('bad URL', function () {
-    assert.throws(function () {
+  test('bad URL', () => {
+    assert.throws(() => {
       connect('blurble');
     });
   });
 
-  test('wrongly typed open option', function (done) {
+  test('wrongly typed open option', (done) => {
     const url = require('node:url');
     const parts = url.parse(URL, true);
     const q = parts.query || {};
@@ -75,11 +75,11 @@ suite('Connect API', function () {
     connect(u, {}, kCallback(fail(done), succeed(done)));
   });
 
-  test('serverProperties', function (done) {
+  test('serverProperties', (done) => {
     const url = require('node:url');
     const parts = url.parse(URL, true);
     const config = parts.query || {};
-    connect(config, {}, function (err, connection) {
+    connect(config, {}, (err, connection) => {
       if (err) {
         return done(err);
       }
@@ -88,7 +88,7 @@ suite('Connect API', function () {
     });
   });
 
-  test('using custom heartbeat option', function (done) {
+  test('using custom heartbeat option', (done) => {
     const url = require('node:url');
     const parts = url.parse(URL, true);
     const config = parts.query || {};
@@ -96,7 +96,7 @@ suite('Connect API', function () {
     connect(config, {}, kCallback(succeedIfAttributeEquals('heartbeat', 20, done), fail(done)));
   });
 
-  test('wrongly typed heartbeat option', function (done) {
+  test('wrongly typed heartbeat option', (done) => {
     const url = require('node:url');
     const parts = url.parse(URL, true);
     const config = parts.query || {};
@@ -104,7 +104,7 @@ suite('Connect API', function () {
     connect(config, {}, kCallback(fail(done), succeed(done)));
   });
 
-  test('using plain credentials', function (done) {
+  test('using plain credentials', (done) => {
     const url = require('node:url');
     const parts = url.parse(URL, true);
     let u = 'guest',
@@ -116,7 +116,7 @@ suite('Connect API', function () {
     connect(URL, {credentials: require('../lib/credentials').plain(u, p)}, kCallback(succeed(done), fail(done)));
   });
 
-  test('using amqplain credentials', function (done) {
+  test('using amqplain credentials', (done) => {
     const url = require('node:url');
     const parts = url.parse(URL, true);
     let u = 'guest',
@@ -128,8 +128,8 @@ suite('Connect API', function () {
     connect(URL, {credentials: require('../lib/credentials').amqplain(u, p)}, kCallback(succeed(done), fail(done)));
   });
 
-  test('ipv6', function (done) {
-    connect('amqp://[::1]', {}, function (err, _connection) {
+  test('ipv6', (done) => {
+    connect('amqp://[::1]', {}, (err, _connection) => {
       if (err) {
         return done(err);
       }
@@ -137,20 +137,18 @@ suite('Connect API', function () {
     });
   });
 
-  test('using unsupported mechanism', function (done) {
+  test('using unsupported mechanism', (done) => {
     const creds = {
       mechanism: 'UNSUPPORTED',
-      response: function () {
-        return Buffer.from('');
-      },
+      response: () => Buffer.from(''),
     };
     connect(URL, {credentials: creds}, kCallback(fail(done), succeed(done)));
   });
 
-  test('with a given connection timeout', function (done) {
-    const timeoutServer = net.createServer(function () {}).listen(31991);
+  test('with a given connection timeout', (done) => {
+    const timeoutServer = net.createServer(() => {}).listen(31991);
 
-    connect('amqp://localhost:31991', {timeout: 50}, function (_err, val) {
+    connect('amqp://localhost:31991', {timeout: 50}, (_err, val) => {
       timeoutServer.close();
       if (val) done(new Error('Expected connection timeout, did not'));
       else done();
@@ -158,21 +156,21 @@ suite('Connect API', function () {
   });
 });
 
-suite('Errors on connect', function () {
+suite('Errors on connect', () => {
   let server;
-  teardown(function () {
+  teardown(() => {
     if (server) {
       server.close();
     }
   });
 
-  test('closes underlying connection on authentication error', function (done) {
+  test('closes underlying connection on authentication error', (done) => {
     const bothDone = latch(2, done);
     server = net
-      .createServer(function (socket) {
-        socket.once('data', function (protocolHeader) {
+      .createServer((socket) => {
+        socket.once('data', (protocolHeader) => {
           assert.deepStrictEqual(protocolHeader, Buffer.from(`AMQP${String.fromCharCode(0, 0, 9, 1)}`));
-          util.runServer(socket, function (send, wait) {
+          util.runServer(socket, (send, wait) => {
             send(defs.ConnectionStart, {
               versionMajor: 0,
               versionMinor: 9,
@@ -180,7 +178,7 @@ suite('Errors on connect', function () {
               mechanisms: Buffer.from('PLAIN'),
               locales: Buffer.from('en_US'),
             });
-            wait(defs.ConnectionStartOk)().then(function () {
+            wait(defs.ConnectionStartOk)().then(() => {
               send(defs.ConnectionClose, {
                 replyCode: 403,
                 replyText: 'ACCESS_REFUSED - Login was refused using authentication mechanism PLAIN',
@@ -192,13 +190,13 @@ suite('Errors on connect', function () {
         });
 
         // Wait for the connection to be closed after the authentication error
-        socket.once('end', function () {
+        socket.once('end', () => {
           bothDone();
         });
       })
       .listen(0);
 
-    connect(`amqp://localhost:${server.address().port}`, {}, function (err) {
+    connect(`amqp://localhost:${server.address().port}`, {}, (err) => {
       if (!err) bothDone(new Error('Expected authentication error'));
       bothDone();
     });

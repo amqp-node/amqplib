@@ -26,8 +26,8 @@ const HB = Buffer.from([
   defs.constants.FRAME_END,
 ]);
 
-suite('Explicit parsing', function () {
-  test('Parse heartbeat', function () {
+suite('Explicit parsing', () => {
+  test('Parse heartbeat', () => {
     const input = inputs();
     const frames = new Frames(input);
     input.write(HB);
@@ -35,7 +35,7 @@ suite('Explicit parsing', function () {
     assert(!frames.recvFrame());
   });
 
-  test('Parse partitioned', function () {
+  test('Parse partitioned', () => {
     const input = inputs();
     const frames = new Frames(input);
     input.write(HB.subarray(0, 3));
@@ -46,12 +46,12 @@ suite('Explicit parsing', function () {
   });
 
   function testBogusFrame(name, bytes) {
-    test(name, function (done) {
+    test(name, (done) => {
       const input = inputs();
       const frames = new Frames(input);
       frames.frameMax = 5; //for the max frame test
       input.write(Buffer.from(bytes));
-      frames.step(function (err, _frame) {
+      frames.step((err, _frame) => {
         if (err != null) done();
         else done(new Error('Was a bogus frame!'));
       });
@@ -102,16 +102,16 @@ const assertEqualModuloDefaults = require('./codec').assertEqualModuloDefaults;
 
 const Trace = label('frame trace', repeat(choice.apply(choice, amqp.methods)));
 
-suite('Parsing', function () {
+suite('Parsing', () => {
   function testPartitioning(partition) {
     return forAll(Trace)
-      .satisfy(function (t) {
+      .satisfy((t) => {
         const bufs = [];
         const input = inputs();
         const frames = new Frames(input);
         let i = 0,
           ex;
-        frames.accept = function (f) {
+        frames.accept = (f) => {
           // A minor hack to make sure we get the assertion exception;
           // otherwise, it's just a test that we reached the line
           // incrementing `i` for each frame.
@@ -123,12 +123,12 @@ suite('Parsing', function () {
           i++;
         };
 
-        t.forEach(function (f) {
+        t.forEach((f) => {
           f.channel = 0;
           bufs.push(defs.encodeMethod(f.id, 0, f.fields));
         });
 
-        partition(bufs).forEach(function (chunk) {
+        partition(bufs).forEach((chunk) => {
           input.write(chunk);
         });
         frames.acceptLoop();
@@ -140,21 +140,17 @@ suite('Parsing', function () {
 
   test(
     'Parse trace of methods',
-    testPartitioning(function (bufs) {
-      return bufs;
-    }),
+    testPartitioning((bufs) => bufs),
   );
 
   test(
     "Parse concat'd methods",
-    testPartitioning(function (bufs) {
-      return [Buffer.concat(bufs)];
-    }),
+    testPartitioning((bufs) => [Buffer.concat(bufs)]),
   );
 
   test(
     'Parse partitioned methods',
-    testPartitioning(function (bufs) {
+    testPartitioning((bufs) => {
       const full = Buffer.concat(bufs);
       const onethird = Math.floor(full.length / 3);
       const twothirds = 2 * onethird;
@@ -168,26 +164,22 @@ const FRAME_MAX_MIN = 4096;
 
 const FrameMax = amqp.rangeInt('frame max', FRAME_MAX_MIN, FRAME_MAX_MAX);
 
-const Body = sized(function (_n) {
-  return Math.floor(Math.random() * FRAME_MAX_MAX);
-}, repeat(amqp.Octet));
+const Body = sized((_n) => Math.floor(Math.random() * FRAME_MAX_MAX), repeat(amqp.Octet));
 
 const Content = transform(
-  function (args) {
-    return {
-      method: args[0].fields,
-      header: args[1].fields,
-      body: Buffer.from(args[2]),
-    };
-  },
+  (args) => ({
+    method: args[0].fields,
+    header: args[1].fields,
+    body: Buffer.from(args[2]),
+  }),
   sequence(amqp.methods['BasicDeliver'], amqp.properties['BasicProperties'], Body),
 );
 
-suite('Content framing', function () {
+suite('Content framing', () => {
   test(
     'Adhere to frame max',
     forAll(Content, FrameMax)
-      .satisfy(function (content, max) {
+      .satisfy((content, max) => {
         const input = inputs();
         const frames = new Frames(input);
         frames.frameMax = max;

@@ -32,7 +32,7 @@ amqp.connect((err, connection) => {
             else console.warn(' [x] Consumer cancelled');
           },
           {noAck: true},
-          function (err) {
+          (err) => {
             if (err) return bail(err, connection);
             console.log(' [*] Waiting for logs. To exit press CTRL+C.');
             subscribeAll(channel, queue, severities, (err) => {
