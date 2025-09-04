@@ -1,14 +1,14 @@
 'use strict';
 
-var assert = require('assert');
-var api = require('../callback_api');
-var util = require('./util');
-var schedule = util.schedule;
-var randomString = util.randomString;
-var kCallback = util.kCallback;
-var domain = require('domain');
+const assert = require('assert');
+const api = require('../callback_api');
+const util = require('./util');
+const schedule = util.schedule;
+const randomString = util.randomString;
+const kCallback = util.kCallback;
+const domain = require('domain');
 
-var URL = process.env.URL || 'amqp://localhost';
+const URL = process.env.URL || 'amqp://localhost';
 
 function connect(cb) {
   api.connect(URL, {}, cb);
@@ -25,11 +25,11 @@ function doneCallback(done) {
 function ignore() {}
 
 function twice(done) {
-  var first = function (err) {
+  let first = function (err) {
     if (err == undefined) second = done;
     else (second = ignore), done(err);
   };
-  var second = function (err) {
+  let second = function (err) {
     if (err == undefined) first = done;
     else (first = ignore), done(err);
   };
@@ -95,8 +95,8 @@ function channel_test_fn(method) {
     });
   };
 }
-var channel_test = channel_test_fn('createChannel');
-var confirm_channel_test = channel_test_fn('createConfirmChannel');
+const channel_test = channel_test_fn('createChannel');
+const confirm_channel_test = channel_test_fn('createConfirmChannel');
 
 suite('channel open', function () {
   channel_test('at all', function (_ch, done) {
@@ -141,13 +141,13 @@ suite('assert, check, delete', function () {
   });
 
   channel_test('fail on check non-queue', function (ch, done) {
-    var both = twice(done);
+    const both = twice(done);
     ch.on('error', failCallback(both.first));
     ch.checkQueue('test.cb.nothere', failCallback(both.second));
   });
 
   channel_test('fail on check non-exchange', function (ch, done) {
-    var both = twice(done);
+    const both = twice(done);
     ch.on('error', failCallback(both.first));
     ch.checkExchange('test.cb.nothere', failCallback(both.second));
   });
@@ -192,7 +192,7 @@ suite('bindings', function () {
 
 suite('sending messages', function () {
   channel_test('send to queue and consume noAck', function (ch, done) {
-    var msg = randomString();
+    const msg = randomString();
     ch.assertQueue('', {exclusive: true}, function (e, q) {
       if (e !== null) return done(e);
       ch.consume(
@@ -208,7 +208,7 @@ suite('sending messages', function () {
   });
 
   channel_test('send to queue and consume ack', function (ch, done) {
-    var msg = randomString();
+    const msg = randomString();
     ch.assertQueue('', {exclusive: true}, function (e, q) {
       if (e !== null) return done(e);
       ch.consume(
@@ -228,7 +228,7 @@ suite('sending messages', function () {
   channel_test('send to and get from queue', function (ch, done) {
     ch.assertQueue('', {exclusive: true}, function (e, q) {
       if (e != null) return done(e);
-      var msg = randomString();
+      const msg = randomString();
       ch.sendToQueue(q.queue, Buffer.from(msg));
       waitForMessages(ch, q.queue, function (e, _) {
         if (e != null) return done(e);
@@ -242,11 +242,11 @@ suite('sending messages', function () {
     });
   });
 
-  var channelOptions = {};
+  const channelOptions = {};
 
   channel_test('find high watermark', function (ch, done) {
-    var msg = randomString();
-    var baseline = 0;
+    const msg = randomString();
+    let baseline = 0;
     ch.assertQueue('', {exclusive: true}, function (e, q) {
       if (e !== null) return done(e);
       while (ch.sendToQueue(q.queue, Buffer.from(msg))) {
@@ -258,11 +258,11 @@ suite('sending messages', function () {
   });
 
   channel_test('set high watermark', channelOptions, function (ch, done) {
-    var msg = randomString();
+    const msg = randomString();
     ch.assertQueue('', {exclusive: true}, function (e, q) {
       if (e !== null) return done(e);
-      var ok;
-      for (var i = 0; i < channelOptions.highWaterMark; i++) {
+      let ok;
+      for (let i = 0; i < channelOptions.highWaterMark; i++) {
         ok = ch.sendToQueue(q.queue, Buffer.from(msg));
         assert.equal(ok, true);
       }
@@ -280,17 +280,17 @@ suite('ConfirmChannel', function () {
   });
 
   confirm_channel_test('Wait for confirms', function (ch, done) {
-    for (var i = 0; i < 1000; i++) {
+    for (let i = 0; i < 1000; i++) {
       ch.publish('', '', Buffer.from('foo'), {});
     }
     ch.waitForConfirms(done);
   });
 
-  var channelOptions = {};
+  const channelOptions = {};
 
   confirm_channel_test('find high watermark', function (ch, done) {
-    var msg = randomString();
-    var baseline = 0;
+    const msg = randomString();
+    let baseline = 0;
     ch.assertQueue('', {exclusive: true}, function (e, q) {
       if (e !== null) return done(e);
       while (ch.sendToQueue(q.queue, Buffer.from(msg))) {
@@ -302,11 +302,11 @@ suite('ConfirmChannel', function () {
   });
 
   confirm_channel_test('set high watermark', channelOptions, function (ch, done) {
-    var msg = randomString();
+    const msg = randomString();
     ch.assertQueue('', {exclusive: true}, function (e, q) {
       if (e !== null) return done(e);
-      var ok;
-      for (var i = 0; i < channelOptions.highWaterMark; i++) {
+      let ok;
+      for (let i = 0; i < channelOptions.highWaterMark; i++) {
         ok = ch.sendToQueue(q.queue, Buffer.from(msg));
         assert.equal(ok, true);
       }
@@ -331,7 +331,7 @@ suite('Error handling', function () {
    */
   if (util.versionGreaterThan(process.versions.node, '0.8')) {
     test('Throw error in connection open callback', function (done) {
-      var dom = domain.createDomain();
+      const dom = domain.createDomain();
       dom.on('error', failCallback(done));
       connect(
         dom.bind(function (_err, _conn) {
@@ -344,7 +344,7 @@ suite('Error handling', function () {
   // TODO: refactor {error_test, channel_test}
   function error_test(name, fun) {
     test(name, function (done) {
-      var dom = domain.createDomain();
+      const dom = domain.createDomain();
       dom.run(function () {
         connect(
           kCallback(function (c) {
@@ -396,13 +396,13 @@ suite('Error handling', function () {
   });
 
   error_test('Get from non-queue invokes error k', function (ch, done, dom) {
-    var both = twice(failCallback(done));
+    const both = twice(failCallback(done));
     dom.on('error', both.first);
     ch.get('', {}, both.second);
   });
 
   error_test('Consume from non-queue invokes error k', function (ch, done, dom) {
-    var both = twice(failCallback(done));
+    const both = twice(failCallback(done));
     dom.on('error', both.first);
     ch.consume('', both.second);
   });

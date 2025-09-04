@@ -1,16 +1,16 @@
-var format = require('util').format;
+const format = require('util').format;
 
-var defs = require('./amqp-rabbitmq-0.9.1.json');
+const defs = require('./amqp-rabbitmq-0.9.1.json');
 
-var FRAME_OVERHEAD = 8; // type + channel + size + frame-end
+const FRAME_OVERHEAD = 8; // type + channel + size + frame-end
 
-var METHOD_OVERHEAD = FRAME_OVERHEAD + 4;
+const METHOD_OVERHEAD = FRAME_OVERHEAD + 4;
 // F_O + classId + methodId
 
-var PROPERTIES_OVERHEAD = FRAME_OVERHEAD + 4 + 8 + 2;
+const PROPERTIES_OVERHEAD = FRAME_OVERHEAD + 4 + 8 + 2;
 // F_O + classId + weight + content size + flags
 
-var out = process.stdout;
+const out = process.stdout;
 
 function printf() {
   out.write(format.apply(format, arguments), 'utf8');
@@ -24,11 +24,11 @@ function println() {
   nl();
 }
 
-var constants = {};
-var constant_strs = {};
+const constants = {};
+const constant_strs = {};
 
-for (var i = 0, len = defs.constants.length; i < len; i++) {
-  var cdef = defs.constants[i];
+for (let i = 0, len = defs.constants.length; i < len; i++) {
+  const cdef = defs.constants[i];
   constants[constantName(cdef)] = cdef.value;
   constant_strs[cdef.value] = cdef.name;
 }
@@ -42,7 +42,7 @@ function methodName(clazz, method) {
 }
 
 function propertyName(dashed) {
-  var parts = dashed.split('-');
+  const parts = dashed.split('-');
   return parts[0] + parts.slice(1).map(initial).join('');
 }
 
@@ -51,26 +51,26 @@ function initial(part) {
 }
 
 function argument(a) {
-  var type = a.type || domains[a.domain];
-  var friendlyName = propertyName(a.name);
+  const type = a.type || domains[a.domain];
+  const friendlyName = propertyName(a.name);
   return {type: type, name: friendlyName, default: a['default-value']};
 }
 
-var domains = {};
-for (var i = 0, len = defs.domains.length; i < len; i++) {
-  var dom = defs.domains[i];
+const domains = {};
+for (let i = 0, len = defs.domains.length; i < len; i++) {
+  const dom = defs.domains[i];
   domains[dom[0]] = dom[1];
 }
 
-var methods = {};
-var propertieses = {};
+const methods = {};
+const propertieses = {};
 
-for (var i = 0, len = defs.classes.length; i < len; i++) {
-  var clazz = defs.classes[i];
-  for (var j = 0, num = clazz.methods.length; j < num; j++) {
-    var method = clazz.methods[j];
-    var name = methodName(clazz, method);
-    var info = 'methodInfo' + name;
+for (let i = 0, len = defs.classes.length; i < len; i++) {
+  const clazz = defs.classes[i];
+  for (let j = 0, num = clazz.methods.length; j < num; j++) {
+    const method = clazz.methods[j];
+    const name = methodName(clazz, method);
+    const info = 'methodInfo' + name;
 
     methods[name] = {
       id: methodId(clazz, method),
@@ -86,8 +86,8 @@ for (var i = 0, len = defs.classes.length; i < len; i++) {
     };
   }
   if (clazz.properties && clazz.properties.length > 0) {
-    var name = propertiesName(clazz);
-    var props = clazz.properties;
+    const name = propertiesName(clazz);
+    const props = clazz.properties;
     propertieses[name] = {
       id: clazz.id,
       name: name,
@@ -130,12 +130,12 @@ nl();
 
 println('module.exports.decode = function(id, buf) {');
 println('switch (id) {');
-for (var m in methods) {
-  var method = methods[m];
+for (const m in methods) {
+  const method = methods[m];
   println('case %d: return %s(buf);', method.id, method.decoder);
 }
-for (var p in propertieses) {
-  var props = propertieses[p];
+for (const p in propertieses) {
+  const props = propertieses[p];
   println('case %d: return %s(buf);', props.id, props.decoder);
 }
 println('default: throw new Error("Unknown class/method ID");');
@@ -144,8 +144,8 @@ nl();
 
 println('module.exports.encodeMethod =', 'function(id, channel, fields) {');
 println('switch (id) {');
-for (var m in methods) {
-  var method = methods[m];
+for (const m in methods) {
+  const method = methods[m];
   println('case %d: return %s(channel, fields);', method.id, method.encoder);
 }
 println('default: throw new Error("Unknown class/method ID");');
@@ -154,8 +154,8 @@ nl();
 
 println('module.exports.encodeProperties =', 'function(id, channel, size, fields) {');
 println('switch (id) {');
-for (var p in propertieses) {
-  var props = propertieses[p];
+for (const p in propertieses) {
+  const props = propertieses[p];
   println('case %d: return %s(channel, size, fields);', props.id, props.encoder);
 }
 println('default: throw new Error("Unknown class/properties ID");');
@@ -164,20 +164,20 @@ nl();
 
 println('module.exports.info = function(id) {');
 println('switch(id) {');
-for (var m in methods) {
-  var method = methods[m];
+for (const m in methods) {
+  const method = methods[m];
   println('case %d: return %s; ', method.id, method.info);
 }
-for (var p in propertieses) {
-  var properties = propertieses[p];
+for (const p in propertieses) {
+  const properties = propertieses[p];
   println('case %d: return %s', properties.id, properties.info);
 }
 println('default: throw new Error("Unknown class/method ID");');
 println('}}');
 nl();
 
-for (var m in methods) {
-  var method = methods[m];
+for (const m in methods) {
+  const method = methods[m];
   println('module.exports.%s = %d;', m, method.id);
   decoderFn(method);
   nl();
@@ -187,8 +187,8 @@ for (var m in methods) {
   nl();
 }
 
-for (var p in propertieses) {
-  var properties = propertieses[p];
+for (const p in propertieses) {
+  const properties = propertieses[p];
   println('module.exports.%s = %d;', p, properties.id);
   encodePropsFn(properties);
   nl();
@@ -291,7 +291,7 @@ function checkAssignArg(a) {
 // another buffer before returning. `scratchOffset`, `val`, `len` are
 // expected to have been declared.
 function assignTable(a) {
-  var varname = tableVar(a);
+  const varname = tableVar(a);
   println('len = encodeTable(SCRATCH, val, scratchOffset);');
   println('var %s = SCRATCH.slice(scratchOffset, scratchOffset + len);', varname);
   println('scratchOffset += len;');
@@ -306,13 +306,13 @@ function stringLenVar(a) {
 }
 
 function assignStringLen(a) {
-  var v = stringLenVar(a);
+  const v = stringLenVar(a);
   // Assumes the value or default is in val
   println("var %s = Buffer.byteLength(val, 'utf8');", v);
 }
 
 function encoderFn(method) {
-  var args = method['args'];
+  const args = method['args'];
   println('function %s(channel, fields) {', method.encoder);
   println('var offset = 0, val = null, bits = 0, varyingSize = 0;');
   println('var len, scratchOffset = 0;');
@@ -323,12 +323,12 @@ function encoderFn(method) {
   // either 1. contribute to the fixed size; or 2. emit code to
   // calculate the size (and possibly the encoded value, in the case
   // of tables).
-  var fixedSize = METHOD_OVERHEAD;
+  let fixedSize = METHOD_OVERHEAD;
 
-  var bitsInARow = 0;
+  let bitsInARow = 0;
 
-  for (var i = 0, len = args.length; i < len; i++) {
-    var arg = args[i];
+  for (let i = 0, len = args.length; i < len; i++) {
+    const arg = args[i];
 
     if (arg.type != 'bit') bitsInARow = 0;
 
@@ -387,8 +387,8 @@ function encoderFn(method) {
 
   bitsInARow = 0;
 
-  for (var i = 0, len = args.length; i < len; i++) {
-    var a = args[i];
+  for (let i = 0, len = args.length; i < len; i++) {
+    const a = args[i];
 
     // Flush any collected bits before doing a new field
     if (a.type != 'bit' && bitsInARow > 0) {
@@ -457,23 +457,23 @@ function encoderFn(method) {
 
 function fieldsDecl(args) {
   println('var fields = {');
-  for (var i = 0, num = args.length; i < num; i++) {
+  for (let i = 0, num = args.length; i < num; i++) {
     println('%s: undefined,', args[i].name);
   }
   println('};');
 }
 
 function decoderFn(method) {
-  var args = method.args;
+  const args = method.args;
   println('function %s(buffer) {', method.decoder);
   println('var offset = 0, val, len;');
   fieldsDecl(args);
 
-  var bitsInARow = 0;
+  let bitsInARow = 0;
 
-  for (var i = 0, num = args.length; i < num; i++) {
-    var a = args[i];
-    var field = "fields['" + a.name + "']";
+  for (let i = 0, num = args.length; i < num; i++) {
+    const a = args[i];
+    const field = "fields['" + a.name + "']";
 
     // Flush any collected bits before doing a new field
     if (a.type != 'bit' && bitsInARow > 0) {
@@ -496,7 +496,7 @@ function decoderFn(method) {
         println('val = ints.readUInt64BE(buffer, offset); offset += 8;');
         break;
       case 'bit':
-        var bit = 1 << bitsInARow;
+        const bit = 1 << bitsInARow;
         println('val = !!(buffer[offset] & %d);', bit);
         if (bitsInARow === 7) {
           println('offset++;');
@@ -528,7 +528,7 @@ function decoderFn(method) {
 }
 
 function infoObj(thing) {
-  var info = JSON.stringify({id: thing.id, classId: thing.clazzId, methodId: thing.methodId, name: thing.name, args: thing.args});
+  const info = JSON.stringify({id: thing.id, classId: thing.clazzId, methodId: thing.methodId, name: thing.name, args: thing.args});
   println('var %s = module.exports.%s = %s;', thing.info, thing.info, info);
 }
 
@@ -551,16 +551,16 @@ function encodePropsFn(props) {
   println('var offset = 0, flags = 0, val, len;');
   println('var scratchOffset = 0, varyingSize = 0;');
 
-  var fixedSize = PROPERTIES_OVERHEAD;
+  const fixedSize = PROPERTIES_OVERHEAD;
 
-  var args = props.args;
+  const args = props.args;
 
   function incVarying(by) {
     println('varyingSize += %d;', by);
   }
 
-  for (var i = 0, num = args.length; i < num; i++) {
-    var p = args[i];
+  for (let i = 0, num = args.length; i < num; i++) {
+    const p = args[i];
 
     assignArg(p);
     println('if (val != undefined) {');
@@ -617,9 +617,9 @@ function encodePropsFn(props) {
   // we'll write the flags later too
   println('offset = 21;');
 
-  for (var i = 0, num = args.length; i < num; i++) {
-    var p = args[i];
-    var flag = flagAt(i);
+  for (let i = 0, num = args.length; i < num; i++) {
+    const p = args[i];
+    const flag = flagAt(i);
 
     assignArg(p);
     println('if (val != undefined) {');
@@ -645,7 +645,7 @@ function encodePropsFn(props) {
           println('offset += 8;');
           break;
         case 'shortstr':
-          var v = stringLenVar(p);
+          const v = stringLenVar(p);
           println('buffer[offset] = %s; offset++;', v);
           println("buffer.write(val, offset, 'utf8');");
           println('offset += %s;', v);
@@ -674,7 +674,7 @@ function encodePropsFn(props) {
 }
 
 function decodePropsFn(props) {
-  var args = props.args;
+  const args = props.args;
 
   println('function %s(buffer) {', props.decoder);
   println('var flags, offset = 2, val, len;');
@@ -684,9 +684,9 @@ function decodePropsFn(props) {
 
   fieldsDecl(args);
 
-  for (var i = 0, num = args.length; i < num; i++) {
-    var p = argument(args[i]);
-    var field = "fields['" + p.name + "']";
+  for (let i = 0, num = args.length; i < num; i++) {
+    const p = argument(args[i]);
+    const field = "fields['" + p.name + "']";
 
     println('if (flags & %d) {', flagAt(i));
     if (p.type === 'bit') {

@@ -1,15 +1,15 @@
 'use strict';
 
-var crypto = require('crypto');
-var Connection = require('../lib/connection').Connection;
-var PassThrough = require('stream').PassThrough;
-var defs = require('../lib/defs');
-var assert = require('assert');
+const crypto = require('crypto');
+const Connection = require('../lib/connection').Connection;
+const PassThrough = require('stream').PassThrough;
+const defs = require('../lib/defs');
+const assert = require('assert');
 
-var schedule = typeof setImmediate === 'function' ? setImmediate : process.nextTick;
+const schedule = typeof setImmediate === 'function' ? setImmediate : process.nextTick;
 
 function randomString() {
-  var hash = crypto.createHash('sha1');
+  const hash = crypto.createHash('sha1');
   hash.update(crypto.randomBytes(64));
   return hash.digest('base64');
 }
@@ -31,8 +31,8 @@ function randomString() {
 // the other.
 
 function socketPair() {
-  var server = new PassThrough();
-  var client = new PassThrough();
+  const server = new PassThrough();
+  const client = new PassThrough();
   server.write = client.push.bind(client);
   client.write = server.push.bind(server);
   function end(chunk, encoding) {
@@ -46,7 +46,7 @@ function socketPair() {
 }
 
 function runServer(socket, run) {
-  var frames = new Connection(socket);
+  const frames = new Connection(socket);
   // We will be closing the socket without doing a closing handshake,
   // so cheat
   frames.expectSocketClose = true;
@@ -124,8 +124,8 @@ function fail(done) {
 // `count` times. If it's called with an error value, it will
 // immediately call done with that error value.
 function latch(count, done) {
-  var awaiting = count;
-  var alive = true;
+  let awaiting = count;
+  let alive = true;
   return function (err) {
     if (err instanceof Error && alive) {
       alive = false;
@@ -166,10 +166,10 @@ function versionGreaterThan(actual, spec) {
     return parseInt(e);
   }
 
-  var version = actual.split('.').map(int);
-  var desired = spec.split('.').map(int);
-  for (var i = 0; i < desired.length; i++) {
-    var a = version[i],
+  const version = actual.split('.').map(int);
+  const desired = spec.split('.').map(int);
+  for (let i = 0; i < desired.length; i++) {
+    const a = version[i],
       b = desired[i];
     if (a != b) return a > b;
   }

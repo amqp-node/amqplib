@@ -2,18 +2,18 @@
 
 'use strict';
 
-var C = require('claire');
-var forAll = C.forAll;
-var arb = C.data;
-var transform = C.transform;
-var repeat = C.repeat;
-var label = C.label;
-var sequence = C.sequence;
-var asGenerator = C.asGenerator;
-var sized = C.sized;
-var recursive = C.recursive;
-var choice = C.choice;
-var Undefined = C.Undefined;
+const C = require('claire');
+const forAll = C.forAll;
+const arb = C.data;
+const transform = C.transform;
+const repeat = C.repeat;
+const label = C.label;
+const sequence = C.sequence;
+const asGenerator = C.asGenerator;
+const sized = C.sized;
+const recursive = C.recursive;
+const choice = C.choice;
+const Undefined = C.Undefined;
 
 // Stub these out so we can use outside tests
 // if (!suite) var suite = function() {}
@@ -39,17 +39,17 @@ function rangeInt(name, a, b) {
 }
 
 function toFloat32(i) {
-  var b = Buffer.alloc(4);
+  const b = Buffer.alloc(4);
   b.writeFloatBE(i, 0);
   return b.readFloatBE(0);
 }
 
 function floatChooser(maxExp) {
   return function () {
-    var n = Number.NaN;
+    let n = Number.NaN;
     while (isNaN(n)) {
-      var mantissa = Math.random() * 2 - 1;
-      var exponent = chooseInt(0, maxExp);
+      const mantissa = Math.random() * 2 - 1;
+      const exponent = chooseInt(0, maxExp);
       n = Math.pow(mantissa, exponent);
     }
     return n;
@@ -67,37 +67,37 @@ function explicitType(t, underlying) {
 
 // FIXME null, byte array, others?
 
-var Octet = rangeInt('octet', 0, 255);
-var ShortStr = label(
+const Octet = rangeInt('octet', 0, 255);
+const ShortStr = label(
   'shortstr',
   transform(function (s) {
     return s.substr(0, 255);
   }, arb.Str),
 );
 
-var LongStr = label(
+const LongStr = label(
   'longstr',
   transform(function (bytes) {
     return Buffer.from(bytes);
   }, repeat(Octet)),
 );
 
-var UShort = rangeInt('short-uint', 0, 0xffff);
-var ULong = rangeInt('long-uint', 0, 0xffffffff);
-var ULongLong = rangeInt('longlong-uint', 0, 0xffffffffffffffff);
-var Short = rangeInt('short-int', -0x8000, 0x7fff);
-var Long = rangeInt('long-int', -0x80000000, 0x7fffffff);
-var LongLong = rangeInt('longlong-int', -0x8000000000000000, 0x7fffffffffffffff);
-var Bit = label('bit', arb.Bool);
-var Double = label('double', asGenerator(floatChooser(308)));
-var Float = label('float', transform(toFloat32, floatChooser(38)));
-var Timestamp = label(
+const UShort = rangeInt('short-uint', 0, 0xffff);
+const ULong = rangeInt('long-uint', 0, 0xffffffff);
+const ULongLong = rangeInt('longlong-uint', 0, 0xffffffffffffffff);
+const Short = rangeInt('short-int', -0x8000, 0x7fff);
+const Long = rangeInt('long-int', -0x80000000, 0x7fffffff);
+const LongLong = rangeInt('longlong-int', -0x8000000000000000, 0x7fffffffffffffff);
+const Bit = label('bit', arb.Bool);
+const Double = label('double', asGenerator(floatChooser(308)));
+const Float = label('float', transform(toFloat32, floatChooser(38)));
+const Timestamp = label(
   'timestamp',
   transform(function (n) {
     return {'!': 'timestamp', value: n};
   }, ULongLong),
 );
-var Decimal = label(
+const Decimal = label(
   'decimal',
   transform(
     function (args) {
@@ -106,19 +106,19 @@ var Decimal = label(
     sequence(arb.UInt, Octet),
   ),
 );
-var UnsignedByte = label(
+const UnsignedByte = label(
   'unsignedbyte',
   transform(function (n) {
     return {'!': 'unsignedbyte', value: n};
   }, Octet),
 );
-var UnsignedShort = label(
+const UnsignedShort = label(
   'unsignedshort',
   transform(function (n) {
     return {'!': 'unsignedshort', value: n};
   }, UShort),
 );
-var UnsignedInt = label(
+const UnsignedInt = label(
   'unsignedint',
   transform(function (n) {
     return {'!': 'unsignedint', value: n};
@@ -126,19 +126,19 @@ var UnsignedInt = label(
 );
 
 // Signed 8 bit int
-var Byte = rangeInt('byte', -128, 127);
+const Byte = rangeInt('byte', -128, 127);
 
 // Explicitly typed values
-var ExByte = explicitType('byte', Byte);
-var ExInt8 = explicitType('int8', Byte);
-var ExShort = explicitType('short', Short);
-var ExInt16 = explicitType('int16', Short);
-var ExInt = explicitType('int', Long);
-var ExInt32 = explicitType('int32', Long);
-var ExLong = explicitType('long', LongLong);
-var ExInt64 = explicitType('int64', LongLong);
+const ExByte = explicitType('byte', Byte);
+const ExInt8 = explicitType('int8', Byte);
+const ExShort = explicitType('short', Short);
+const ExInt16 = explicitType('int16', Short);
+const ExInt = explicitType('int', Long);
+const ExInt32 = explicitType('int32', Long);
+const ExLong = explicitType('long', LongLong);
+const ExInt64 = explicitType('int64', LongLong);
 
-var FieldArray = label(
+const FieldArray = label(
   'field-array',
   recursive(function () {
     return arb.Array(
@@ -170,7 +170,7 @@ var FieldArray = label(
   }),
 );
 
-var FieldTable = label(
+const FieldTable = label(
   'table',
   recursive(function () {
     return sized(
@@ -208,7 +208,7 @@ var FieldTable = label(
 );
 
 // Internal tests of our properties
-var domainProps = [
+const domainProps = [
   [
     Octet,
     function (n) {
@@ -315,10 +315,10 @@ suite('Domains', function () {
 
 // For methods and properties (as opposed to field table values) it's
 // easier just to accept and produce numbers for timestamps.
-var ArgTimestamp = label('timestamp', ULongLong);
+const ArgTimestamp = label('timestamp', ULongLong);
 
 // These are the domains used in method arguments
-var ARG_TYPES = {
+const ARG_TYPES = {
   octet: Octet,
   shortstr: ShortStr,
   longstr: LongStr,
@@ -339,7 +339,7 @@ function argtype(thing) {
 }
 
 function zipObject(vals, names) {
-  var obj = {};
+  const obj = {};
   vals.forEach(function (v, i) {
     obj[names[i]] = v;
   });
@@ -350,11 +350,11 @@ function name(arg) {
   return arg.name;
 }
 
-var defs = require('../lib/defs');
+const defs = require('../lib/defs');
 
 function method(info) {
-  var domain = sequence.apply(null, info.args.map(argtype));
-  var names = info.args.map(name);
+  const domain = sequence.apply(null, info.args.map(argtype));
+  const names = info.args.map(name);
   return label(
     info.name,
     transform(function (fieldVals) {
@@ -364,10 +364,10 @@ function method(info) {
 }
 
 function properties(info) {
-  var types = info.args.map(argtype);
+  const types = info.args.map(argtype);
   types.unshift(ULongLong); // size
-  var domain = sequence.apply(null, types);
-  var names = info.args.map(name);
+  const domain = sequence.apply(null, types);
+  const names = info.args.map(name);
   return label(
     info.name,
     transform(function (fieldVals) {
@@ -376,10 +376,10 @@ function properties(info) {
   );
 }
 
-var methods = [];
-var propertieses = [];
+const methods = [];
+const propertieses = [];
 
-for (var k in defs) {
+for (const k in defs) {
   if (k.substr(0, 10) === 'methodInfo') {
     methods.push(method(defs[k]));
     methods[defs[k].name] = method(defs[k]);

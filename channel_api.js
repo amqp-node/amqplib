@@ -1,6 +1,6 @@
-var raw_connect = require('./lib/connect').connect;
-var ChannelModel = require('./lib/channel_model').ChannelModel;
-var promisify = require('util').promisify;
+const raw_connect = require('./lib/connect').connect;
+const ChannelModel = require('./lib/channel_model').ChannelModel;
+const promisify = require('util').promisify;
 
 function connect(url, connOptions) {
   return promisify(function (cb) {
