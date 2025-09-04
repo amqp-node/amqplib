@@ -21,6 +21,7 @@
 - Enforce strict equality checks (=== and !==) instead of loose equality (== and !=)
 - Replace global isNaN with Number.isNaN for safer type checking
 - Ensure no variable redeclarations exist to prevent shadowing issues
+- Replace global isFinite with Number.isFinite for safer numeric validation
 
 ## v0.10.9
 - Add support for IPv6 urls
