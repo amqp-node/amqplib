@@ -21,7 +21,6 @@
       },
       "suspicious": {
         "noRedundantUseStrict": "error",
-        "noAssignInExpressions": "off",
         "noAsyncPromiseExecutor": "off",
         "noDoubleEquals": "off",
         "noGlobalIsNan": "off",

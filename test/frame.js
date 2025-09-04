@@ -192,15 +192,16 @@ suite('Content framing', function () {
         const frames = new Frames(input);
         frames.frameMax = max;
         frames.sendMessage(0, defs.BasicDeliver, content.method, defs.BasicProperties, content.header, content.body);
-        let f,
-          _i = 0,
-          largest = 0;
-        while ((f = input.read())) {
+        let _i = 0;
+        let largest = 0;
+        let frame = input.read();
+        while (frame) {
           _i++;
-          if (f.length > largest) largest = f.length;
-          if (f.length > max) {
+          if (frame.length > largest) largest = frame.length;
+          if (frame.length > max) {
             return false;
           }
+          frame = input.read();
         }
         // The ratio of frames to 'contents' should always be >= 2
         // (one properties frame and at least one content frame); > 2
