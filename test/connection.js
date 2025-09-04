@@ -66,7 +66,7 @@ function connectionTest(client, server) {
     var protocolHeader = pair.server.read(8);
     assert.deepEqual(Buffer.from('AMQP' + String.fromCharCode(0, 0, 9, 1)), protocolHeader);
 
-    var s = util.runServer(pair.server, function (send, wait) {
+    util.runServer(pair.server, function (send, wait) {
       server(send, wait, bothDone, pair.server);
     });
   };

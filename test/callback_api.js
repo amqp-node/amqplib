@@ -1,7 +1,6 @@
 'use strict';
 
 var assert = require('assert');
-var crypto = require('crypto');
 var api = require('../callback_api');
 var util = require('./util');
 var schedule = util.schedule;

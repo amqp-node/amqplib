@@ -103,7 +103,7 @@ function roundtrip_table(t) {
   var decoded = codec.decodeFields(buf.subarray(4, size)); // ignore the length-prefix
   try {
     assert.deepEqual(removeExplicitTypes(t), decoded);
-  } catch (e) {
+  } catch {
     return false;
   }
   return true;

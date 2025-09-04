@@ -1,8 +1,6 @@
 'use strict';
 
 var assert = require('assert');
-var succeed = require('./util').succeed;
-var fail = require('./util').fail;
 var connection = require('../lib/connection');
 var Frames = connection.Connection;
 var HEARTBEAT = require('../lib/frame').HEARTBEAT;
@@ -197,10 +195,10 @@ suite('Content framing', function () {
         frames.frameMax = max;
         frames.sendMessage(0, defs.BasicDeliver, content.method, defs.BasicProperties, content.header, content.body);
         var f,
-          i = 0,
+          _i = 0,
           largest = 0;
         while ((f = input.read())) {
-          i++;
+          _i++;
           if (f.length > largest) largest = f.length;
           if (f.length > max) {
             return false;
@@ -209,7 +207,7 @@ suite('Content framing', function () {
         // The ratio of frames to 'contents' should always be >= 2
         // (one properties frame and at least one content frame); > 2
         // indicates fragmentation. The largest is always, of course <= frame max
-        //console.log('Frames: %d; frames per message: %d; largest frame %d', i, i / t.length, largest);
+        //console.log('Frames: %d; frames per message: %d; largest frame %d', _i, _i / t.length, largest);
         return true;
       })
       .asTest(),
