@@ -84,10 +84,10 @@ const LongStr = label(
 
 const UShort = rangeInt('short-uint', 0, 0xffff);
 const ULong = rangeInt('long-uint', 0, 0xffffffff);
-const ULongLong = rangeInt('longlong-uint', 0, 0xffffffffffffffff);
+const ULongLong = rangeInt('longlong-uint', 0, Number.MAX_SAFE_INTEGER);
 const Short = rangeInt('short-int', -0x8000, 0x7fff);
 const Long = rangeInt('long-int', -0x80000000, 0x7fffffff);
-const LongLong = rangeInt('longlong-int', -0x8000000000000000, 0x7fffffffffffffff);
+const LongLong = rangeInt('longlong-int', Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
 const Bit = label('bit', arb.Bool);
 const Double = label('double', asGenerator(floatChooser(308)));
 const Float = label('float', transform(toFloat32, floatChooser(38)));
@@ -260,7 +260,7 @@ const domainProps = [
   [
     LongLong,
     function (n) {
-      return n >= -0x8000000000000000 && n < 0x8000000000000000;
+      return n >= Number.MIN_SAFE_INTEGER && n <= Number.MAX_SAFE_INTEGER;
     },
   ],
   [
