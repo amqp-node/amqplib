@@ -131,7 +131,7 @@ suite('Connect API', function () {
   });
 
   test('ipv6', function (done) {
-    connect('amqp://[::1]', {}, function (err, connection) {
+    connect('amqp://[::1]', {}, function (err, _connection) {
       if (err) {
         return done(err);
       }
@@ -152,7 +152,7 @@ suite('Connect API', function () {
   test('with a given connection timeout', function (done) {
     var timeoutServer = net.createServer(function () {}).listen(31991);
 
-    connect('amqp://localhost:31991', {timeout: 50}, function (err, val) {
+    connect('amqp://localhost:31991', {timeout: 50}, function (_err, val) {
       timeoutServer.close();
       if (val) done(new Error('Expected connection timeout, did not'));
       else done();

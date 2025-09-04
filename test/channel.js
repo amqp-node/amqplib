@@ -25,7 +25,7 @@ function baseChannelTest(client, server) {
 
     if (LOG_ERRORS) c.on('error', console.warn);
 
-    c.open(OPEN_OPTS, function (err, ok) {
+    c.open(OPEN_OPTS, function (err, _ok) {
       if (err === null) client(c, bothDone);
       else fail(bothDone);
     });
@@ -90,7 +90,7 @@ suite('channel open and close', function () {
       function (ch, done) {
         open(ch).then(succeed(done), fail(done));
       },
-      function (send, wait, done) {
+      function (_send, _wait, done) {
         done();
       },
     ),
@@ -127,7 +127,7 @@ suite('channel open and close', function () {
       },
       function (send, wait, done, ch) {
         return wait(defs.ChannelClose)()
-          .then(function (close) {
+          .then(function (_close) {
             send(defs.ChannelCloseOk, {}, ch);
           })
           .then(succeed(done), fail(done));
@@ -174,7 +174,7 @@ suite('channel open and close', function () {
           ch.closeBecause('Bye', defs.constants.REPLY_SUCCESS);
         }, fail(both));
       },
-      function (send, wait, done, ch) {
+      function (send, wait, done, _ch) {
         wait(defs.ChannelClose)()
           .then(function () {
             send(
@@ -227,7 +227,7 @@ suite('channel machinery', function () {
         var rpcLatch = latch(3, done);
         open(ch)
           .then(function () {
-            function wheeboom(err, f) {
+            function wheeboom(err, _f) {
               if (err !== null) rpcLatch(err);
               else rpcLatch();
             }
@@ -245,7 +245,7 @@ suite('channel machinery', function () {
           .then(null, fail(rpcLatch));
       },
       function (send, wait, done, ch) {
-        function sendOk(f) {
+        function sendOk(_f) {
           send(defs.BasicQosOk, {}, ch);
         }
 
@@ -368,7 +368,7 @@ suite('channel machinery', function () {
           })
           .then(succeed(done), fail(done));
       },
-      function (send, wait, done, ch) {
+      function (_send, wait, done, _ch) {
         wait(defs.BasicPublish)()
           .then(wait(defs.BasicProperties))
           .then(wait(undefined)) // content frame
@@ -399,7 +399,7 @@ suite('channel machinery', function () {
           );
         }, done);
       },
-      function (send, wait, done, ch) {
+      function (_send, wait, done, _ch) {
         wait(defs.BasicPublish)()
           .then(wait(defs.BasicProperties))
           .then(wait(undefined)) // content frame
@@ -432,7 +432,7 @@ suite('channel machinery', function () {
           );
         }, done);
       },
-      function (send, wait, done, ch) {
+      function (_send, wait, done, _ch) {
         wait(defs.BasicPublish)()
           .then(wait(defs.BasicProperties))
           .then(wait(undefined)) // content frame
@@ -474,7 +474,7 @@ suite('channel machinery', function () {
           );
         }, done);
       },
-      function (send, wait, done, ch) {
+      function (_send, wait, done, _ch) {
         wait(defs.BasicPublish)()
           .then(wait(defs.BasicProperties))
           // no content frame for a zero-length message
@@ -495,7 +495,7 @@ suite('channel machinery', function () {
           }, done);
         });
       },
-      function (send, wait, done, ch) {
+      function (send, _wait, done, ch) {
         completes(function () {
           send(defs.BasicDeliver, DELIVER_FIELDS, ch, Buffer.from('barfoo'));
         }, done);
@@ -514,7 +514,7 @@ suite('channel machinery', function () {
           }, done);
         });
       },
-      function (send, wait, done, ch) {
+      function (send, _wait, done, ch) {
         completes(function () {
           send(defs.BasicDeliver, DELIVER_FIELDS, ch, Buffer.from(''));
         }, done);
@@ -560,7 +560,7 @@ suite('channel machinery', function () {
           });
         }, done);
       },
-      function (send, wait, done, ch) {
+      function (_send, _wait, done, _ch) {
         done();
       },
     ),
@@ -577,7 +577,7 @@ suite('channel machinery', function () {
           });
         }, done);
       },
-      function (send, wait, done, ch) {
+      function (_send, _wait, done, _ch) {
         done();
       },
     ),
@@ -654,7 +654,7 @@ suite('channel machinery', function () {
         });
         open(ch);
       },
-      function (send, wait, done, ch) {
+      function (send, _wait, done, ch) {
         completes(function () {
           send(defs.BasicReturn, DELIVER_FIELDS, ch, Buffer.from('barfoo'));
         }, done);
@@ -673,7 +673,7 @@ suite('channel machinery', function () {
         });
         open(ch);
       },
-      function (send, wait, done, ch) {
+      function (send, _wait, done, ch) {
         completes(function () {
           send(
             defs.BasicCancel,
@@ -700,7 +700,7 @@ suite('channel machinery', function () {
           });
           open(ch);
         },
-        function (send, wait, done, ch) {
+        function (send, _wait, done, ch) {
           completes(function () {
             send(
               Method,
@@ -734,7 +734,7 @@ suite('channel machinery', function () {
         ch.pushConfirmCallback(allConfirms);
         open(ch);
       },
-      function (send, wait, done, ch) {
+      function (send, _wait, done, ch) {
         completes(function () {
           send(defs.BasicAck, {deliveryTag: 2, multiple: false}, ch);
           send(defs.BasicAck, {deliveryTag: 3, multiple: false}, ch);
@@ -761,7 +761,7 @@ suite('channel machinery', function () {
         });
         open(ch);
       },
-      function (send, wait, done, ch) {
+      function (send, _wait, done, ch) {
         completes(function () {
           send(defs.BasicAck, {deliveryTag: 2, multiple: false}, ch);
           send(defs.BasicAck, {deliveryTag: 1, multiple: false}, ch);

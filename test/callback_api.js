@@ -100,7 +100,7 @@ var channel_test = channel_test_fn('createChannel');
 var confirm_channel_test = channel_test_fn('createConfirmChannel');
 
 suite('channel open', function () {
-  channel_test('at all', function (ch, done) {
+  channel_test('at all', function (_ch, done) {
     done();
   });
 
@@ -114,10 +114,10 @@ suite('assert, check, delete', function () {
     ch.assertQueue(
       'test.cb.queue',
       {},
-      kCallback(function (q) {
+      kCallback(function (_q) {
         ch.checkQueue(
           'test.cb.queue',
-          kCallback(function (ok) {
+          kCallback(function (_ok) {
             ch.deleteQueue('test.cb.queue', {}, doneCallback(done));
           }, done),
         );
@@ -130,10 +130,10 @@ suite('assert, check, delete', function () {
       'test.cb.exchange',
       'topic',
       {},
-      kCallback(function (ex) {
+      kCallback(function (_ex) {
         ch.checkExchange(
           'test.cb.exchange',
-          kCallback(function (ok) {
+          kCallback(function (_ok) {
             ch.deleteExchange('test.cb.exchange', {}, doneCallback(done));
           }, done),
         );
@@ -335,7 +335,7 @@ suite('Error handling', function () {
       var dom = domain.createDomain();
       dom.on('error', failCallback(done));
       connect(
-        dom.bind(function (err, conn) {
+        dom.bind(function (_err, _conn) {
           throw new Error('Spurious connection open callback error');
         }),
       );
@@ -366,21 +366,21 @@ suite('Error handling', function () {
     });
   }
 
-  error_test('Channel open callback throws an error', function (ch, done, dom) {
+  error_test('Channel open callback throws an error', function (_ch, done, dom) {
     dom.on('error', failCallback(done));
     throw new Error('Error in open callback');
   });
 
   error_test('RPC callback throws error', function (ch, done, dom) {
     dom.on('error', failCallback(done));
-    ch.prefetch(0, false, function (err, ok) {
+    ch.prefetch(0, false, function (_err, _ok) {
       throw new Error('Spurious callback error');
     });
   });
 
   error_test('Get callback throws error', function (ch, done, dom) {
     dom.on('error', failCallback(done));
-    ch.assertQueue('test.cb.get-with-error', {}, function (err, ok) {
+    ch.assertQueue('test.cb.get-with-error', {}, function (_err, _ok) {
       ch.get('test.cb.get-with-error', {noAck: true}, function () {
         throw new Error('Spurious callback error');
       });
@@ -389,7 +389,7 @@ suite('Error handling', function () {
 
   error_test('Consume callback throws error', function (ch, done, dom) {
     dom.on('error', failCallback(done));
-    ch.assertQueue('test.cb.consume-with-error', {}, function (err, ok) {
+    ch.assertQueue('test.cb.consume-with-error', {}, function (_err, _ok) {
       ch.consume('test.cb.consume-with-error', ignore, {noAck: true}, function () {
         throw new Error('Spurious callback error');
       });

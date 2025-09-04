@@ -43,12 +43,12 @@ function happy_open(send, wait) {
     locales: Buffer.from('en_US'),
   });
   return wait(defs.ConnectionStartOk)()
-    .then(function (f) {
+    .then(function (_f) {
       send(defs.ConnectionTune, {channelMax: 0, heartbeat: 0, frameMax: 0});
     })
     .then(wait(defs.ConnectionTuneOk))
     .then(wait(defs.ConnectionOpen))
-    .then(function (f) {
+    .then(function (_f) {
       send(defs.ConnectionOpenOk, {knownHosts: ''});
     });
 }
@@ -114,7 +114,7 @@ suite('Connection open', function () {
       function (c, done) {
         c.open(OPEN_OPTS, kCallback(fail(done), succeed(done)));
       },
-      function (send, wait, done) {
+      function (send, _wait, done) {
         // bad server! bad! whatever were you thinking?
         completes(function () {
           send(defs.ConnectionTune, {channelMax: 0, heartbeat: 0, frameMax: 0});
@@ -164,7 +164,7 @@ suite('Connection running', function () {
             send(defs.ChannelOpenOk, {channelId: Buffer.from('')}, 0);
           })
           .then(wait(defs.ConnectionClose))
-          .then(function (close) {
+          .then(function (_close) {
             send(defs.ConnectionCloseOk, {}, 0);
           })
           .then(succeed(done), fail(done));
@@ -188,7 +188,7 @@ suite('Connection running', function () {
             send(defs.ChannelOpenOk, {channelId: Buffer.from('')}, 3);
           })
           .then(wait(defs.ConnectionClose))
-          .then(function (close) {
+          .then(function (_close) {
             send(defs.ConnectionCloseOk, {}, 0);
           })
           .then(succeed(done), fail(done));
@@ -228,7 +228,7 @@ suite('Connection running', function () {
         c.on('blocked', succeed(done));
         c.open(OPEN_OPTS);
       },
-      function (send, wait, done, socket) {
+      function (send, wait, done, _socket) {
         happy_open(send, wait)
           .then(function () {
             send(defs.ConnectionBlocked, {reason: 'felt like it'}, 0);
@@ -245,7 +245,7 @@ suite('Connection running', function () {
         c.on('unblocked', succeed(done));
         c.open(OPEN_OPTS);
       },
-      function (send, wait, done, socket) {
+      function (send, wait, done, _socket) {
         happy_open(send, wait)
           .then(function () {
             send(defs.ConnectionUnblocked, {}, 0);
@@ -276,7 +276,7 @@ suite('Connection close', function () {
       function (send, wait, done) {
         happy_open(send, wait)
           .then(wait(defs.ConnectionClose))
-          .then(function (close) {
+          .then(function (_close) {
             send(defs.ConnectionCloseOk, {});
           })
           .then(succeed(done), fail(done));
@@ -300,7 +300,7 @@ suite('Connection close', function () {
       function (send, wait, done) {
         happy_open(send, wait)
           .then(wait(defs.ConnectionClose))
-          .then(function (f) {
+          .then(function (_f) {
             send(defs.ConnectionClose, {
               replyText: 'Ha!',
               replyCode: defs.constants.REPLY_SUCCESS,
@@ -309,7 +309,7 @@ suite('Connection close', function () {
             });
           })
           .then(wait(defs.ConnectionCloseOk))
-          .then(function (f) {
+          .then(function (_f) {
             send(defs.ConnectionCloseOk, {});
           })
           .then(succeed(done), fail(done));
@@ -328,7 +328,7 @@ suite('Connection close', function () {
       },
       function (send, wait, done) {
         happy_open(send, wait)
-          .then(function (f) {
+          .then(function (_f) {
             send(defs.ConnectionClose, {
               replyText: 'Begone',
               replyCode: defs.constants.INTERNAL_ERROR,
@@ -352,7 +352,7 @@ suite('Connection close', function () {
       },
       function (send, wait, done) {
         happy_open(send, wait)
-          .then(function (f) {
+          .then(function (_f) {
             send(defs.ConnectionClose, {
               replyText: 'Begone',
               replyCode: defs.constants.CONNECTION_FORCED,
@@ -445,7 +445,7 @@ suite('heartbeats', function () {
         c.on('error', succeed(done));
         c.open(opts);
       },
-      function (send, wait, done, socket) {
+      function (send, wait, done, _socket) {
         happy_open(send, wait).then(succeed(done), fail(done));
         // conspicuously not sending anything ...
       },
