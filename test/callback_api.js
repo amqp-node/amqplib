@@ -1,12 +1,12 @@
 'use strict';
 
-const assert = require('assert');
+const assert = require('node:assert');
 const api = require('../callback_api');
 const util = require('./util');
 const schedule = util.schedule;
 const randomString = util.randomString;
 const kCallback = util.kCallback;
-const domain = require('domain');
+const domain = require('node:domain');
 
 const URL = process.env.URL || 'amqp://localhost';
 

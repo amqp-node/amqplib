@@ -1,8 +1,8 @@
 'use strict';
 
-const assert = require('assert');
+const assert = require('node:assert');
 const Mux = require('../lib/mux').Mux;
-const PassThrough = require('stream').PassThrough;
+const PassThrough = require('node:stream').PassThrough;
 
 const latch = require('./util').latch;
 const schedule = require('./util').schedule;

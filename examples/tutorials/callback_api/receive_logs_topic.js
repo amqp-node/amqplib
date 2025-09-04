@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const amqp = require('amqplib/callback_api');
-const {basename} = require('path');
+const {basename} = require('node:path');
 
 const exchange = 'topic_logs';
 const severities = process.argv.slice(2);

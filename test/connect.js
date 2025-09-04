@@ -3,15 +3,15 @@
 const connect = require('../lib/connect').connect;
 const credentialsFromUrl = require('../lib/connect').credentialsFromUrl;
 const defs = require('../lib/defs');
-const assert = require('assert');
+const assert = require('node:assert');
 const util = require('./util');
-const net = require('net');
+const net = require('node:net');
 const fail = util.fail,
   succeed = util.succeed,
   latch = util.latch,
   kCallback = util.kCallback,
   succeedIfAttributeEquals = util.succeedIfAttributeEquals;
-const format = require('util').format;
+const format = require('node:util').format;
 
 const URL = process.env.URL || 'amqp://localhost';
 
@@ -68,7 +68,7 @@ suite('Connect API', function () {
   });
 
   test('wrongly typed open option', function (done) {
-    const url = require('url');
+    const url = require('node:url');
     const parts = url.parse(URL, true);
     const q = parts.query || {};
     q.frameMax = 'NOT A NUMBER';
@@ -78,7 +78,7 @@ suite('Connect API', function () {
   });
 
   test('serverProperties', function (done) {
-    const url = require('url');
+    const url = require('node:url');
     const parts = url.parse(URL, true);
     const config = parts.query || {};
     connect(config, {}, function (err, connection) {
@@ -91,7 +91,7 @@ suite('Connect API', function () {
   });
 
   test('using custom heartbeat option', function (done) {
-    const url = require('url');
+    const url = require('node:url');
     const parts = url.parse(URL, true);
     const config = parts.query || {};
     config.heartbeat = 20;
@@ -99,7 +99,7 @@ suite('Connect API', function () {
   });
 
   test('wrongly typed heartbeat option', function (done) {
-    const url = require('url');
+    const url = require('node:url');
     const parts = url.parse(URL, true);
     const config = parts.query || {};
     config.heartbeat = 'NOT A NUMBER';
@@ -107,7 +107,7 @@ suite('Connect API', function () {
   });
 
   test('using plain credentials', function (done) {
-    const url = require('url');
+    const url = require('node:url');
     const parts = url.parse(URL, true);
     let u = 'guest',
       p = 'guest';
@@ -119,7 +119,7 @@ suite('Connect API', function () {
   });
 
   test('using amqplain credentials', function (done) {
-    const url = require('url');
+    const url = require('node:url');
     const parts = url.parse(URL, true);
     let u = 'guest',
       p = 'guest';

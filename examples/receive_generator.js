@@ -3,7 +3,7 @@
 'use strict';
 const co = require('co');
 const amqp = require('amqplib');
-const readline = require('readline');
+const readline = require('node:readline');
 
 co(function* () {
   const myConsumer = (msg) => {

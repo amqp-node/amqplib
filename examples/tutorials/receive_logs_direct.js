@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const amqp = require('../..');
-const {basename} = require('path');
+const {basename} = require('node:path');
 
 const exchange = 'direct_logs';
 const bindingKeys = process.argv.slice(2);

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const amqp = require('amqplib');
-const {basename} = require('path');
+const {basename} = require('node:path');
 const {v4: uuid} = require('uuid');
 
 const queue = 'rpc_queue';
