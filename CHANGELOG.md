@@ -26,6 +26,7 @@
 - Enable useArrowFunction lint rule to prefer arrow functions for cleaner syntax
 - Remove useless catch clauses that only rethrow errors without handling them
 - Replace arguments object with rest parameters for modern JavaScript best practices
+- Eliminate comma operator usage for clearer, more readable code
 
 ## v0.10.9
 - Add support for IPv6 urls
