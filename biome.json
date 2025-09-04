@@ -24,7 +24,7 @@
         "noAsyncPromiseExecutor": "off",
         "noGlobalIsNan": "error",
         "noGlobalIsFinite": "error",
-        "noPrototypeBuiltins": "off",
+        "noPrototypeBuiltins": "error",
         "noVar": "error"
       }
     }
