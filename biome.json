@@ -23,7 +23,6 @@
         "noRedundantUseStrict": "error",
         "noAsyncPromiseExecutor": "off",
         "noGlobalIsNan": "error",
-        "noRedeclare": "off",
         "noGlobalIsFinite": "off",
         "noPrototypeBuiltins": "off",
         "noVar": "error"
