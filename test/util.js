@@ -169,7 +169,7 @@ function versionGreaterThan(actual, spec) {
   for (let i = 0; i < desired.length; i++) {
     const a = version[i],
       b = desired[i];
-    if (a != b) return a > b;
+    if (a !== b) return a > b;
   }
   return false;
 }

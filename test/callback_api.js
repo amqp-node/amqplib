@@ -24,11 +24,11 @@ function ignore() {}
 
 function twice(done) {
   let first = function (err) {
-    if (err == undefined) second = done;
+    if (err === undefined) second = done;
     else (second = ignore), done(err);
   };
   let second = function (err) {
-    if (err == undefined) first = done;
+    if (err === undefined) first = done;
     else (first = ignore), done(err);
   };
   return {
@@ -196,7 +196,7 @@ suite('sending messages', function () {
       ch.consume(
         q.queue,
         function (m) {
-          if (m.content.toString() == msg) done();
+          if (m.content.toString() === msg) done();
           else done(new Error(`message content doesn't match:${msg} =/= ${m.content.toString()}`));
         },
         {noAck: true, exclusive: true},
@@ -212,7 +212,7 @@ suite('sending messages', function () {
       ch.consume(
         q.queue,
         function (m) {
-          if (m.content.toString() == msg) {
+          if (m.content.toString() === msg) {
             ch.ack(m);
             done();
           } else done(new Error(`message content doesn't match:${msg} =/= ${m.content.toString()}`));
@@ -233,7 +233,7 @@ suite('sending messages', function () {
         ch.get(q.queue, {noAck: true}, function (e, m) {
           if (e != null) return done(e);
           else if (!m) return done(new Error('Empty (false) not expected'));
-          else if (m.content.toString() == msg) return done();
+          else if (m.content.toString() === msg) return done();
           else return done(new Error(`Messages do not match: ${msg} =/= ${m.content.toString()}`));
         });
       });

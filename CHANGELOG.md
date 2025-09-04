@@ -18,6 +18,7 @@
 - Replace string concatenation with modern template literals
 - Remove redundant 'use strict' directives as modules are automatically in strict mode
 - Refactor assignment-in-expression patterns to improve code clarity and readability
+- Enforce strict equality checks (=== and !==) instead of loose equality (== and !=)
 
 ## v0.10.9
 - Add support for IPv6 urls
