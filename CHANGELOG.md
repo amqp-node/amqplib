@@ -23,6 +23,7 @@
 - Replace global isNaN with Number.isNaN for safer type checking
 - Ensure no variable redeclarations exist to prevent shadowing issues
 - Replace global isFinite with Number.isFinite for safer numeric validation
+- Enable useArrowFunction lint rule to prefer arrow functions for cleaner syntax
 
 ## v0.10.9
 - Add support for IPv6 urls

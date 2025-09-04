@@ -14,7 +14,7 @@ function connect(cb) {
 
 // Construct a node-style callback from a `done` function
 function doneCallback(done) {
-  return function (err, _) {
+  return (err, _) => {
     if (err == null) done();
     else done(err);
   };
@@ -23,19 +23,19 @@ function doneCallback(done) {
 function ignore() {}
 
 function twice(done) {
-  let first = function (err) {
+  let first = (err) => {
     if (err === undefined) second = done;
     else (second = ignore), done(err);
   };
-  let second = function (err) {
+  let second = (err) => {
     if (err === undefined) first = done;
     else (first = ignore), done(err);
   };
   return {
-    first: function (err) {
+    first: (err) => {
       first(err);
     },
-    second: function (err) {
+    second: (err) => {
       second(err);
     },
   };
@@ -43,48 +43,48 @@ function twice(done) {
 
 // Adapt 'done' to a callback that's expected to fail
 function failCallback(done) {
-  return function (err, _) {
+  return (err, _) => {
     if (err == null) done(new Error(`Expected failure, got ${val}`));
     else done();
   };
 }
 
 function waitForMessages(ch, q, k) {
-  ch.checkQueue(q, function (e, ok) {
+  ch.checkQueue(q, (e, ok) => {
     if (e != null) return k(e);
     else if (ok.messageCount > 0) return k(null, ok);
     else schedule(waitForMessages.bind(null, ch, q, k));
   });
 }
 
-suite('connect', function () {
-  test('at all', function (done) {
+suite('connect', () => {
+  test('at all', (done) => {
     connect(doneCallback(done));
   });
 });
 
-suite('updateSecret', function () {
-  test('updateSecret', function (done) {
+suite('updateSecret', () => {
+  test('updateSecret', (done) => {
     connect(
-      kCallback(function (c) {
+      kCallback((c) => {
         c.updateSecret(Buffer.from('new secret'), 'no reason', doneCallback(done));
       }),
     );
   });
 });
 
-function channel_test_fn(method) {
-  return function (name, options, chfun) {
-    if (arguments.length === 2) {
+const channel_test_fn = (method) => {
+  return (name, options, chfun) => {
+    if (typeof options === 'function') {
       chfun = options;
       options = {};
     }
-    test(name, function (done) {
+    test(name, (done) => {
       connect(
-        kCallback(function (c) {
+        kCallback((c) => {
           c[method](
             options,
-            kCallback(function (ch) {
+            kCallback((ch) => {
               chfun(ch, done);
             }, done),
           );
@@ -92,29 +92,29 @@ function channel_test_fn(method) {
       );
     });
   };
-}
+};
 const channel_test = channel_test_fn('createChannel');
 const confirm_channel_test = channel_test_fn('createConfirmChannel');
 
-suite('channel open', function () {
-  channel_test('at all', function (_ch, done) {
+suite('channel open', () => {
+  channel_test('at all', (_ch, done) => {
     done();
   });
 
-  channel_test('open and close', function (ch, done) {
+  channel_test('open and close', (ch, done) => {
     ch.close(doneCallback(done));
   });
 });
 
-suite('assert, check, delete', function () {
-  channel_test('assert, check, delete queue', function (ch, done) {
+suite('assert, check, delete', () => {
+  channel_test('assert, check, delete queue', (ch, done) => {
     ch.assertQueue(
       'test.cb.queue',
       {},
-      kCallback(function (_q) {
+      kCallback((_q) => {
         ch.checkQueue(
           'test.cb.queue',
-          kCallback(function (_ok) {
+          kCallback((_ok) => {
             ch.deleteQueue('test.cb.queue', {}, doneCallback(done));
           }, done),
         );
@@ -122,15 +122,15 @@ suite('assert, check, delete', function () {
     );
   });
 
-  channel_test('assert, check, delete exchange', function (ch, done) {
+  channel_test('assert, check, delete exchange', (ch, done) => {
     ch.assertExchange(
       'test.cb.exchange',
       'topic',
       {},
-      kCallback(function (_ex) {
+      kCallback((_ex) => {
         ch.checkExchange(
           'test.cb.exchange',
-          kCallback(function (_ok) {
+          kCallback((_ok) => {
             ch.deleteExchange('test.cb.exchange', {}, doneCallback(done));
           }, done),
         );
@@ -138,30 +138,30 @@ suite('assert, check, delete', function () {
     );
   });
 
-  channel_test('fail on check non-queue', function (ch, done) {
+  channel_test('fail on check non-queue', (ch, done) => {
     const both = twice(done);
     ch.on('error', failCallback(both.first));
     ch.checkQueue('test.cb.nothere', failCallback(both.second));
   });
 
-  channel_test('fail on check non-exchange', function (ch, done) {
+  channel_test('fail on check non-exchange', (ch, done) => {
     const both = twice(done);
     ch.on('error', failCallback(both.first));
     ch.checkExchange('test.cb.nothere', failCallback(both.second));
   });
 });
 
-suite('bindings', function () {
-  channel_test('bind queue', function (ch, done) {
+suite('bindings', () => {
+  channel_test('bind queue', (ch, done) => {
     ch.assertQueue(
       'test.cb.bindq',
       {},
-      kCallback(function (q) {
+      kCallback((q) => {
         ch.assertExchange(
           'test.cb.bindex',
           'fanout',
           {},
-          kCallback(function (ex) {
+          kCallback((ex) => {
             ch.bindQueue(q.queue, ex.exchange, '', {}, doneCallback(done));
           }, done),
         );
@@ -169,17 +169,17 @@ suite('bindings', function () {
     );
   });
 
-  channel_test('bind exchange', function (ch, done) {
+  channel_test('bind exchange', (ch, done) => {
     ch.assertExchange(
       'test.cb.bindex1',
       'fanout',
       {},
-      kCallback(function (ex1) {
+      kCallback((ex1) => {
         ch.assertExchange(
           'test.cb.bindex2',
           'fanout',
           {},
-          kCallback(function (ex2) {
+          kCallback((ex2) => {
             ch.bindExchange(ex1.exchange, ex2.exchange, '', {}, doneCallback(done));
           }, done),
         );
@@ -188,14 +188,14 @@ suite('bindings', function () {
   });
 });
 
-suite('sending messages', function () {
-  channel_test('send to queue and consume noAck', function (ch, done) {
+suite('sending messages', () => {
+  channel_test('send to queue and consume noAck', (ch, done) => {
     const msg = randomString();
-    ch.assertQueue('', {exclusive: true}, function (e, q) {
+    ch.assertQueue('', {exclusive: true}, (e, q) => {
       if (e !== null) return done(e);
       ch.consume(
         q.queue,
-        function (m) {
+        (m) => {
           if (m.content.toString() === msg) done();
           else done(new Error(`message content doesn't match:${msg} =/= ${m.content.toString()}`));
         },
@@ -205,13 +205,13 @@ suite('sending messages', function () {
     });
   });
 
-  channel_test('send to queue and consume ack', function (ch, done) {
+  channel_test('send to queue and consume ack', (ch, done) => {
     const msg = randomString();
-    ch.assertQueue('', {exclusive: true}, function (e, q) {
+    ch.assertQueue('', {exclusive: true}, (e, q) => {
       if (e !== null) return done(e);
       ch.consume(
         q.queue,
-        function (m) {
+        (m) => {
           if (m.content.toString() === msg) {
             ch.ack(m);
             done();
@@ -223,14 +223,14 @@ suite('sending messages', function () {
     });
   });
 
-  channel_test('send to and get from queue', function (ch, done) {
-    ch.assertQueue('', {exclusive: true}, function (e, q) {
+  channel_test('send to and get from queue', (ch, done) => {
+    ch.assertQueue('', {exclusive: true}, (e, q) => {
       if (e != null) return done(e);
       const msg = randomString();
       ch.sendToQueue(q.queue, Buffer.from(msg));
-      waitForMessages(ch, q.queue, function (e, _) {
+      waitForMessages(ch, q.queue, (e, _) => {
         if (e != null) return done(e);
-        ch.get(q.queue, {noAck: true}, function (e, m) {
+        ch.get(q.queue, {noAck: true}, (e, m) => {
           if (e != null) return done(e);
           else if (!m) return done(new Error('Empty (false) not expected'));
           else if (m.content.toString() === msg) return done();
@@ -242,10 +242,10 @@ suite('sending messages', function () {
 
   const channelOptions = {};
 
-  channel_test('find high watermark', function (ch, done) {
+  channel_test('find high watermark', (ch, done) => {
     const msg = randomString();
     let baseline = 0;
-    ch.assertQueue('', {exclusive: true}, function (e, q) {
+    ch.assertQueue('', {exclusive: true}, (e, q) => {
       if (e !== null) return done(e);
       while (ch.sendToQueue(q.queue, Buffer.from(msg))) {
         baseline++;
@@ -255,9 +255,9 @@ suite('sending messages', function () {
     });
   });
 
-  channel_test('set high watermark', channelOptions, function (ch, done) {
+  channel_test('set high watermark', channelOptions, (ch, done) => {
     const msg = randomString();
-    ch.assertQueue('', {exclusive: true}, function (e, q) {
+    ch.assertQueue('', {exclusive: true}, (e, q) => {
       if (e !== null) return done(e);
       let ok;
       for (let i = 0; i < channelOptions.highWaterMark; i++) {
@@ -269,15 +269,15 @@ suite('sending messages', function () {
   });
 });
 
-suite('ConfirmChannel', function () {
-  confirm_channel_test('Receive confirmation', function (ch, done) {
+suite('ConfirmChannel', () => {
+  confirm_channel_test('Receive confirmation', (ch, done) => {
     // An unroutable message, on the basis that you're not allowed a
     // queue with an empty name, and you can't make bindings to the
     // default exchange. Tricky eh?
     ch.publish('', '', Buffer.from('foo'), {}, done);
   });
 
-  confirm_channel_test('Wait for confirms', function (ch, done) {
+  confirm_channel_test('Wait for confirms', (ch, done) => {
     for (let i = 0; i < 1000; i++) {
       ch.publish('', '', Buffer.from('foo'), {});
     }
@@ -286,10 +286,10 @@ suite('ConfirmChannel', function () {
 
   const channelOptions = {};
 
-  confirm_channel_test('find high watermark', function (ch, done) {
+  confirm_channel_test('find high watermark', (ch, done) => {
     const msg = randomString();
     let baseline = 0;
-    ch.assertQueue('', {exclusive: true}, function (e, q) {
+    ch.assertQueue('', {exclusive: true}, (e, q) => {
       if (e !== null) return done(e);
       while (ch.sendToQueue(q.queue, Buffer.from(msg))) {
         baseline++;
@@ -299,9 +299,9 @@ suite('ConfirmChannel', function () {
     });
   });
 
-  confirm_channel_test('set high watermark', channelOptions, function (ch, done) {
+  confirm_channel_test('set high watermark', channelOptions, (ch, done) => {
     const msg = randomString();
-    ch.assertQueue('', {exclusive: true}, function (e, q) {
+    ch.assertQueue('', {exclusive: true}, (e, q) => {
       if (e !== null) return done(e);
       let ok;
       for (let i = 0; i < channelOptions.highWaterMark; i++) {
@@ -313,7 +313,7 @@ suite('ConfirmChannel', function () {
   });
 });
 
-suite('Error handling', function () {
+suite('Error handling', () => {
   /*
   I don't like having to do this, but there appears to be something
   broken about domains in Node.JS v0.8 and mocha. Apparently it has to
@@ -328,11 +328,11 @@ suite('Error handling', function () {
   program.
    */
   if (util.versionGreaterThan(process.versions.node, '0.8')) {
-    test('Throw error in connection open callback', function (done) {
+    test('Throw error in connection open callback', (done) => {
       const dom = domain.createDomain();
       dom.on('error', failCallback(done));
       connect(
-        dom.bind(function (_err, _conn) {
+        dom.bind((_err, _conn) => {
           throw new Error('Spurious connection open callback error');
         }),
       );
@@ -341,11 +341,11 @@ suite('Error handling', function () {
 
   // TODO: refactor {error_test, channel_test}
   function error_test(name, fun) {
-    test(name, function (done) {
+    test(name, (done) => {
       const dom = domain.createDomain();
-      dom.run(function () {
+      dom.run(() => {
         connect(
-          kCallback(function (c) {
+          kCallback((c) => {
             // Seems like there were some unironed wrinkles in 0.8's
             // implementation of domains; explicitly adding the connection
             // to the domain makes sure any exception thrown in the course
@@ -353,7 +353,7 @@ suite('Error handling', function () {
             // versions of Node.JS, this ends up being belt-and-braces.
             dom.add(c);
             c.createChannel(
-              kCallback(function (ch) {
+              kCallback((ch) => {
                 fun(ch, done, dom);
               }, done),
             );
@@ -363,43 +363,43 @@ suite('Error handling', function () {
     });
   }
 
-  error_test('Channel open callback throws an error', function (_ch, done, dom) {
+  error_test('Channel open callback throws an error', (_ch, done, dom) => {
     dom.on('error', failCallback(done));
     throw new Error('Error in open callback');
   });
 
-  error_test('RPC callback throws error', function (ch, done, dom) {
+  error_test('RPC callback throws error', (ch, done, dom) => {
     dom.on('error', failCallback(done));
-    ch.prefetch(0, false, function (_err, _ok) {
+    ch.prefetch(0, false, (_err, _ok) => {
       throw new Error('Spurious callback error');
     });
   });
 
-  error_test('Get callback throws error', function (ch, done, dom) {
+  error_test('Get callback throws error', (ch, done, dom) => {
     dom.on('error', failCallback(done));
-    ch.assertQueue('test.cb.get-with-error', {}, function (_err, _ok) {
-      ch.get('test.cb.get-with-error', {noAck: true}, function () {
+    ch.assertQueue('test.cb.get-with-error', {}, (_err, _ok) => {
+      ch.get('test.cb.get-with-error', {noAck: true}, () => {
         throw new Error('Spurious callback error');
       });
     });
   });
 
-  error_test('Consume callback throws error', function (ch, done, dom) {
+  error_test('Consume callback throws error', (ch, done, dom) => {
     dom.on('error', failCallback(done));
-    ch.assertQueue('test.cb.consume-with-error', {}, function (_err, _ok) {
-      ch.consume('test.cb.consume-with-error', ignore, {noAck: true}, function () {
+    ch.assertQueue('test.cb.consume-with-error', {}, (_err, _ok) => {
+      ch.consume('test.cb.consume-with-error', ignore, {noAck: true}, () => {
         throw new Error('Spurious callback error');
       });
     });
   });
 
-  error_test('Get from non-queue invokes error k', function (ch, done, dom) {
+  error_test('Get from non-queue invokes error k', (ch, done, dom) => {
     const both = twice(failCallback(done));
     dom.on('error', both.first);
     ch.get('', {}, both.second);
   });
 
-  error_test('Consume from non-queue invokes error k', function (ch, done, dom) {
+  error_test('Consume from non-queue invokes error k', (ch, done, dom) => {
     const both = twice(failCallback(done));
     dom.on('error', both.first);
     ch.consume('', both.second);

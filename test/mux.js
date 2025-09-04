@@ -20,7 +20,7 @@ function readAllObjects(s, cb) {
     }
   }
 
-  s.on('end', function () {
+  s.on('end', () => {
     cb(objs);
   });
   s.on('readable', read);
@@ -28,10 +28,10 @@ function readAllObjects(s, cb) {
   read();
 }
 
-test('single input', function (done) {
+test('single input', (done) => {
   const input = stream();
   const output = stream();
-  input.on('end', function () {
+  input.on('end', () => {
     output.end();
   });
 
@@ -42,11 +42,11 @@ test('single input', function (done) {
   // not 0, it's treated specially by PassThrough for some reason. By
   // 'specially' I mean it breaks the stream. See e.g.,
   // https://github.com/isaacs/readable-stream/pull/55
-  data.forEach(function (chunk) {
+  data.forEach((chunk) => {
     input.write(chunk);
   });
 
-  readAllObjects(output, function (vals) {
+  readAllObjects(output, (vals) => {
     assert.deepEqual(data, vals);
     done();
   });
@@ -54,10 +54,10 @@ test('single input', function (done) {
   input.end();
 });
 
-test('single input, resuming stream', function (done) {
+test('single input, resuming stream', (done) => {
   const input = stream();
   const output = stream();
-  input.on('end', function () {
+  input.on('end', () => {
     output.end();
   });
 
@@ -69,7 +69,7 @@ test('single input, resuming stream', function (done) {
   const data = [1, 2, 3, 4, 'skip', 6, 7, 8, 9];
 
   const oldRead = input.read;
-  input.read = function (size) {
+  input.read = (size) => {
     const val = oldRead.call(input, size);
 
     if (val === 'skip') {
@@ -80,11 +80,11 @@ test('single input, resuming stream', function (done) {
     return val;
   };
 
-  data.forEach(function (chunk) {
+  data.forEach((chunk) => {
     input.write(chunk);
   });
 
-  readAllObjects(output, function (vals) {
+  readAllObjects(output, (vals) => {
     assert.deepEqual([1, 2, 3, 4, 6, 7, 8, 9], vals);
     done();
   });
@@ -92,7 +92,7 @@ test('single input, resuming stream', function (done) {
   input.end();
 });
 
-test('two sequential inputs', function (done) {
+test('two sequential inputs', (done) => {
   const input1 = stream();
   const input2 = stream();
   const output = stream();
@@ -101,28 +101,28 @@ test('two sequential inputs', function (done) {
   mux.pipeFrom(input2);
 
   const data = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-  data.forEach(function (v) {
+  data.forEach((v) => {
     input1.write(v);
   });
 
-  input1.on('end', function () {
-    data.forEach(function (v) {
+  input1.on('end', () => {
+    data.forEach((v) => {
       input2.write(v);
     });
     input2.end();
   });
-  input2.on('end', function () {
+  input2.on('end', () => {
     output.end();
   });
 
   input1.end();
-  readAllObjects(output, function (vs) {
+  readAllObjects(output, (vs) => {
     assert.equal(2 * data.length, vs.length);
     done();
   });
 });
 
-test('two interleaved inputs', function (done) {
+test('two interleaved inputs', (done) => {
   const input1 = stream();
   const input2 = stream();
   const output = stream();
@@ -130,30 +130,30 @@ test('two interleaved inputs', function (done) {
   mux.pipeFrom(input1);
   mux.pipeFrom(input2);
 
-  const endLatch = latch(2, function () {
+  const endLatch = latch(2, () => {
     output.end();
   });
   input1.on('end', endLatch);
   input2.on('end', endLatch);
 
   const data = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-  data.forEach(function (v) {
+  data.forEach((v) => {
     input1.write(v);
   });
   input1.end();
 
-  data.forEach(function (v) {
+  data.forEach((v) => {
     input2.write(v);
   });
   input2.end();
 
-  readAllObjects(output, function (vs) {
+  readAllObjects(output, (vs) => {
     assert.equal(2 * data.length, vs.length);
     done();
   });
 });
 
-test('unpipe', function (done) {
+test('unpipe', (done) => {
   const input = stream();
   const output = stream();
   const mux = new Mux(output);
@@ -163,20 +163,20 @@ test('unpipe', function (done) {
 
   mux.pipeFrom(input);
 
-  schedule(function () {
-    pipedData.forEach(function (chunk) {
+  schedule(() => {
+    pipedData.forEach((chunk) => {
       input.write(chunk);
     });
 
-    schedule(function () {
+    schedule(() => {
       mux.unpipeFrom(input);
 
-      schedule(function () {
-        unpipedData.forEach(function (chunk) {
+      schedule(() => {
+        unpipedData.forEach((chunk) => {
           input.write(chunk);
         });
         input.end();
-        schedule(function () {
+        schedule(() => {
           // exhaust so that 'end' fires
           let v;
           do {
@@ -187,11 +187,11 @@ test('unpipe', function (done) {
     });
   });
 
-  input.on('end', function () {
+  input.on('end', () => {
     output.end();
   });
 
-  readAllObjects(output, function (vals) {
+  readAllObjects(output, (vals) => {
     try {
       assert.deepEqual(pipedData, vals);
       done();
@@ -201,7 +201,7 @@ test('unpipe', function (done) {
   });
 });
 
-test('roundrobin', function (done) {
+test('roundrobin', (done) => {
   const input1 = stream();
   const input2 = stream();
   const output = stream();
@@ -210,25 +210,25 @@ test('roundrobin', function (done) {
   mux.pipeFrom(input1);
   mux.pipeFrom(input2);
 
-  const endLatch = latch(2, function () {
+  const endLatch = latch(2, () => {
     output.end();
   });
   input1.on('end', endLatch);
   input2.on('end', endLatch);
 
   const ones = [1, 1, 1, 1, 1];
-  ones.forEach(function (v) {
+  ones.forEach((v) => {
     input1.write(v);
   });
   input1.end();
 
   const twos = [2, 2, 2, 2, 2];
-  twos.forEach(function (v) {
+  twos.forEach((v) => {
     input2.write(v);
   });
   input2.end();
 
-  readAllObjects(output, function (vs) {
+  readAllObjects(output, (vs) => {
     assert.deepEqual([1, 2, 1, 2, 1, 2, 1, 2, 1, 2], vs);
     done();
   });

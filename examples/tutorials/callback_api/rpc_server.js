@@ -30,7 +30,7 @@ amqp.connect((err, connection) => {
           channel.ack(message);
         },
         {noAck: false},
-        function (err) {
+        (err) => {
           if (err) return bail(err, conn);
           console.log(' [x] Awaiting RPC requests. To exit press CTRL+C.');
         },

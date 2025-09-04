@@ -56,33 +56,32 @@ function runServer(socket, run) {
   function send(id, fields, channel, content) {
     channel = channel || 0;
     if (content) {
-      schedule(function () {
+      schedule(() => {
         frames.sendMessage(channel, id, fields, defs.BasicProperties, fields, content);
       });
     } else {
-      schedule(function () {
+      schedule(() => {
         frames.sendMethod(channel, id, fields);
       });
     }
   }
 
   function wait(method) {
-    return function () {
-      return new Promise(function (resolve, reject) {
+    return () =>
+      new Promise((resolve, reject) => {
         if (method) {
-          frames.step(function (e, f) {
+          frames.step((e, f) => {
             if (e !== null) return reject(e);
             if (f.id === method) resolve(f);
             else reject(new Error(`Expected method: ${method}, got ${f.id}`));
           });
         } else {
-          frames.step(function (e, f) {
+          frames.step((e, f) => {
             if (e !== null) return reject(e);
             else resolve(f);
           });
         }
       });
-    };
   }
   run(send, wait);
   return frames;
@@ -90,7 +89,7 @@ function runServer(socket, run) {
 
 // Produce a callback that will complete the test successfully
 function succeed(done) {
-  return function () {
+  return () => {
     done();
   };
 }
@@ -99,7 +98,7 @@ function succeed(done) {
 // only if the value is an object, it has the specified
 // attribute, and its value is equals to the expected value
 function succeedIfAttributeEquals(attribute, value, done) {
-  return function (object) {
+  return (object) => {
     if (object && !(object instanceof Error) && value === object[attribute]) {
       return done();
     }
@@ -112,7 +111,7 @@ function succeedIfAttributeEquals(attribute, value, done) {
 // (to be used as a failure continuation) or any other value (to be
 // used as a success continuation when failure is expected)
 function fail(done) {
-  return function (err) {
+  return (err) => {
     if (err instanceof Error) done(err);
     else done(new Error(`Expected to fail, instead got ${err.toString()}`));
   };
@@ -124,7 +123,7 @@ function fail(done) {
 function latch(count, done) {
   let awaiting = count;
   let alive = true;
-  return function (err) {
+  return (err) => {
     if (err instanceof Error && alive) {
       alive = false;
       done(err);
@@ -152,7 +151,7 @@ function completes(thunk, done) {
 // Construct a Node.JS-style callback from a success continuation and
 // an error continuation
 function kCallback(k, ek) {
-  return function (err, val) {
+  return (err, val) => {
     if (err === null) k && k(val);
     else ek && ek(err);
   };
@@ -174,17 +173,17 @@ function versionGreaterThan(actual, spec) {
   return false;
 }
 
-suite('versionGreaterThan', function () {
-  test('full spec', function () {
+suite('versionGreaterThan', () => {
+  test('full spec', () => {
     assert(versionGreaterThan('0.8.26', '0.6.12'));
     assert(versionGreaterThan('0.8.26', '0.8.21'));
   });
 
-  test('partial spec', function () {
+  test('partial spec', () => {
     assert(versionGreaterThan('0.9.12', '0.8'));
   });
 
-  test('not greater', function () {
+  test('not greater', () => {
     assert(!versionGreaterThan('0.8.12', '0.8.26'));
     assert(!versionGreaterThan('0.6.2', '0.6.12'));
     assert(!versionGreaterThan('0.8.29', '0.8'));

@@ -41,19 +41,19 @@ function happy_open(send, wait) {
     locales: Buffer.from('en_US'),
   });
   return wait(defs.ConnectionStartOk)()
-    .then(function (_f) {
+    .then((_f) => {
       send(defs.ConnectionTune, {channelMax: 0, heartbeat: 0, frameMax: 0});
     })
     .then(wait(defs.ConnectionTuneOk))
     .then(wait(defs.ConnectionOpen))
-    .then(function (_f) {
+    .then((_f) => {
       send(defs.ConnectionOpenOk, {knownHosts: ''});
     });
 }
 module.exports.connection_handshake = happy_open;
 
 function connectionTest(client, server) {
-  return function (done) {
+  return (done) => {
     const bothDone = latch(2, done);
     const pair = util.socketPair();
     const c = new Connection(pair.client);
@@ -64,43 +64,43 @@ function connectionTest(client, server) {
     const protocolHeader = pair.server.read(8);
     assert.deepEqual(Buffer.from(`AMQP${String.fromCharCode(0, 0, 9, 1)}`), protocolHeader);
 
-    util.runServer(pair.server, function (send, wait) {
+    util.runServer(pair.server, (send, wait) => {
       server(send, wait, bothDone, pair.server);
     });
   };
 }
 
-suite('Connection errors', function () {
-  test('socket close during open', function (done) {
+suite('Connection errors', () => {
+  test('socket close during open', (done) => {
     // RabbitMQ itself will take at least 3 seconds to close the socket
     // in the event of a handshake problem. Instead of using a live
     // connection, I'm just going to pretend.
     const pair = util.socketPair();
     const conn = new Connection(pair.client);
-    pair.server.on('readable', function () {
+    pair.server.on('readable', () => {
       pair.server.end();
     });
     conn.open({}, kCallback(fail(done), succeed(done)));
   });
 
-  test('bad frame during open', function (done) {
+  test('bad frame during open', (done) => {
     const ss = util.socketPair();
     const conn = new (require('../lib/connection').Connection)(ss.client);
-    ss.server.on('readable', function () {
+    ss.server.on('readable', () => {
       ss.server.write(Buffer.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
     });
     conn.open({}, kCallback(fail(done), succeed(done)));
   });
 });
 
-suite('Connection open', function () {
+suite('Connection open', () => {
   test(
     'happy',
     connectionTest(
-      function (c, done) {
+      (c, done) => {
         c.open(OPEN_OPTS, kCallback(succeed(done), fail(done)));
       },
-      function (send, wait, done) {
+      (send, wait, done) => {
         happy_open(send, wait).then(succeed(done), fail(done));
       },
     ),
@@ -109,12 +109,12 @@ suite('Connection open', function () {
   test(
     'wrong first frame',
     connectionTest(
-      function (c, done) {
+      (c, done) => {
         c.open(OPEN_OPTS, kCallback(fail(done), succeed(done)));
       },
-      function (send, _wait, done) {
+      (send, _wait, done) => {
         // bad server! bad! whatever were you thinking?
-        completes(function () {
+        completes(() => {
           send(defs.ConnectionTune, {channelMax: 0, heartbeat: 0, frameMax: 0});
         }, done);
       },
@@ -124,10 +124,10 @@ suite('Connection open', function () {
   test(
     'unexpected socket close',
     connectionTest(
-      function (c, done) {
+      (c, done) => {
         c.open(OPEN_OPTS, kCallback(fail(done), succeed(done)));
       },
-      function (send, wait, done, socket) {
+      (send, wait, done, socket) => {
         send(defs.ConnectionStart, {
           versionMajor: 0,
           versionMinor: 9,
@@ -136,7 +136,7 @@ suite('Connection open', function () {
           locales: Buffer.from('en_US'),
         });
         return wait(defs.ConnectionStartOk)()
-          .then(function () {
+          .then(() => {
             socket.end();
           })
           .then(succeed(done), fail(done));
@@ -145,24 +145,24 @@ suite('Connection open', function () {
   );
 });
 
-suite('Connection running', function () {
+suite('Connection running', () => {
   test(
     'wrong frame on channel 0',
     connectionTest(
-      function (c, done) {
+      (c, done) => {
         c.on('error', succeed(done));
         c.open(OPEN_OPTS);
       },
-      function (send, wait, done) {
+      (send, wait, done) => {
         happy_open(send, wait)
-          .then(function () {
+          .then(() => {
             // there's actually nothing that would plausibly be sent to a
             // just opened connection, so this is violating more than one
             // rule. Nonetheless.
             send(defs.ChannelOpenOk, {channelId: Buffer.from('')}, 0);
           })
           .then(wait(defs.ConnectionClose))
-          .then(function (_close) {
+          .then((_close) => {
             send(defs.ConnectionCloseOk, {}, 0);
           })
           .then(succeed(done), fail(done));
@@ -173,20 +173,20 @@ suite('Connection running', function () {
   test(
     'unopened channel',
     connectionTest(
-      function (c, done) {
+      (c, done) => {
         c.on('error', succeed(done));
         c.open(OPEN_OPTS);
       },
-      function (send, wait, done) {
+      (send, wait, done) => {
         happy_open(send, wait)
-          .then(function () {
+          .then(() => {
             // there's actually nothing that would plausibly be sent to a
             // just opened connection, so this is violating more than one
             // rule. Nonetheless.
             send(defs.ChannelOpenOk, {channelId: Buffer.from('')}, 3);
           })
           .then(wait(defs.ConnectionClose))
-          .then(function (_close) {
+          .then((_close) => {
             send(defs.ConnectionCloseOk, {}, 0);
           })
           .then(succeed(done), fail(done));
@@ -197,21 +197,21 @@ suite('Connection running', function () {
   test(
     'unexpected socket close',
     connectionTest(
-      function (c, done) {
+      (c, done) => {
         const errorAndClosed = latch(2, done);
         c.on('error', succeed(errorAndClosed));
         c.on('close', succeed(errorAndClosed));
         c.open(
           OPEN_OPTS,
-          kCallback(function () {
+          kCallback(() => {
             c.sendHeartbeat();
           }, fail(errorAndClosed)),
         );
       },
-      function (send, wait, done, socket) {
+      (send, wait, done, socket) => {
         happy_open(send, wait)
           .then(wait())
-          .then(function () {
+          .then(() => {
             socket.end();
           })
           .then(succeed(done));
@@ -222,13 +222,13 @@ suite('Connection running', function () {
   test(
     'connection.blocked',
     connectionTest(
-      function (c, done) {
+      (c, done) => {
         c.on('blocked', succeed(done));
         c.open(OPEN_OPTS);
       },
-      function (send, wait, done, _socket) {
+      (send, wait, done, _socket) => {
         happy_open(send, wait)
-          .then(function () {
+          .then(() => {
             send(defs.ConnectionBlocked, {reason: 'felt like it'}, 0);
           })
           .then(succeed(done));
@@ -239,13 +239,13 @@ suite('Connection running', function () {
   test(
     'connection.unblocked',
     connectionTest(
-      function (c, done) {
+      (c, done) => {
         c.on('unblocked', succeed(done));
         c.open(OPEN_OPTS);
       },
-      function (send, wait, done, _socket) {
+      (send, wait, done, _socket) => {
         happy_open(send, wait)
-          .then(function () {
+          .then(() => {
             send(defs.ConnectionUnblocked, {}, 0);
           })
           .then(succeed(done));
@@ -254,27 +254,27 @@ suite('Connection running', function () {
   );
 });
 
-suite('Connection close', function () {
+suite('Connection close', () => {
   test(
     'happy',
     connectionTest(
-      function (c, done0) {
+      (c, done0) => {
         const done = latch(2, done0);
         c.on('close', done);
         c.open(
           OPEN_OPTS,
           kCallback(
-            function (_ok) {
+            (_ok) => {
               c.close(kCallback(succeed(done), fail(done)));
             },
-            function () {},
+            () => {},
           ),
         );
       },
-      function (send, wait, done) {
+      (send, wait, done) => {
         happy_open(send, wait)
           .then(wait(defs.ConnectionClose))
-          .then(function (_close) {
+          .then((_close) => {
             send(defs.ConnectionCloseOk, {});
           })
           .then(succeed(done), fail(done));
@@ -285,20 +285,20 @@ suite('Connection close', function () {
   test(
     'interleaved close frames',
     connectionTest(
-      function (c, done0) {
+      (c, done0) => {
         const done = latch(2, done0);
         c.on('close', done);
         c.open(
           OPEN_OPTS,
-          kCallback(function (_ok) {
+          kCallback((_ok) => {
             c.close(kCallback(succeed(done), fail(done)));
           }, done),
         );
       },
-      function (send, wait, done) {
+      (send, wait, done) => {
         happy_open(send, wait)
           .then(wait(defs.ConnectionClose))
-          .then(function (_f) {
+          .then((_f) => {
             send(defs.ConnectionClose, {
               replyText: 'Ha!',
               replyCode: defs.constants.REPLY_SUCCESS,
@@ -307,7 +307,7 @@ suite('Connection close', function () {
             });
           })
           .then(wait(defs.ConnectionCloseOk))
-          .then(function (_f) {
+          .then((_f) => {
             send(defs.ConnectionCloseOk, {});
           })
           .then(succeed(done), fail(done));
@@ -318,15 +318,15 @@ suite('Connection close', function () {
   test(
     'server error close',
     connectionTest(
-      function (c, done0) {
+      (c, done0) => {
         const done = latch(2, done0);
         c.on('close', succeed(done));
         c.on('error', succeed(done));
         c.open(OPEN_OPTS);
       },
-      function (send, wait, done) {
+      (send, wait, done) => {
         happy_open(send, wait)
-          .then(function (_f) {
+          .then((_f) => {
             send(defs.ConnectionClose, {
               replyText: 'Begone',
               replyCode: defs.constants.INTERNAL_ERROR,
@@ -343,14 +343,14 @@ suite('Connection close', function () {
   test(
     'operator-intiated close',
     connectionTest(
-      function (c, done) {
+      (c, done) => {
         c.on('close', succeed(done));
         c.on('error', fail(done));
         c.open(OPEN_OPTS);
       },
-      function (send, wait, done) {
+      (send, wait, done) => {
         happy_open(send, wait)
-          .then(function (_f) {
+          .then((_f) => {
             send(defs.ConnectionClose, {
               replyText: 'Begone',
               replyCode: defs.constants.CONNECTION_FORCED,
@@ -367,23 +367,23 @@ suite('Connection close', function () {
   test(
     'double close',
     connectionTest(
-      function (c, done) {
+      (c, done) => {
         c.open(
           OPEN_OPTS,
-          kCallback(function () {
+          kCallback(() => {
             c.close();
             // NB no synchronisation, we do this straight away
-            assert.throws(function () {
+            assert.throws(() => {
               c.close();
             });
             done();
           }, done),
         );
       },
-      function (send, wait, done) {
+      (send, wait, done) => {
         happy_open(send, wait)
           .then(wait(defs.ConnectionClose))
-          .then(function () {
+          .then(() => {
             send(defs.ConnectionCloseOk, {});
           })
           .then(succeed(done), fail(done));
@@ -392,40 +392,40 @@ suite('Connection close', function () {
   );
 });
 
-suite('heartbeats', function () {
+suite('heartbeats', () => {
   const heartbeat = require('../lib/heartbeat');
 
-  setup(function () {
+  setup(() => {
     heartbeat.UNITS_TO_MS = 20;
   });
 
-  teardown(function () {
+  teardown(() => {
     heartbeat.UNITS_TO_MS = 1000;
   });
 
   test(
     'send heartbeat after open',
     connectionTest(
-      function (c, done) {
-        completes(function () {
+      (c, done) => {
+        completes(() => {
           const opts = Object.create(OPEN_OPTS);
           opts.heartbeat = 1;
           // Don't leave the error waiting to happen for the next test, this
           // confuses mocha awfully
-          c.on('error', function () {});
+          c.on('error', () => {});
           c.open(opts);
         }, done);
       },
-      function (send, wait, done, socket) {
+      (send, wait, done, socket) => {
         let timer;
         happy_open(send, wait)
-          .then(function () {
-            timer = setInterval(function () {
+          .then(() => {
+            timer = setInterval(() => {
               socket.write(HB_BUF);
             }, heartbeat.UNITS_TO_MS);
           })
           .then(wait())
-          .then(function (hb) {
+          .then((hb) => {
             if (hb === HEARTBEAT) done();
             else done('Next frame after silence not a heartbeat');
             clearInterval(timer);
@@ -437,13 +437,13 @@ suite('heartbeats', function () {
   test(
     'detect lack of heartbeats',
     connectionTest(
-      function (c, done) {
+      (c, done) => {
         const opts = Object.create(OPEN_OPTS);
         opts.heartbeat = 1;
         c.on('error', succeed(done));
         c.open(opts);
       },
-      function (send, wait, done, _socket) {
+      (send, wait, done, _socket) => {
         happy_open(send, wait).then(succeed(done), fail(done));
         // conspicuously not sending anything ...
       },

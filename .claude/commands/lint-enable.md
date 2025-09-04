@@ -1,4 +1,4 @@
-Please follow the following process when I ask you to enfore a new lint rule using /lint-enforce $rule
+Please follow the following process when I ask you to enable a lint rule using /lint-enable $rule
 
 1. Create and change to a new branch. Ask for the branch name.
 2. Configure the rule to error in biome.json

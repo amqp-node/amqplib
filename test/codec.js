@@ -77,12 +77,12 @@ function bufferToArray(b) {
   return Array.prototype.slice.call(b);
 }
 
-suite('Implicit encodings', function () {
-  testCases.forEach(function (tc) {
+suite('Implicit encodings', () => {
+  testCases.forEach((tc) => {
     const name = tc[0],
       val = tc[1],
       expect = tc[2];
-    test(name, function () {
+    test(name, () => {
       const buffer = Buffer.alloc(1000);
       const size = codec.encodeTable(buffer, val, 0);
       const result = buffer.subarray(4, size);
@@ -108,12 +108,10 @@ function roundtrip_table(t) {
 }
 
 function roundtrips(T) {
-  return forAll(T).satisfy(function (v) {
-    return roundtrip_table({value: v});
-  });
+  return forAll(T).satisfy((v) => roundtrip_table({value: v}));
 }
 
-suite('Roundtrip values', function () {
+suite('Roundtrip values', () => {
   [
     amqp.Octet,
     amqp.ShortStr,
@@ -134,7 +132,7 @@ suite('Roundtrip values', function () {
     amqp.Float,
     amqp.FieldArray,
     amqp.FieldTable,
-  ].forEach(function (T) {
+  ].forEach((T) => {
     test(`${T.toString()} roundtrip`, roundtrips(T).asTest());
   });
 });
@@ -218,7 +216,7 @@ function assertEqualModuloDefaults(original, decodedFields) {
 module.exports.assertEqualModuloDefaults = assertEqualModuloDefaults;
 
 function roundtripMethod(Method) {
-  return forAll(Method).satisfy(function (method) {
+  return forAll(Method).satisfy((method) => {
     const buf = defs.encodeMethod(method.id, 0, method.fields);
     // FIXME depends on framing, ugh
     const fs1 = defs.decode(method.id, buf.subarray(11, buf.length));
@@ -228,7 +226,7 @@ function roundtripMethod(Method) {
 }
 
 function roundtripProperties(Properties) {
-  return forAll(Properties).satisfy(function (properties) {
+  return forAll(Properties).satisfy((properties) => {
     const buf = defs.encodeProperties(properties.id, 0, properties.size, properties.fields);
     // FIXME depends on framing, ugh
     const fs1 = defs.decode(properties.id, buf.subarray(19, buf.length));
@@ -238,14 +236,14 @@ function roundtripProperties(Properties) {
   });
 }
 
-suite('Roundtrip methods', function () {
-  amqp.methods.forEach(function (Method) {
+suite('Roundtrip methods', () => {
+  amqp.methods.forEach((Method) => {
     test(`${Method.toString()} roundtrip`, roundtripMethod(Method).asTest());
   });
 });
 
-suite('Roundtrip properties', function () {
-  amqp.properties.forEach(function (Properties) {
+suite('Roundtrip properties', () => {
+  amqp.properties.forEach((Properties) => {
     test(`${Properties.toString()} roundtrip`, roundtripProperties(Properties).asTest());
   });
 });

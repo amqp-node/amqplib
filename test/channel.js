@@ -14,21 +14,21 @@ const OPEN_OPTS = require('./connection').OPEN_OPTS;
 const LOG_ERRORS = process.env.LOG_ERRORS;
 
 function baseChannelTest(client, server) {
-  return function (done) {
+  return (done) => {
     const bothDone = latch(2, done);
     const pair = util.socketPair();
     const c = new Connection(pair.client);
 
     if (LOG_ERRORS) c.on('error', console.warn);
 
-    c.open(OPEN_OPTS, function (err, _ok) {
+    c.open(OPEN_OPTS, (err, _ok) => {
       if (err === null) client(c, bothDone);
       else fail(bothDone);
     });
 
     pair.server.read(8); // discard the protocol header
-    util.runServer(pair.server, function (send, wait) {
-      conn_handshake(send, wait).then(function () {
+    util.runServer(pair.server, (send, wait) => {
+      conn_handshake(send, wait).then(() => {
         server(send, wait, bothDone);
       }, fail(bothDone));
     });
@@ -37,16 +37,14 @@ function baseChannelTest(client, server) {
 
 function channelTest(client, server) {
   return baseChannelTest(
-    function (conn, done) {
+    (conn, done) => {
       const ch = new Channel(conn);
       if (LOG_ERRORS) ch.on('error', console.warn);
       client(ch, done, conn);
     },
-    function (send, wait, done) {
+    (send, wait, done) => {
       channel_handshake(send, wait)
-        .then(function (ch) {
-          return server(send, wait, done, ch);
-        })
+        .then((ch) => server(send, wait, done, ch))
         .then(null, fail(done)); // so you can return a promise to let
       // errors bubble out
     },
@@ -54,7 +52,7 @@ function channelTest(client, server) {
 }
 
 function channel_handshake(send, wait) {
-  return wait(defs.ChannelOpen)().then(function (open) {
+  return wait(defs.ChannelOpen)().then((open) => {
     assert.notEqual(0, open.channel);
     send(defs.ChannelOpenOk, {channelId: Buffer.from('')}, open.channel);
     return open.channel;
@@ -74,19 +72,19 @@ const DELIVER_FIELDS = {
 
 function open(ch) {
   ch.allocate();
-  return promisify(function (cb) {
+  return promisify((cb) => {
     ch._rpc(defs.ChannelOpen, {outOfBand: ''}, defs.ChannelOpenOk, cb);
   })();
 }
 
-suite('channel open and close', function () {
+suite('channel open and close', () => {
   test(
     'open',
     channelTest(
-      function (ch, done) {
+      (ch, done) => {
         open(ch).then(succeed(done), fail(done));
       },
-      function (_send, _wait, done) {
+      (_send, _wait, done) => {
         done();
       },
     ),
@@ -95,47 +93,46 @@ suite('channel open and close', function () {
   test(
     'bad server',
     baseChannelTest(
-      function (c, done) {
+      (c, done) => {
         const ch = new Channel(c);
         open(ch).then(fail(done), succeed(done));
       },
-      function (send, wait, done) {
-        return wait(defs.ChannelOpen)()
-          .then(function (open) {
+      (send, wait, done) =>
+        wait(defs.ChannelOpen)()
+          .then((open) => {
             send(defs.ChannelCloseOk, {}, open.channel);
           })
-          .then(succeed(done), fail(done));
-      },
+          .then(succeed(done), fail(done)),
     ),
   );
 
   test(
     'open, close',
     channelTest(
-      function (ch, done) {
+      (ch, done) => {
         open(ch)
-          .then(function () {
-            return new Promise(function (resolve) {
-              ch.closeBecause('Bye', defs.constants.REPLY_SUCCESS, resolve);
-            });
-          })
+          .then(
+            () =>
+              new Promise((resolve) => {
+                ch.closeBecause('Bye', defs.constants.REPLY_SUCCESS, resolve);
+              }),
+          )
           .then(succeed(done), fail(done));
       },
-      function (send, wait, done, ch) {
-        return wait(defs.ChannelClose)()
-          .then(function (_close) {
+      (send, wait, done, ch) =>
+        wait(defs.ChannelClose)()
+          .then((_close) => {
             send(defs.ChannelCloseOk, {}, ch);
           })
-          .then(succeed(done), fail(done));
-      },
+          .then(succeed(done), fail(done)),
     ),
   );
 
   test(
     'server close',
     channelTest(
-      function (ch, done) {
-        ch.on('error', function (error) {
+      (ch, done) => {
+        ch.on('error', (error) => {
           assert.strictEqual(504, error.code);
           assert.strictEqual(0, error.classId);
           assert.strictEqual(0, error.methodId);
@@ -143,7 +140,7 @@ suite('channel open and close', function () {
         });
         open(ch);
       },
-      function (send, wait, done, ch) {
+      (send, wait, done, ch) => {
         send(
           defs.ChannelClose,
           {
@@ -162,17 +159,17 @@ suite('channel open and close', function () {
   test(
     'overlapping channel/server close',
     channelTest(
-      function (ch, done, conn) {
+      (ch, done, conn) => {
         const both = latch(2, done);
         conn.on('error', succeed(both));
         ch.on('close', succeed(both));
-        open(ch).then(function () {
+        open(ch).then(() => {
           ch.closeBecause('Bye', defs.constants.REPLY_SUCCESS);
         }, fail(both));
       },
-      function (send, wait, done, _ch) {
+      (send, wait, done, _ch) => {
         wait(defs.ChannelClose)()
-          .then(function () {
+          .then(() => {
             send(
               defs.ConnectionClose,
               {
@@ -193,20 +190,20 @@ suite('channel open and close', function () {
   test(
     'double close',
     channelTest(
-      function (ch, done) {
+      (ch, done) => {
         open(ch)
-          .then(function () {
+          .then(() => {
             ch.closeBecause('First close', defs.constants.REPLY_SUCCESS);
             // NB no synchronisation, we do this straight away
-            assert.throws(function () {
+            assert.throws(() => {
               ch.closeBecause('Second close', defs.constants.REPLY_SUCCESS);
             });
           })
           .then(succeed(done), fail(done));
       },
-      function (send, wait, done, ch) {
+      (send, wait, done, ch) => {
         wait(defs.ChannelClose)()
-          .then(function () {
+          .then(() => {
             send(defs.ChannelCloseOk, {}, ch);
           })
           .then(succeed(done), fail(done));
@@ -215,14 +212,14 @@ suite('channel open and close', function () {
   );
 }); //suite
 
-suite('channel machinery', function () {
+suite('channel machinery', () => {
   test(
     'RPC',
     channelTest(
-      function (ch, done) {
+      (ch, done) => {
         const rpcLatch = latch(3, done);
         open(ch)
-          .then(function () {
+          .then(() => {
             function wheeboom(err, _f) {
               if (err !== null) rpcLatch(err);
               else rpcLatch();
@@ -240,7 +237,7 @@ suite('channel machinery', function () {
           })
           .then(null, fail(rpcLatch));
       },
-      function (send, wait, done, ch) {
+      (send, wait, done, ch) => {
         function sendOk(_f) {
           send(defs.BasicQosOk, {}, ch);
         }
@@ -259,46 +256,45 @@ suite('channel machinery', function () {
   test(
     'Bad RPC',
     channelTest(
-      function (ch, done) {
+      (ch, done) => {
         // We want to see the RPC rejected and the channel closed (with an
         // error)
         const errLatch = latch(2, done);
-        ch.on('error', function (error) {
+        ch.on('error', (error) => {
           assert.strictEqual(505, error.code);
           assert.strictEqual(60, error.classId);
           assert.strictEqual(72, error.methodId);
           succeed(errLatch)();
         });
 
-        open(ch).then(function () {
-          ch._rpc(defs.BasicRecover, {requeue: true}, defs.BasicRecoverOk, function (err) {
+        open(ch).then(() => {
+          ch._rpc(defs.BasicRecover, {requeue: true}, defs.BasicRecoverOk, (err) => {
             if (err !== null) errLatch();
             else errLatch(new Error('Expected RPC failure'));
           });
         }, fail(errLatch));
       },
-      function (send, wait, done, ch) {
-        return wait()()
-          .then(function () {
+      (send, wait, done, ch) =>
+        wait()()
+          .then(() => {
             send(defs.BasicGetEmpty, {clusterId: ''}, ch);
           }) // oh wait! that was wrong! expect a channel close
           .then(wait(defs.ChannelClose))
-          .then(function () {
+          .then(() => {
             send(defs.ChannelCloseOk, {}, ch);
           })
-          .then(succeed(done), fail(done));
-      },
+          .then(succeed(done), fail(done)),
     ),
   );
 
   test(
     'RPC on closed channel',
     channelTest(
-      function (ch, done) {
+      (ch, done) => {
         open(ch);
 
-        const close = new Promise(function (resolve) {
-          ch.on('error', function (error) {
+        const close = new Promise((resolve) => {
+          ch.on('error', (error) => {
             assert.strictEqual(504, error.code);
             assert.strictEqual(0, error.classId);
             assert.strictEqual(0, error.methodId);
@@ -307,25 +303,25 @@ suite('channel machinery', function () {
         });
 
         function failureCb(resolve, reject) {
-          return function (err) {
+          return (err) => {
             if (err !== null) resolve();
             else reject();
           };
         }
 
-        const fail1 = new Promise(function (resolve, reject) {
-          return ch._rpc(defs.BasicRecover, {requeue: true}, defs.BasicRecoverOk, failureCb(resolve, reject));
-        });
+        const fail1 = new Promise((resolve, reject) =>
+          ch._rpc(defs.BasicRecover, {requeue: true}, defs.BasicRecoverOk, failureCb(resolve, reject)),
+        );
 
-        const fail2 = new Promise(function (resolve, reject) {
-          return ch._rpc(defs.BasicRecover, {requeue: true}, defs.BasicRecoverOk, failureCb(resolve, reject));
-        });
+        const fail2 = new Promise((resolve, reject) =>
+          ch._rpc(defs.BasicRecover, {requeue: true}, defs.BasicRecoverOk, failureCb(resolve, reject)),
+        );
 
         Promise.all([close, fail1, fail2]).then(succeed(done)).catch(fail(done));
       },
-      function (send, wait, done, ch) {
+      (send, wait, done, ch) => {
         wait(defs.BasicRecover)()
-          .then(function () {
+          .then(() => {
             send(
               defs.ChannelClose,
               {
@@ -347,9 +343,9 @@ suite('channel machinery', function () {
   test(
     'publish all < single chunk threshold',
     channelTest(
-      function (ch, done) {
+      (ch, done) => {
         open(ch)
-          .then(function () {
+          .then(() => {
             ch.sendMessage(
               {
                 exchange: 'foo',
@@ -364,11 +360,11 @@ suite('channel machinery', function () {
           })
           .then(succeed(done), fail(done));
       },
-      function (_send, wait, done, _ch) {
+      (_send, wait, done, _ch) => {
         wait(defs.BasicPublish)()
           .then(wait(defs.BasicProperties))
           .then(wait(undefined)) // content frame
-          .then(function (f) {
+          .then((f) => {
             assert.equal('foobar', f.content.toString());
           })
           .then(succeed(done), fail(done));
@@ -379,9 +375,9 @@ suite('channel machinery', function () {
   test(
     'publish content > single chunk threshold',
     channelTest(
-      function (ch, done) {
+      (ch, done) => {
         open(ch);
-        completes(function () {
+        completes(() => {
           ch.sendMessage(
             {
               exchange: 'foo',
@@ -395,11 +391,11 @@ suite('channel machinery', function () {
           );
         }, done);
       },
-      function (_send, wait, done, _ch) {
+      (_send, wait, done, _ch) => {
         wait(defs.BasicPublish)()
           .then(wait(defs.BasicProperties))
           .then(wait(undefined)) // content frame
-          .then(function (f) {
+          .then((f) => {
             assert.equal(3000, f.content.length);
           })
           .then(succeed(done), fail(done));
@@ -410,9 +406,9 @@ suite('channel machinery', function () {
   test(
     'publish method & headers > threshold',
     channelTest(
-      function (ch, done) {
+      (ch, done) => {
         open(ch);
-        completes(function () {
+        completes(() => {
           ch.sendMessage(
             {
               exchange: 'foo',
@@ -428,11 +424,11 @@ suite('channel machinery', function () {
           );
         }, done);
       },
-      function (_send, wait, done, _ch) {
+      (_send, wait, done, _ch) => {
         wait(defs.BasicPublish)()
           .then(wait(defs.BasicProperties))
           .then(wait(undefined)) // content frame
-          .then(function (f) {
+          .then((f) => {
             assert.equal('foobar', f.content.toString());
           })
           .then(succeed(done), fail(done));
@@ -443,9 +439,9 @@ suite('channel machinery', function () {
   test(
     'publish zero-length message',
     channelTest(
-      function (ch, done) {
+      (ch, done) => {
         open(ch);
-        completes(function () {
+        completes(() => {
           ch.sendMessage(
             {
               exchange: 'foo',
@@ -470,7 +466,7 @@ suite('channel machinery', function () {
           );
         }, done);
       },
-      function (_send, wait, done, _ch) {
+      (_send, wait, done, _ch) => {
         wait(defs.BasicPublish)()
           .then(wait(defs.BasicProperties))
           // no content frame for a zero-length message
@@ -483,16 +479,16 @@ suite('channel machinery', function () {
   test(
     'delivery',
     channelTest(
-      function (ch, done) {
+      (ch, done) => {
         open(ch);
-        ch.on('delivery', function (m) {
-          completes(function () {
+        ch.on('delivery', (m) => {
+          completes(() => {
             assert.equal('barfoo', m.content.toString());
           }, done);
         });
       },
-      function (send, _wait, done, ch) {
-        completes(function () {
+      (send, _wait, done, ch) => {
+        completes(() => {
           send(defs.BasicDeliver, DELIVER_FIELDS, ch, Buffer.from('barfoo'));
         }, done);
       },
@@ -502,16 +498,16 @@ suite('channel machinery', function () {
   test(
     'zero byte msg',
     channelTest(
-      function (ch, done) {
+      (ch, done) => {
         open(ch);
-        ch.on('delivery', function (m) {
-          completes(function () {
+        ch.on('delivery', (m) => {
+          completes(() => {
             assert.deepEqual(Buffer.alloc(0), m.content);
           }, done);
         });
       },
-      function (send, _wait, done, ch) {
-        completes(function () {
+      (send, _wait, done, ch) => {
+        completes(() => {
           send(defs.BasicDeliver, DELIVER_FIELDS, ch, Buffer.from(''));
         }, done);
       },
@@ -521,9 +517,9 @@ suite('channel machinery', function () {
   test(
     'bad delivery',
     channelTest(
-      function (ch, done) {
+      (ch, done) => {
         const errorAndClose = latch(2, done);
-        ch.on('error', function (error) {
+        ch.on('error', (error) => {
           assert.strictEqual(505, error.code);
           assert.strictEqual(60, error.classId);
           assert.strictEqual(60, error.methodId);
@@ -532,12 +528,12 @@ suite('channel machinery', function () {
         ch.on('close', succeed(errorAndClose));
         open(ch);
       },
-      function (send, wait, done, ch) {
+      (send, wait, done, ch) => {
         send(defs.BasicDeliver, DELIVER_FIELDS, ch);
         // now send another deliver without having sent the content
         send(defs.BasicDeliver, DELIVER_FIELDS, ch);
         return wait(defs.ChannelClose)()
-          .then(function () {
+          .then(() => {
             send(defs.ChannelCloseOk, {}, ch);
           })
           .then(succeed(done), fail(done));
@@ -548,15 +544,15 @@ suite('channel machinery', function () {
   test(
     'bad content send',
     channelTest(
-      function (ch, done) {
-        completes(function () {
+      (ch, done) => {
+        completes(() => {
           open(ch);
-          assert.throws(function () {
+          assert.throws(() => {
             ch.sendMessage({routingKey: 'foo', exchange: 'amq.direct'}, {}, null);
           });
         }, done);
       },
-      function (_send, _wait, done, _ch) {
+      (_send, _wait, done, _ch) => {
         done();
       },
     ),
@@ -565,15 +561,15 @@ suite('channel machinery', function () {
   test(
     'bad properties send',
     channelTest(
-      function (ch, done) {
-        completes(function () {
+      (ch, done) => {
+        completes(() => {
           open(ch);
-          assert.throws(function () {
+          assert.throws(() => {
             ch.sendMessage({routingKey: 'foo', exchange: 'amq.direct'}, {contentEncoding: 7}, Buffer.from('foobar'));
           });
         }, done);
       },
-      function (_send, _wait, done, _ch) {
+      (_send, _wait, done, _ch) => {
         done();
       },
     ),
@@ -582,12 +578,12 @@ suite('channel machinery', function () {
   test(
     'bad consumer',
     channelTest(
-      function (ch, done) {
+      (ch, done) => {
         const errorAndClose = latch(2, done);
-        ch.on('delivery', function () {
+        ch.on('delivery', () => {
           throw new Error('I am a bad consumer');
         });
-        ch.on('error', function (error) {
+        ch.on('error', (error) => {
           assert.strictEqual(541, error.code);
           assert.strictEqual(undefined, error.classId);
           assert.strictEqual(undefined, error.methodId);
@@ -596,10 +592,10 @@ suite('channel machinery', function () {
         ch.on('close', succeed(errorAndClose));
         open(ch);
       },
-      function (send, wait, done, ch) {
+      (send, wait, done, ch) => {
         send(defs.BasicDeliver, DELIVER_FIELDS, ch, Buffer.from('barfoo'));
         return wait(defs.ChannelClose)()
-          .then(function () {
+          .then(() => {
             send(defs.ChannelCloseOk, {}, ch);
           })
           .then(succeed(done), fail(done));
@@ -610,28 +606,28 @@ suite('channel machinery', function () {
   test(
     'bad send in consumer',
     channelTest(
-      function (ch, done) {
+      (ch, done) => {
         const errorAndClose = latch(2, done);
         ch.on('close', succeed(errorAndClose));
-        ch.on('error', function (error) {
+        ch.on('error', (error) => {
           assert.strictEqual(541, error.code);
           assert.strictEqual(undefined, error.classId);
           assert.strictEqual(undefined, error.methodId);
           succeed(errorAndClose)();
         });
 
-        ch.on('delivery', function () {
+        ch.on('delivery', () => {
           ch.sendMessage({routingKey: 'foo', exchange: 'amq.direct'}, {}, null); // can't send null
         });
 
         open(ch);
       },
-      function (send, wait, done, ch) {
-        completes(function () {
+      (send, wait, done, ch) => {
+        completes(() => {
           send(defs.BasicDeliver, DELIVER_FIELDS, ch, Buffer.from('barfoo'));
         }, done);
         return wait(defs.ChannelClose)()
-          .then(function () {
+          .then(() => {
             send(defs.ChannelCloseOk, {}, ch);
           })
           .then(succeed(done), fail(done));
@@ -642,16 +638,16 @@ suite('channel machinery', function () {
   test(
     'return',
     channelTest(
-      function (ch, done) {
-        ch.on('return', function (m) {
-          completes(function () {
+      (ch, done) => {
+        ch.on('return', (m) => {
+          completes(() => {
             assert.equal('barfoo', m.content.toString());
           }, done);
         });
         open(ch);
       },
-      function (send, _wait, done, ch) {
-        completes(function () {
+      (send, _wait, done, ch) => {
+        completes(() => {
           send(defs.BasicReturn, DELIVER_FIELDS, ch, Buffer.from('barfoo'));
         }, done);
       },
@@ -661,16 +657,16 @@ suite('channel machinery', function () {
   test(
     'cancel',
     channelTest(
-      function (ch, done) {
-        ch.on('cancel', function (f) {
-          completes(function () {
+      (ch, done) => {
+        ch.on('cancel', (f) => {
+          completes(() => {
             assert.equal('product of society', f.consumerTag);
           }, done);
         });
         open(ch);
       },
-      function (send, _wait, done, ch) {
-        completes(function () {
+      (send, _wait, done, ch) => {
+        completes(() => {
           send(
             defs.BasicCancel,
             {
@@ -688,16 +684,16 @@ suite('channel machinery', function () {
     return test(
       `confirm ${variety}`,
       channelTest(
-        function (ch, done) {
-          ch.on(variety, function (f) {
-            completes(function () {
+        (ch, done) => {
+          ch.on(variety, (f) => {
+            completes(() => {
               assert.equal(1, f.deliveryTag);
             }, done);
           });
           open(ch);
         },
-        function (send, _wait, done, ch) {
-          completes(function () {
+        (send, _wait, done, ch) => {
+          completes(() => {
             send(
               Method,
               {
@@ -718,9 +714,9 @@ suite('channel machinery', function () {
   test(
     'out-of-order acks',
     channelTest(
-      function (ch, done) {
-        const allConfirms = latch(3, function () {
-          completes(function () {
+      (ch, done) => {
+        const allConfirms = latch(3, () => {
+          completes(() => {
             assert.equal(0, ch.unconfirmed.length);
             assert.equal(4, ch.lwm);
           }, done);
@@ -730,8 +726,8 @@ suite('channel machinery', function () {
         ch.pushConfirmCallback(allConfirms);
         open(ch);
       },
-      function (send, _wait, done, ch) {
-        completes(function () {
+      (send, _wait, done, ch) => {
+        completes(() => {
           send(defs.BasicAck, {deliveryTag: 2, multiple: false}, ch);
           send(defs.BasicAck, {deliveryTag: 3, multiple: false}, ch);
           send(defs.BasicAck, {deliveryTag: 1, multiple: false}, ch);
@@ -743,22 +739,22 @@ suite('channel machinery', function () {
   test(
     'not all out-of-order acks',
     channelTest(
-      function (ch, done) {
-        const allConfirms = latch(2, function () {
-          completes(function () {
+      (ch, done) => {
+        const allConfirms = latch(2, () => {
+          completes(() => {
             assert.equal(1, ch.unconfirmed.length);
             assert.equal(3, ch.lwm);
           }, done);
         });
         ch.pushConfirmCallback(allConfirms); // tag = 1
         ch.pushConfirmCallback(allConfirms); // tag = 2
-        ch.pushConfirmCallback(function () {
+        ch.pushConfirmCallback(() => {
           done(new Error('Confirm callback should not be called'));
         });
         open(ch);
       },
-      function (send, _wait, done, ch) {
-        completes(function () {
+      (send, _wait, done, ch) => {
+        completes(() => {
           send(defs.BasicAck, {deliveryTag: 2, multiple: false}, ch);
           send(defs.BasicAck, {deliveryTag: 1, multiple: false}, ch);
         }, done);

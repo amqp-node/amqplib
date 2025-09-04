@@ -14,7 +14,7 @@
       "complexity": {
         "noCommaOperator": "off",
         "noUselessCatch": "off",
-        "useArrowFunction": "off",
+        "useArrowFunction": "error",
         "useOptionalChain": "off",
         "noArguments": "off",
         "useLiteralKeys": "off"
