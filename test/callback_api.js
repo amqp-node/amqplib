@@ -25,11 +25,17 @@ function ignore() {}
 function twice(done) {
   let first = (err) => {
     if (err === undefined) second = done;
-    else (second = ignore), done(err);
+    else {
+      second = ignore;
+      done(err);
+    }
   };
   let second = (err) => {
     if (err === undefined) first = done;
-    else (first = ignore), done(err);
+    else {
+      first = ignore;
+      done(err);
+    }
   };
   return {
     first: (err) => {
