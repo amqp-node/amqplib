@@ -24,6 +24,7 @@
 - Ensure no variable redeclarations exist to prevent shadowing issues
 - Replace global isFinite with Number.isFinite for safer numeric validation
 - Enable useArrowFunction lint rule to prefer arrow functions for cleaner syntax
+- Enable noUselessCatch lint rule to prevent useless catch blocks that only rethrow errors
 
 ## v0.10.9
 - Add support for IPv6 urls

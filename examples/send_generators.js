@@ -27,8 +27,6 @@ co(function* () {
     console.log(" [x] Sent '%s'", msg);
 
     channel.close();
-  } catch (e) {
-    throw e;
   } finally {
     conn.close();
   }
