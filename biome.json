@@ -37,7 +37,6 @@
   "javascript": {
     "formatter": {
       "arrowParentheses": "always",
-      "bracketSameLine": true,
       "bracketSpacing": false,
       "jsxQuoteStyle": "double",
       "quoteProperties": "asNeeded",
