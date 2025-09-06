@@ -79,9 +79,9 @@ function bufferToArray(b) {
 
 suite('Implicit encodings', () => {
   testCases.forEach((tc) => {
-    const name = tc[0],
-      val = tc[1],
-      expect = tc[2];
+    const name = tc[0];
+    const val = tc[1];
+    const expect = tc[2];
     test(name, () => {
       const buffer = Buffer.alloc(1000);
       const size = codec.encodeTable(buffer, val, 0);

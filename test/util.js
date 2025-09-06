@@ -166,8 +166,8 @@ function versionGreaterThan(actual, spec) {
   const version = actual.split('.').map(int);
   const desired = spec.split('.').map(int);
   for (let i = 0; i < desired.length; i++) {
-    const a = version[i],
-      b = desired[i];
+    const a = version[i];
+    const b = desired[i];
     if (a !== b) return a > b;
   }
   return false;

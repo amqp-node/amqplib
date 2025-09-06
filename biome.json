@@ -26,6 +26,9 @@
         "noGlobalIsFinite": "error",
         "noPrototypeBuiltins": "error",
         "noVar": "error"
+      },
+      "style": {
+        "useSingleVarDeclarator": "error"
       }
     }
   },
