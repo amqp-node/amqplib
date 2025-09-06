@@ -71,11 +71,9 @@ suite('connect', () => {
 
 suite('updateSecret', () => {
   test('updateSecret', (done) => {
-    connect(
-      kCallback((c) => {
-        c.updateSecret(Buffer.from('new secret'), 'no reason', doneCallback(done));
-      }),
-    );
+    connect(kCallback((c) => {
+      c.updateSecret(Buffer.from('new secret'), 'no reason', doneCallback(done));
+    }));
   });
 });
 
@@ -86,16 +84,11 @@ const channel_test_fn = (method) => {
       options = {};
     }
     test(name, (done) => {
-      connect(
-        kCallback((c) => {
-          c[method](
-            options,
-            kCallback((ch) => {
-              chfun(ch, done);
-            }, done),
-          );
-        }, done),
-      );
+      connect(kCallback((c) => {
+        c[method](options, kCallback((ch) => {
+          chfun(ch, done);
+        }, done));
+      }, done));
     });
   };
 };
@@ -118,30 +111,19 @@ suite('assert, check, delete', () => {
       'test.cb.queue',
       {},
       kCallback((_q) => {
-        ch.checkQueue(
-          'test.cb.queue',
-          kCallback((_ok) => {
-            ch.deleteQueue('test.cb.queue', {}, doneCallback(done));
-          }, done),
-        );
+        ch.checkQueue('test.cb.queue', kCallback((_ok) => {
+          ch.deleteQueue('test.cb.queue', {}, doneCallback(done));
+        }, done));
       }, done),
     );
   });
 
   channel_test('assert, check, delete exchange', (ch, done) => {
-    ch.assertExchange(
-      'test.cb.exchange',
-      'topic',
-      {},
-      kCallback((_ex) => {
-        ch.checkExchange(
-          'test.cb.exchange',
-          kCallback((_ok) => {
-            ch.deleteExchange('test.cb.exchange', {}, doneCallback(done));
-          }, done),
-        );
-      }, done),
-    );
+    ch.assertExchange('test.cb.exchange', 'topic', {}, kCallback((_ex) => {
+      ch.checkExchange('test.cb.exchange', kCallback((_ok) => {
+        ch.deleteExchange('test.cb.exchange', {}, doneCallback(done));
+      }, done));
+    }, done));
   });
 
   channel_test('fail on check non-queue', (ch, done) => {
@@ -159,38 +141,19 @@ suite('assert, check, delete', () => {
 
 suite('bindings', () => {
   channel_test('bind queue', (ch, done) => {
-    ch.assertQueue(
-      'test.cb.bindq',
-      {},
-      kCallback((q) => {
-        ch.assertExchange(
-          'test.cb.bindex',
-          'fanout',
-          {},
-          kCallback((ex) => {
-            ch.bindQueue(q.queue, ex.exchange, '', {}, doneCallback(done));
-          }, done),
-        );
-      }, done),
-    );
+    ch.assertQueue('test.cb.bindq', {}, kCallback((q) => {
+      ch.assertExchange('test.cb.bindex', 'fanout',  {}, kCallback((ex) => {
+        ch.bindQueue(q.queue, ex.exchange, '', {}, doneCallback(done));
+      }, done));
+    }, done));
   });
 
   channel_test('bind exchange', (ch, done) => {
-    ch.assertExchange(
-      'test.cb.bindex1',
-      'fanout',
-      {},
-      kCallback((ex1) => {
-        ch.assertExchange(
-          'test.cb.bindex2',
-          'fanout',
-          {},
-          kCallback((ex2) => {
-            ch.bindExchange(ex1.exchange, ex2.exchange, '', {}, doneCallback(done));
-          }, done),
-        );
-      }, done),
-    );
+    ch.assertExchange('test.cb.bindex1', 'fanout', {}, kCallback((ex1) => {
+      ch.assertExchange('test.cb.bindex2', 'fanout', {}, kCallback((ex2) => {
+        ch.bindExchange(ex1.exchange, ex2.exchange, '', {}, doneCallback(done));
+      }, done));
+    }, done));
   });
 });
 
@@ -199,14 +162,10 @@ suite('sending messages', () => {
     const msg = randomString();
     ch.assertQueue('', { exclusive: true }, (e, q) => {
       if (e !== null) return done(e);
-      ch.consume(
-        q.queue,
-        (m) => {
-          if (m.content.toString() === msg) done();
-          else done(new Error(`message content doesn't match:${msg} =/= ${m.content.toString()}`));
-        },
-        { noAck: true, exclusive: true },
-      );
+      ch.consume(q.queue, (m) => {
+        if (m.content.toString() === msg) done();
+        else done(new Error(`message content doesn't match:${msg} =/= ${m.content.toString()}`));
+      }, { noAck: true, exclusive: true });
       ch.sendToQueue(q.queue, Buffer.from(msg));
     });
   });
@@ -215,16 +174,12 @@ suite('sending messages', () => {
     const msg = randomString();
     ch.assertQueue('', { exclusive: true }, (e, q) => {
       if (e !== null) return done(e);
-      ch.consume(
-        q.queue,
-        (m) => {
-          if (m.content.toString() === msg) {
-            ch.ack(m);
-            done();
-          } else done(new Error(`message content doesn't match:${msg} =/= ${m.content.toString()}`));
-        },
-        { noAck: false, exclusive: true },
-      );
+      ch.consume(q.queue, (m) => {
+        if (m.content.toString() === msg) {
+          ch.ack(m);
+          done();
+        } else done(new Error(`message content doesn't match:${msg} =/= ${m.content.toString()}`));
+      }, { noAck: false, exclusive: true });
       ch.sendToQueue(q.queue, Buffer.from(msg));
     });
   });
@@ -337,11 +292,9 @@ suite('Error handling', () => {
     test('Throw error in connection open callback', (done) => {
       const dom = domain.createDomain();
       dom.on('error', failCallback(done));
-      connect(
-        dom.bind((_err, _conn) => {
-          throw new Error('Spurious connection open callback error');
-        }),
-      );
+      connect(dom.bind((_err, _conn) => {
+        throw new Error('Spurious connection open callback error');
+      }));
     });
   }
 
@@ -350,21 +303,17 @@ suite('Error handling', () => {
     test(name, (done) => {
       const dom = domain.createDomain();
       dom.run(() => {
-        connect(
-          kCallback((c) => {
-            // Seems like there were some unironed wrinkles in 0.8's
-            // implementation of domains; explicitly adding the connection
-            // to the domain makes sure any exception thrown in the course
-            // of processing frames is handled by the domain. For other
-            // versions of Node.JS, this ends up being belt-and-braces.
-            dom.add(c);
-            c.createChannel(
-              kCallback((ch) => {
-                fun(ch, done, dom);
-              }, done),
-            );
-          }, done),
-        );
+        connect(kCallback((c) => {
+          // Seems like there were some unironed wrinkles in 0.8's
+          // implementation of domains; explicitly adding the connection
+          // to the domain makes sure any exception thrown in the course
+          // of processing frames is handled by the domain. For other
+          // versions of Node.JS, this ends up being belt-and-braces.
+          dom.add(c);
+          c.createChannel(kCallback((ch) => {
+            fun(ch, done, dom);
+          }, done));
+        }, done));
       });
     });
   }
