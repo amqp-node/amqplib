@@ -4,3 +4,7 @@ pre-commit:
       glob: "**/*.js"
       run: npx biome format {staged_files} --write
       stage_fixed: true
+    lint:
+      glob: "**/*.js"
+      run: npx biome lint {staged_files} --write
+      stage_fixed: true
