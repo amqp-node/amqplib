@@ -15,7 +15,7 @@ amqp.connect((err, connection) => {
       });
     });
 
-    channel.assertQueue(queue, {durable: false}, (err) => {
+    channel.assertQueue(queue, { durable: false }, (err) => {
       if (err) return bail(err, connection);
       channel.prefetch(1);
       channel.consume(
@@ -29,7 +29,7 @@ amqp.connect((err, connection) => {
           });
           channel.ack(message);
         },
-        {noAck: false},
+        { noAck: false },
         (err) => {
           if (err) return bail(err, conn);
           console.log(' [x] Awaiting RPC requests. To exit press CTRL+C.');

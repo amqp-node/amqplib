@@ -114,7 +114,7 @@ suite('Connect API', () => {
       u = auth[0];
       p = auth[1];
     }
-    connect(URL, {credentials: require('../lib/credentials').plain(u, p)}, kCallback(succeed(done), fail(done)));
+    connect(URL, { credentials: require('../lib/credentials').plain(u, p) }, kCallback(succeed(done), fail(done)));
   });
 
   test('using amqplain credentials', (done) => {
@@ -127,7 +127,7 @@ suite('Connect API', () => {
       u = auth[0];
       p = auth[1];
     }
-    connect(URL, {credentials: require('../lib/credentials').amqplain(u, p)}, kCallback(succeed(done), fail(done)));
+    connect(URL, { credentials: require('../lib/credentials').amqplain(u, p) }, kCallback(succeed(done), fail(done)));
   });
 
   test('ipv6', (done) => {
@@ -144,13 +144,13 @@ suite('Connect API', () => {
       mechanism: 'UNSUPPORTED',
       response: () => Buffer.from(''),
     };
-    connect(URL, {credentials: creds}, kCallback(fail(done), succeed(done)));
+    connect(URL, { credentials: creds }, kCallback(fail(done), succeed(done)));
   });
 
   test('with a given connection timeout', (done) => {
     const timeoutServer = net.createServer(() => {}).listen(31991);
 
-    connect('amqp://localhost:31991', {timeout: 50}, (_err, val) => {
+    connect('amqp://localhost:31991', { timeout: 50 }, (_err, val) => {
       timeoutServer.close();
       if (val) done(new Error('Expected connection timeout, did not'));
       else done();

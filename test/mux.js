@@ -6,7 +6,7 @@ const latch = require('./util').latch;
 const schedule = require('./util').schedule;
 
 function stream() {
-  return new PassThrough({objectMode: true});
+  return new PassThrough({ objectMode: true });
 }
 
 function readAllObjects(s, cb) {

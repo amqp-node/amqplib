@@ -11,7 +11,7 @@ const text = 'Hello World!';
     connection = await amqp.connect('amqp://localhost');
     const channel = await connection.createChannel();
 
-    await channel.assertQueue(queue, {durable: false});
+    await channel.assertQueue(queue, { durable: false });
 
     // NB: `sentToQueue` and `publish` both return a boolean
     // indicating whether it's OK to send again straight away, or

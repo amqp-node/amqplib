@@ -36,7 +36,7 @@
     "formatter": {
       "arrowParentheses": "always",
       "bracketSameLine": false,
-      "bracketSpacing": false,
+      "bracketSpacing": true,
       "jsxQuoteStyle": "double",
       "quoteProperties": "asNeeded",
       "quoteStyle": "single",

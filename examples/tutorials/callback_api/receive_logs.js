@@ -15,9 +15,9 @@ amqp.connect((err, connection) => {
       });
     });
 
-    channel.assertExchange(exchange, 'fanout', {durable: false}, (err, {queue: _queue}) => {
+    channel.assertExchange(exchange, 'fanout', { durable: false }, (err, { queue: _queue }) => {
       if (err) return bail(err, connection);
-      channel.assertQueue('', {exclusive: true}, (err, {queue}) => {
+      channel.assertQueue('', { exclusive: true }, (err, { queue }) => {
         if (err) return bail(err, connection);
         channel.bindQueue(queue, exchange, '', {}, (err) => {
           if (err) return bail(err, connection);
@@ -27,7 +27,7 @@ amqp.connect((err, connection) => {
               if (message) console.log(" [x] '%s'", message.content.toString());
               else console.warn(' [x] Consumer cancelled');
             },
-            {noAck: true},
+            { noAck: true },
             (err) => {
               if (err) return bail(err, connection);
               console.log(' [*] Waiting for logs. To exit press CTRL+C.');

@@ -14,13 +14,13 @@ const queue = 'hello';
       await connection.close();
     });
 
-    await channel.assertQueue(queue, {durable: false});
+    await channel.assertQueue(queue, { durable: false });
     await channel.consume(
       queue,
       (message) => {
         console.log(" [x] Received '%s'", message.content.toString());
       },
-      {noAck: true},
+      { noAck: true },
     );
 
     console.log(' [*] Waiting for messages. To exit press CTRL+C');

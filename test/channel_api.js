@@ -74,8 +74,8 @@ suite('updateSecret', () => {
   });
 });
 
-const QUEUE_OPTS = {durable: false};
-const EX_OPTS = {durable: false};
+const QUEUE_OPTS = { durable: false };
+const EX_OPTS = { durable: false };
 
 suite('assert, check, delete', () => {
   chtest('assert and check queue', (ch) =>
@@ -92,8 +92,8 @@ suite('assert, check, delete', () => {
   chtest('fail on reasserting queue with different options', (ch) => {
     const q = 'test.reassert-queue';
     return ch
-      .assertQueue(q, {durable: false, autoDelete: true})
-      .then(() => expectFail(ch.assertQueue(q, {durable: false, autoDelete: false})));
+      .assertQueue(q, { durable: false, autoDelete: true })
+      .then(() => expectFail(ch.assertQueue(q, { durable: false, autoDelete: false })));
   });
 
   chtest("fail on checking a queue that's not there", (ch) => expectFail(ch.checkQueue(`test.random-${randomString()}`)));
@@ -166,7 +166,7 @@ suite('sendMessage', () => {
         ch.sendToQueue(q, Buffer.from(msg));
         return waitForMessages(q);
       })
-      .then(() => ch.get(q, {noAck: true}))
+      .then(() => ch.get(q, { noAck: true }))
       .then((m) => {
         assert(m);
         assert.equal(msg, m.content.toString());
@@ -181,7 +181,7 @@ suite('sendMessage', () => {
         ch.sendToQueue(q, msg);
         return waitForMessages(q);
       })
-      .then(() => ch.get(q, {noAck: true}))
+      .then(() => ch.get(q, { noAck: true }))
       .then((m) => {
         assert(m);
         assert.deepEqual(msg, m.content);
@@ -206,7 +206,7 @@ suite('binding, consuming', () => {
         ch.publish(ex, '', Buffer.from(msg));
         return waitForMessages(q);
       })
-      .then(() => ch.get(q, {noAck: true}))
+      .then(() => ch.get(q, { noAck: true }))
       .then((m) => {
         assert(m);
         assert.equal(msg, m.content.toString());
@@ -217,14 +217,14 @@ suite('binding, consuming', () => {
   chtest('purge queue', (ch) => {
     const q = 'test.purge-queue';
     return ch
-      .assertQueue(q, {durable: false})
+      .assertQueue(q, { durable: false })
       .then(() => {
         ch.sendToQueue(q, Buffer.from('foobar'));
         return waitForMessages(q);
       })
       .then(() => {
         ch.purgeQueue(q);
-        return ch.get(q, {noAck: true});
+        return ch.get(q, { noAck: true });
       })
       .then((m) => {
         assert(!m); // get-empty
@@ -250,7 +250,7 @@ suite('binding, consuming', () => {
       })
       .then(() => {
         // message got through!
-        return ch.get(q, {noAck: true}).then((m) => {
+        return ch.get(q, { noAck: true }).then((m) => {
           assert(m);
         });
       })
@@ -280,7 +280,7 @@ suite('binding, consuming', () => {
     const msg = randomString();
     return Promise.all([
       ch.assertExchange(ex1, 'direct', EX_OPTS),
-      ch.assertExchange(ex2, 'fanout', {durable: false, internal: true}),
+      ch.assertExchange(ex2, 'fanout', { durable: false, internal: true }),
       ch.assertQueue(q, QUEUE_OPTS),
       ch.purgeQueue(q),
       ch.bindExchange(ex2, ex1, rk, {}),
@@ -292,7 +292,7 @@ suite('binding, consuming', () => {
             if (m.content.toString() === msg) resolve();
             else reject(new Error('Wrong message'));
           }
-          ch.consume(q, delivery, {noAck: true}).then(() => {
+          ch.consume(q, delivery, { noAck: true }).then(() => {
             ch.publish(ex1, rk, Buffer.from(msg));
           });
         }),
@@ -321,7 +321,7 @@ suite('binding, consuming', () => {
       })
       .then(() => {
         // message got through!
-        return ch.get(q, {noAck: true}).then((m) => {
+        return ch.get(q, { noAck: true }).then((m) => {
           assert(m);
         });
       })
@@ -351,7 +351,7 @@ suite('binding, consuming', () => {
         ch.purgeQueue(q),
         // My callback is 'resolve the promise in `arrived`'
         ch
-          .consume(q, resolve, {noAck: true})
+          .consume(q, resolve, { noAck: true })
           .then((ok) => {
             ctag = ok.consumerTag;
             ch.sendToQueue(q, Buffer.from('foo'));
@@ -366,7 +366,7 @@ suite('binding, consuming', () => {
         // but check a message did arrive in the queue
         waitForMessages(q),
       ])
-        .then(() => ch.get(q, {noAck: true}))
+        .then(() => ch.get(q, { noAck: true }))
         .then((m) => {
           // I'm going to reject it, because I flip succeed/fail
           // just below
@@ -405,7 +405,7 @@ suite('binding, consuming', () => {
         ch.sendToQueue(q, Buffer.from(msg2));
         return waitForMessages(q, 2);
       })
-      .then(() => ch.get(q, {noAck: false}))
+      .then(() => ch.get(q, { noAck: false }))
       .then((m) => {
         assert.equal(msg1, m.content.toString());
         ch.ack(m);
@@ -430,7 +430,7 @@ suite('binding, consuming', () => {
         ch.sendToQueue(q, Buffer.from(msg1));
         return waitForMessages(q);
       })
-      .then(() => ch.get(q, {noAck: false}))
+      .then(() => ch.get(q, { noAck: false }))
       .then((m) => {
         assert.equal(msg1, m.content.toString());
         ch.nack(m);
@@ -454,7 +454,7 @@ suite('binding, consuming', () => {
         ch.sendToQueue(q, Buffer.from(msg1));
         return waitForMessages(q);
       })
-      .then(() => ch.get(q, {noAck: false}))
+      .then(() => ch.get(q, { noAck: false }))
       .then((m) => {
         assert.equal(msg1, m.content.toString());
         ch.reject(m);
@@ -485,7 +485,7 @@ suite('binding, consuming', () => {
                 resolve(messageCount);
               }
             }
-            return ch.consume(q, receive, {noAck: false});
+            return ch.consume(q, receive, { noAck: false });
           }),
       )
       .then((c) => assert.equal(2, c));

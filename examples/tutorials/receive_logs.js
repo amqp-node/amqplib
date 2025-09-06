@@ -14,8 +14,8 @@ const exchange = 'logs';
       await connection.close();
     });
 
-    await channel.assertExchange(exchange, 'fanout', {durable: false});
-    const {queue} = await channel.assertQueue('', {exclusive: true});
+    await channel.assertExchange(exchange, 'fanout', { durable: false });
+    const { queue } = await channel.assertQueue('', { exclusive: true });
     await channel.bindQueue(queue, exchange, '');
 
     await channel.consume(
@@ -24,7 +24,7 @@ const exchange = 'logs';
         if (message) console.log(" [x] '%s'", message.content.toString());
         else console.warn(' [x] Consumer cancelled');
       },
-      {noAck: true},
+      { noAck: true },
     );
 
     console.log(' [*] Waiting for logs. To exit press CTRL+C');

@@ -10,7 +10,7 @@ const text = process.argv.slice(2).join(' ') || 'info: Hello World!';
   try {
     connection = await amqp.connect('amqp://localhost');
     const channel = await connection.createChannel();
-    await channel.assertExchange(exchange, 'fanout', {durable: false});
+    await channel.assertExchange(exchange, 'fanout', { durable: false });
     channel.publish(exchange, '', Buffer.from(text));
     console.log(" [x] Sent '%s'", text);
     await channel.close();
