@@ -109,8 +109,8 @@ suite('Parsing', () => {
         const bufs = [];
         const input = inputs();
         const frames = new Frames(input);
-        let i = 0,
-          ex;
+        let i = 0;
+        let ex;
         frames.accept = (f) => {
           // A minor hack to make sure we get the assertion exception;
           // otherwise, it's just a test that we reached the line

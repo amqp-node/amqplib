@@ -4,9 +4,9 @@ const Connection = require('../lib/connection').Connection;
 const HEARTBEAT = require('../lib/frame').HEARTBEAT;
 const HB_BUF = require('../lib/frame').HEARTBEAT_BUF;
 const util = require('./util');
-const succeed = util.succeed,
-  fail = util.fail,
-  latch = util.latch;
+const succeed = util.succeed;
+const fail = util.fail;
+const latch = util.latch;
 const completes = util.completes;
 const kCallback = util.kCallback;
 

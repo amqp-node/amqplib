@@ -1,8 +1,8 @@
 const assert = require('node:assert');
 const api = require('../channel_api');
 const util = require('./util');
-const succeed = util.succeed,
-  fail = util.fail;
+const succeed = util.succeed;
+const fail = util.fail;
 const schedule = util.schedule;
 const randomString = util.randomString;
 const promisify = require('node:util').promisify;
@@ -273,11 +273,11 @@ suite('binding, consuming', () => {
   // To some extent this is now just testing semantics of the server,
   // but we can at least try out a few settings, and consume.
   chtest('consume via exchange-exchange binding', (ch) => {
-    const ex1 = 'test.ex-ex-binding1',
-      ex2 = 'test.ex-ex-binding2';
+    const ex1 = 'test.ex-ex-binding1';
+    const ex2 = 'test.ex-ex-binding2';
     const q = 'test.ex-ex-binding-q';
-    const rk = 'test.routing.key',
-      msg = randomString();
+    const rk = 'test.routing.key';
+    const msg = randomString();
     return Promise.all([
       ch.assertExchange(ex1, 'direct', EX_OPTS),
       ch.assertExchange(ex2, 'fanout', {durable: false, internal: true}),
@@ -396,8 +396,8 @@ suite('binding, consuming', () => {
   // ack, by default, removes a single message from the queue
   chtest('ack', (ch) => {
     const q = 'test.ack';
-    const msg1 = randomString(),
-      msg2 = randomString();
+    const msg1 = randomString();
+    const msg2 = randomString();
 
     return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)])
       .then(() => {

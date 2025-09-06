@@ -36,8 +36,8 @@ const queue = 'rpc_queue';
 function fib(n) {
   // Do it the ridiculous, but not most ridiculous, way. For better,
   // see http://nayuki.eigenstate.org/page/fast-fibonacci-algorithms
-  let a = 0,
-    b = 1;
+  let a = 0;
+  let b = 1;
   for (let i = 0; i < n; i++) {
     const c = a + b;
     a = b;
