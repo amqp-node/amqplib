@@ -1,6 +1,7 @@
 {
   "formatter": {
     "enabled": true,
+    "includes": ["**/*.js", "!lib/defs.js", "!test"],
     "formatWithErrors": false,
     "indentStyle": "space",
     "indentWidth": 2,
@@ -10,6 +11,7 @@
   },
   "linter": {
     "enabled": true,
+    "includes": ["**/*.js", "!lib/defs.js"],
     "rules": {
       "complexity": {
         "noCommaOperator": "error",
@@ -43,16 +45,5 @@
       "semicolons": "always",
       "trailingCommas": "all"
     }
-  },
-  "files": {
-    "includes": ["**/*.js", "!lib/defs.js"]
-  },
-  "overrides": [
-    {
-      "includes": ["test/**/*.js"],
-      "formatter": {
-        "enabled": false
-      }
-    }
-  ]
+  }
 }
