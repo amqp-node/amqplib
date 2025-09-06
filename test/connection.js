@@ -94,302 +94,209 @@ suite('Connection errors', () => {
 });
 
 suite('Connection open', () => {
-  test(
-    'happy',
-    connectionTest(
-      (c, done) => {
-        c.open(OPEN_OPTS, kCallback(succeed(done), fail(done)));
-      },
-      (send, wait, done) => {
-        happy_open(send, wait).then(succeed(done), fail(done));
-      },
-    ),
-  );
+  test('happy', connectionTest((c, done) => {
+    c.open(OPEN_OPTS, kCallback(succeed(done), fail(done)));
+  }, (send, wait, done) => {
+    happy_open(send, wait).then(succeed(done), fail(done));
+  }));
 
-  test(
-    'wrong first frame',
-    connectionTest(
-      (c, done) => {
-        c.open(OPEN_OPTS, kCallback(fail(done), succeed(done)));
-      },
-      (send, _wait, done) => {
-        // bad server! bad! whatever were you thinking?
-        completes(() => {
-          send(defs.ConnectionTune, { channelMax: 0, heartbeat: 0, frameMax: 0 });
-        }, done);
-      },
-    ),
-  );
+  test('wrong first frame', connectionTest((c, done) => {
+    c.open(OPEN_OPTS, kCallback(fail(done), succeed(done)));
+  }, (send, _wait, done) => {
+    // bad server! bad! whatever were you thinking?
+    completes(() => {
+      send(defs.ConnectionTune, { channelMax: 0, heartbeat: 0, frameMax: 0 });
+    }, done);
+  }));
 
-  test(
-    'unexpected socket close',
-    connectionTest(
-      (c, done) => {
-        c.open(OPEN_OPTS, kCallback(fail(done), succeed(done)));
-      },
-      (send, wait, done, socket) => {
-        send(defs.ConnectionStart, {
-          versionMajor: 0,
-          versionMinor: 9,
-          serverProperties: {},
-          mechanisms: Buffer.from('PLAIN'),
-          locales: Buffer.from('en_US'),
-        });
-        return wait(defs.ConnectionStartOk)()
-          .then(() => {
-            socket.end();
-          })
-          .then(succeed(done), fail(done));
-      },
-    ),
-  );
+  test('unexpected socket close', connectionTest((c, done) => {
+    c.open(OPEN_OPTS, kCallback(fail(done), succeed(done)));
+  }, (send, wait, done, socket) => {
+    send(defs.ConnectionStart, {
+      versionMajor: 0,
+      versionMinor: 9,
+      serverProperties: {},
+      mechanisms: Buffer.from('PLAIN'),
+      locales: Buffer.from('en_US'),
+    });
+    return wait(defs.ConnectionStartOk)()
+      .then(() => {
+        socket.end();
+      })
+      .then(succeed(done), fail(done));
+  }));
 });
 
 suite('Connection running', () => {
-  test(
-    'wrong frame on channel 0',
-    connectionTest(
-      (c, done) => {
-        c.on('error', succeed(done));
-        c.open(OPEN_OPTS);
-      },
-      (send, wait, done) => {
-        happy_open(send, wait)
-          .then(() => {
-            // there's actually nothing that would plausibly be sent to a
-            // just opened connection, so this is violating more than one
-            // rule. Nonetheless.
-            send(defs.ChannelOpenOk, { channelId: Buffer.from('') }, 0);
-          })
-          .then(wait(defs.ConnectionClose))
-          .then((_close) => {
-            send(defs.ConnectionCloseOk, {}, 0);
-          })
-          .then(succeed(done), fail(done));
-      },
-    ),
-  );
+  test('wrong frame on channel 0', connectionTest((c, done) => {
+    c.on('error', succeed(done));
+    c.open(OPEN_OPTS);
+  }, (send, wait, done) => {
+    happy_open(send, wait)
+      .then(() => {
+        // there's actually nothing that would plausibly be sent to a
+        // just opened connection, so this is violating more than one
+        // rule. Nonetheless.
+        send(defs.ChannelOpenOk, { channelId: Buffer.from('') }, 0);
+      })
+      .then(wait(defs.ConnectionClose))
+      .then((_close) => {
+        send(defs.ConnectionCloseOk, {}, 0);
+      })
+      .then(succeed(done), fail(done));
+  }));
 
-  test(
-    'unopened channel',
-    connectionTest(
-      (c, done) => {
-        c.on('error', succeed(done));
-        c.open(OPEN_OPTS);
-      },
-      (send, wait, done) => {
-        happy_open(send, wait)
-          .then(() => {
-            // there's actually nothing that would plausibly be sent to a
-            // just opened connection, so this is violating more than one
-            // rule. Nonetheless.
-            send(defs.ChannelOpenOk, { channelId: Buffer.from('') }, 3);
-          })
-          .then(wait(defs.ConnectionClose))
-          .then((_close) => {
-            send(defs.ConnectionCloseOk, {}, 0);
-          })
-          .then(succeed(done), fail(done));
-      },
-    ),
-  );
+  test('unopened channel', connectionTest((c, done) => {
+    c.on('error', succeed(done));
+    c.open(OPEN_OPTS);
+  }, (send, wait, done) => {
+    happy_open(send, wait)
+      .then(() => {
+        // there's actually nothing that would plausibly be sent to a
+        // just opened connection, so this is violating more than one
+        // rule. Nonetheless.
+        send(defs.ChannelOpenOk, { channelId: Buffer.from('') }, 3);
+      })
+      .then(wait(defs.ConnectionClose))
+      .then((_close) => {
+        send(defs.ConnectionCloseOk, {}, 0);
+      })
+      .then(succeed(done), fail(done));
+  }));
 
-  test(
-    'unexpected socket close',
-    connectionTest(
-      (c, done) => {
-        const errorAndClosed = latch(2, done);
-        c.on('error', succeed(errorAndClosed));
-        c.on('close', succeed(errorAndClosed));
-        c.open(
-          OPEN_OPTS,
-          kCallback(() => {
-            c.sendHeartbeat();
-          }, fail(errorAndClosed)),
-        );
-      },
-      (send, wait, done, socket) => {
-        happy_open(send, wait)
-          .then(wait())
-          .then(() => {
-            socket.end();
-          })
-          .then(succeed(done));
-      },
-    ),
-  );
+  test('unexpected socket close', connectionTest((c, done) => {
+    const errorAndClosed = latch(2, done);
+    c.on('error', succeed(errorAndClosed));
+    c.on('close', succeed(errorAndClosed));
+    c.open(OPEN_OPTS, kCallback(() => {
+      c.sendHeartbeat();
+    }, fail(errorAndClosed)));
+  }, (send, wait, done, socket) => {
+    happy_open(send, wait)
+      .then(wait())
+      .then(() => {
+        socket.end();
+      })
+      .then(succeed(done));
+  }));
 
-  test(
-    'connection.blocked',
-    connectionTest(
-      (c, done) => {
-        c.on('blocked', succeed(done));
-        c.open(OPEN_OPTS);
-      },
-      (send, wait, done, _socket) => {
-        happy_open(send, wait)
-          .then(() => {
-            send(defs.ConnectionBlocked, { reason: 'felt like it' }, 0);
-          })
-          .then(succeed(done));
-      },
-    ),
-  );
+  test('connection.blocked', connectionTest((c, done) => {
+    c.on('blocked', succeed(done));
+    c.open(OPEN_OPTS);
+  }, (send, wait, done, _socket) => {
+    happy_open(send, wait)
+      .then(() => {
+        send(defs.ConnectionBlocked, { reason: 'felt like it' }, 0);
+      })
+      .then(succeed(done));
+  }));
 
-  test(
-    'connection.unblocked',
-    connectionTest(
-      (c, done) => {
-        c.on('unblocked', succeed(done));
-        c.open(OPEN_OPTS);
-      },
-      (send, wait, done, _socket) => {
-        happy_open(send, wait)
-          .then(() => {
-            send(defs.ConnectionUnblocked, {}, 0);
-          })
-          .then(succeed(done));
-      },
-    ),
-  );
+  test('connection.unblocked', connectionTest((c, done) => {
+    c.on('unblocked', succeed(done));
+    c.open(OPEN_OPTS);
+  }, (send, wait, done, _socket) => {
+    happy_open(send, wait)
+      .then(() => {
+        send(defs.ConnectionUnblocked, {}, 0);
+      })
+      .then(succeed(done));
+  }));
 });
 
 suite('Connection close', () => {
-  test(
-    'happy',
-    connectionTest(
-      (c, done0) => {
-        const done = latch(2, done0);
-        c.on('close', done);
-        c.open(
-          OPEN_OPTS,
-          kCallback(
-            (_ok) => {
-              c.close(kCallback(succeed(done), fail(done)));
-            },
-            () => {},
-          ),
-        );
-      },
-      (send, wait, done) => {
-        happy_open(send, wait)
-          .then(wait(defs.ConnectionClose))
-          .then((_close) => {
-            send(defs.ConnectionCloseOk, {});
-          })
-          .then(succeed(done), fail(done));
-      },
-    ),
-  );
+  test('happy', connectionTest((c, done0) => {
+    const done = latch(2, done0);
+    c.on('close', done);
+    c.open(OPEN_OPTS, kCallback((_ok) => {
+      c.close(kCallback(succeed(done), fail(done)));
+    }, () => {}));
+  }, (send, wait, done) => {
+    happy_open(send, wait)
+      .then(wait(defs.ConnectionClose))
+      .then((_close) => {
+        send(defs.ConnectionCloseOk, {});
+      })
+      .then(succeed(done), fail(done));
+  }));
 
-  test(
-    'interleaved close frames',
-    connectionTest(
-      (c, done0) => {
-        const done = latch(2, done0);
-        c.on('close', done);
-        c.open(
-          OPEN_OPTS,
-          kCallback((_ok) => {
-            c.close(kCallback(succeed(done), fail(done)));
-          }, done),
-        );
-      },
-      (send, wait, done) => {
-        happy_open(send, wait)
-          .then(wait(defs.ConnectionClose))
-          .then((_f) => {
-            send(defs.ConnectionClose, {
-              replyText: 'Ha!',
-              replyCode: defs.constants.REPLY_SUCCESS,
-              methodId: 0,
-              classId: 0,
-            });
-          })
-          .then(wait(defs.ConnectionCloseOk))
-          .then((_f) => {
-            send(defs.ConnectionCloseOk, {});
-          })
-          .then(succeed(done), fail(done));
-      },
-    ),
-  );
+  test('interleaved close frames', connectionTest((c, done0) => {
+    const done = latch(2, done0);
+    c.on('close', done);
+    c.open(OPEN_OPTS, kCallback((_ok) => {
+      c.close(kCallback(succeed(done), fail(done)));
+    }, done));
+  }, (send, wait, done) => {
+    happy_open(send, wait)
+      .then(wait(defs.ConnectionClose))
+      .then((_f) => {
+        send(defs.ConnectionClose, {
+          replyText: 'Ha!',
+          replyCode: defs.constants.REPLY_SUCCESS,
+          methodId: 0,
+          classId: 0,
+        });
+      })
+      .then(wait(defs.ConnectionCloseOk))
+      .then((_f) => {
+        send(defs.ConnectionCloseOk, {});
+      })
+      .then(succeed(done), fail(done));
+  }));
 
-  test(
-    'server error close',
-    connectionTest(
-      (c, done0) => {
-        const done = latch(2, done0);
-        c.on('close', succeed(done));
-        c.on('error', succeed(done));
-        c.open(OPEN_OPTS);
-      },
-      (send, wait, done) => {
-        happy_open(send, wait)
-          .then((_f) => {
-            send(defs.ConnectionClose, {
-              replyText: 'Begone',
-              replyCode: defs.constants.INTERNAL_ERROR,
-              methodId: 0,
-              classId: 0,
-            });
-          })
-          .then(wait(defs.ConnectionCloseOk))
-          .then(succeed(done), fail(done));
-      },
-    ),
-  );
+  test('server error close', connectionTest((c, done0) => {
+    const done = latch(2, done0);
+    c.on('close', succeed(done));
+    c.on('error', succeed(done));
+    c.open(OPEN_OPTS);
+  }, (send, wait, done) => {
+    happy_open(send, wait)
+      .then((_f) => {
+        send(defs.ConnectionClose, {
+          replyText: 'Begone',
+          replyCode: defs.constants.INTERNAL_ERROR,
+          methodId: 0,
+          classId: 0,
+        });
+      })
+      .then(wait(defs.ConnectionCloseOk))
+      .then(succeed(done), fail(done));
+  }));
 
-  test(
-    'operator-intiated close',
-    connectionTest(
-      (c, done) => {
-        c.on('close', succeed(done));
-        c.on('error', fail(done));
-        c.open(OPEN_OPTS);
-      },
-      (send, wait, done) => {
-        happy_open(send, wait)
-          .then((_f) => {
-            send(defs.ConnectionClose, {
-              replyText: 'Begone',
-              replyCode: defs.constants.CONNECTION_FORCED,
-              methodId: 0,
-              classId: 0,
-            });
-          })
-          .then(wait(defs.ConnectionCloseOk))
-          .then(succeed(done), fail(done));
-      },
-    ),
-  );
+  test('operator-intiated close', connectionTest((c, done) => {
+    c.on('close', succeed(done));
+    c.on('error', fail(done));
+    c.open(OPEN_OPTS);
+  }, (send, wait, done) => {
+    happy_open(send, wait)
+      .then((_f) => {
+        send(defs.ConnectionClose, {
+          replyText: 'Begone',
+          replyCode: defs.constants.CONNECTION_FORCED,
+          methodId: 0,
+          classId: 0,
+        });
+      })
+      .then(wait(defs.ConnectionCloseOk))
+      .then(succeed(done), fail(done));
+  }));
 
-  test(
-    'double close',
-    connectionTest(
-      (c, done) => {
-        c.open(
-          OPEN_OPTS,
-          kCallback(() => {
-            c.close();
-            // NB no synchronisation, we do this straight away
-            assert.throws(() => {
-              c.close();
-            });
-            done();
-          }, done),
-        );
-      },
-      (send, wait, done) => {
-        happy_open(send, wait)
-          .then(wait(defs.ConnectionClose))
-          .then(() => {
-            send(defs.ConnectionCloseOk, {});
-          })
-          .then(succeed(done), fail(done));
-      },
-    ),
-  );
+  test('double close', connectionTest((c, done) => {
+    c.open(OPEN_OPTS, kCallback(() => {
+      c.close();
+      // NB no synchronisation, we do this straight away
+      assert.throws(() => {
+        c.close();
+      });
+      done();
+    }, done));
+  }, (send, wait, done) => {
+    happy_open(send, wait)
+      .then(wait(defs.ConnectionClose))
+      .then(() => {
+        send(defs.ConnectionCloseOk, {});
+      })
+      .then(succeed(done), fail(done));
+  }));
 });
 
 suite('heartbeats', () => {
@@ -403,50 +310,38 @@ suite('heartbeats', () => {
     heartbeat.UNITS_TO_MS = 1000;
   });
 
-  test(
-    'send heartbeat after open',
-    connectionTest(
-      (c, done) => {
-        completes(() => {
-          const opts = Object.create(OPEN_OPTS);
-          opts.heartbeat = 1;
-          // Don't leave the error waiting to happen for the next test, this
-          // confuses mocha awfully
-          c.on('error', () => {});
-          c.open(opts);
-        }, done);
-      },
-      (send, wait, done, socket) => {
-        let timer;
-        happy_open(send, wait)
-          .then(() => {
-            timer = setInterval(() => {
-              socket.write(HB_BUF);
-            }, heartbeat.UNITS_TO_MS);
-          })
-          .then(wait())
-          .then((hb) => {
-            if (hb === HEARTBEAT) done();
-            else done('Next frame after silence not a heartbeat');
-            clearInterval(timer);
-          });
-      },
-    ),
-  );
+  test('send heartbeat after open', connectionTest((c, done) => {
+    completes(() => {
+      const opts = Object.create(OPEN_OPTS);
+      opts.heartbeat = 1;
+      // Don't leave the error waiting to happen for the next test, this
+      // confuses mocha awfully
+      c.on('error', () => {});
+      c.open(opts);
+    }, done);
+  }, (send, wait, done, socket) => {
+    let timer;
+    happy_open(send, wait)
+      .then(() => {
+        timer = setInterval(() => {
+          socket.write(HB_BUF);
+        }, heartbeat.UNITS_TO_MS);
+      })
+      .then(wait())
+      .then((hb) => {
+        if (hb === HEARTBEAT) done();
+        else done('Next frame after silence not a heartbeat');
+        clearInterval(timer);
+      });
+  }));
 
-  test(
-    'detect lack of heartbeats',
-    connectionTest(
-      (c, done) => {
-        const opts = Object.create(OPEN_OPTS);
-        opts.heartbeat = 1;
-        c.on('error', succeed(done));
-        c.open(opts);
-      },
-      (send, wait, done, _socket) => {
-        happy_open(send, wait).then(succeed(done), fail(done));
-        // conspicuously not sending anything ...
-      },
-    ),
-  );
+  test('detect lack of heartbeats', connectionTest((c, done) => {
+    const opts = Object.create(OPEN_OPTS);
+    opts.heartbeat = 1;
+    c.on('error', succeed(done));
+    c.open(opts);
+  }, (send, wait, done, _socket) => {
+    happy_open(send, wait).then(succeed(done), fail(done));
+    // conspicuously not sending anything ...
+  }));
 });
