@@ -28,6 +28,7 @@
 - Enable useArrowFunction lint rule to prefer arrow functions for cleaner syntax
 - Enable noUselessCatch lint rule to prevent useless catch blocks that only rethrow errors
 - Enable noArguments rule to enforce modern rest parameters instead of legacy arguments object
+- Enable bracketSpacing formatting rule to add spaces inside object literals
 
 ## v0.10.9
 - Add support for IPv6 urls
