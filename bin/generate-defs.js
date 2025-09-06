@@ -12,15 +12,15 @@ const PROPERTIES_OVERHEAD = FRAME_OVERHEAD + 4 + 8 + 2;
 
 const out = process.stdout;
 
-function printf() {
-  out.write(format.apply(format, arguments), 'utf8');
+function printf(...args) {
+  out.write(format.apply(format, args), 'utf8');
 }
 
 function nl() {
   out.write('\n');
 }
-function println() {
-  printf.apply(printf, arguments);
+function println(...args) {
+  printf.apply(printf, args);
   nl();
 }
 
