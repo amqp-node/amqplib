@@ -53,7 +53,7 @@ function floatChooser(maxExp) {
 function explicitType(t, underlying) {
   return label(
     t,
-    transform((n) => ({'!': t, value: n}), underlying),
+    transform((n) => ({ '!': t, value: n }), underlying),
   );
 }
 
@@ -81,23 +81,23 @@ const Double = label('double', asGenerator(floatChooser(308)));
 const Float = label('float', transform(toFloat32, floatChooser(38)));
 const Timestamp = label(
   'timestamp',
-  transform((n) => ({'!': 'timestamp', value: n}), ULongLong),
+  transform((n) => ({ '!': 'timestamp', value: n }), ULongLong),
 );
 const Decimal = label(
   'decimal',
-  transform((args) => ({'!': 'decimal', value: {places: args[1], digits: args[0]}}), sequence(arb.UInt, Octet)),
+  transform((args) => ({ '!': 'decimal', value: { places: args[1], digits: args[0] } }), sequence(arb.UInt, Octet)),
 );
 const UnsignedByte = label(
   'unsignedbyte',
-  transform((n) => ({'!': 'unsignedbyte', value: n}), Octet),
+  transform((n) => ({ '!': 'unsignedbyte', value: n }), Octet),
 );
 const UnsignedShort = label(
   'unsignedshort',
-  transform((n) => ({'!': 'unsignedshort', value: n}), UShort),
+  transform((n) => ({ '!': 'unsignedshort', value: n }), UShort),
 );
 const UnsignedInt = label(
   'unsignedint',
-  transform((n) => ({'!': 'unsignedint', value: n}), ULong),
+  transform((n) => ({ '!': 'unsignedint', value: n }), ULong),
 );
 
 // Signed 8 bit int
@@ -202,7 +202,7 @@ const domainProps = [
 
 suite('Domains', () => {
   domainProps.forEach((p) => {
-    test(`${p[0]} domain`, forAll(p[0]).satisfy(p[1]).asTest({times: 500}));
+    test(`${p[0]} domain`, forAll(p[0]).satisfy(p[1]).asTest({ times: 500 }));
   });
 });
 
@@ -250,7 +250,7 @@ function method(info) {
   const names = info.args.map(name);
   return label(
     info.name,
-    transform((fieldVals) => ({id: info.id, fields: zipObject(fieldVals, names)}), domain),
+    transform((fieldVals) => ({ id: info.id, fields: zipObject(fieldVals, names) }), domain),
   );
 }
 
@@ -261,7 +261,7 @@ function properties(info) {
   const names = info.args.map(name);
   return label(
     info.name,
-    transform((fieldVals) => ({id: info.id, size: fieldVals[0], fields: zipObject(fieldVals.slice(1), names)}), domain),
+    transform((fieldVals) => ({ id: info.id, size: fieldVals[0], fields: zipObject(fieldVals.slice(1), names) }), domain),
   );
 }
 

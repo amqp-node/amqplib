@@ -53,7 +53,7 @@ function initial(part) {
 function argument(a) {
   const type = a.type || domains[a.domain];
   const friendlyName = propertyName(a.name);
-  return {type: type, name: friendlyName, default: a['default-value']};
+  return { type: type, name: friendlyName, default: a['default-value'] };
 }
 
 const domains = {};
@@ -529,7 +529,7 @@ function decoderFn(method) {
 }
 
 function infoObj(thing) {
-  const info = JSON.stringify({id: thing.id, classId: thing.clazzId, methodId: thing.methodId, name: thing.name, args: thing.args});
+  const info = JSON.stringify({ id: thing.id, classId: thing.clazzId, methodId: thing.methodId, name: thing.name, args: thing.args });
   println('var %s = module.exports.%s = %s;', thing.info, thing.info, info);
 }
 

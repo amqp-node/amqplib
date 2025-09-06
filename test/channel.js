@@ -54,7 +54,7 @@ function channelTest(client, server) {
 function channel_handshake(send, wait) {
   return wait(defs.ChannelOpen)().then((open) => {
     assert.notEqual(0, open.channel);
-    send(defs.ChannelOpenOk, {channelId: Buffer.from('')}, open.channel);
+    send(defs.ChannelOpenOk, { channelId: Buffer.from('') }, open.channel);
     return open.channel;
   });
 }
@@ -73,7 +73,7 @@ const DELIVER_FIELDS = {
 function open(ch) {
   ch.allocate();
   return promisify((cb) => {
-    ch._rpc(defs.ChannelOpen, {outOfBand: ''}, defs.ChannelOpenOk, cb);
+    ch._rpc(defs.ChannelOpen, { outOfBand: '' }, defs.ChannelOpenOk, cb);
   })();
 }
 
@@ -268,7 +268,7 @@ suite('channel machinery', () => {
         });
 
         open(ch).then(() => {
-          ch._rpc(defs.BasicRecover, {requeue: true}, defs.BasicRecoverOk, (err) => {
+          ch._rpc(defs.BasicRecover, { requeue: true }, defs.BasicRecoverOk, (err) => {
             if (err !== null) errLatch();
             else errLatch(new Error('Expected RPC failure'));
           });
@@ -277,7 +277,7 @@ suite('channel machinery', () => {
       (send, wait, done, ch) =>
         wait()()
           .then(() => {
-            send(defs.BasicGetEmpty, {clusterId: ''}, ch);
+            send(defs.BasicGetEmpty, { clusterId: '' }, ch);
           }) // oh wait! that was wrong! expect a channel close
           .then(wait(defs.ChannelClose))
           .then(() => {
@@ -310,11 +310,11 @@ suite('channel machinery', () => {
         }
 
         const fail1 = new Promise((resolve, reject) =>
-          ch._rpc(defs.BasicRecover, {requeue: true}, defs.BasicRecoverOk, failureCb(resolve, reject)),
+          ch._rpc(defs.BasicRecover, { requeue: true }, defs.BasicRecoverOk, failureCb(resolve, reject)),
         );
 
         const fail2 = new Promise((resolve, reject) =>
-          ch._rpc(defs.BasicRecover, {requeue: true}, defs.BasicRecoverOk, failureCb(resolve, reject)),
+          ch._rpc(defs.BasicRecover, { requeue: true }, defs.BasicRecoverOk, failureCb(resolve, reject)),
         );
 
         Promise.all([close, fail1, fail2]).then(succeed(done)).catch(fail(done));
@@ -418,7 +418,7 @@ suite('channel machinery', () => {
               ticket: 0,
             },
             {
-              headers: {foo: Buffer.alloc(3000)},
+              headers: { foo: Buffer.alloc(3000) },
             },
             Buffer.from('foobar'),
           );
@@ -548,7 +548,7 @@ suite('channel machinery', () => {
         completes(() => {
           open(ch);
           assert.throws(() => {
-            ch.sendMessage({routingKey: 'foo', exchange: 'amq.direct'}, {}, null);
+            ch.sendMessage({ routingKey: 'foo', exchange: 'amq.direct' }, {}, null);
           });
         }, done);
       },
@@ -565,7 +565,7 @@ suite('channel machinery', () => {
         completes(() => {
           open(ch);
           assert.throws(() => {
-            ch.sendMessage({routingKey: 'foo', exchange: 'amq.direct'}, {contentEncoding: 7}, Buffer.from('foobar'));
+            ch.sendMessage({ routingKey: 'foo', exchange: 'amq.direct' }, { contentEncoding: 7 }, Buffer.from('foobar'));
           });
         }, done);
       },
@@ -617,7 +617,7 @@ suite('channel machinery', () => {
         });
 
         ch.on('delivery', () => {
-          ch.sendMessage({routingKey: 'foo', exchange: 'amq.direct'}, {}, null); // can't send null
+          ch.sendMessage({ routingKey: 'foo', exchange: 'amq.direct' }, {}, null); // can't send null
         });
 
         open(ch);
@@ -728,9 +728,9 @@ suite('channel machinery', () => {
       },
       (send, _wait, done, ch) => {
         completes(() => {
-          send(defs.BasicAck, {deliveryTag: 2, multiple: false}, ch);
-          send(defs.BasicAck, {deliveryTag: 3, multiple: false}, ch);
-          send(defs.BasicAck, {deliveryTag: 1, multiple: false}, ch);
+          send(defs.BasicAck, { deliveryTag: 2, multiple: false }, ch);
+          send(defs.BasicAck, { deliveryTag: 3, multiple: false }, ch);
+          send(defs.BasicAck, { deliveryTag: 1, multiple: false }, ch);
         }, done);
       },
     ),
@@ -755,8 +755,8 @@ suite('channel machinery', () => {
       },
       (send, _wait, done, ch) => {
         completes(() => {
-          send(defs.BasicAck, {deliveryTag: 2, multiple: false}, ch);
-          send(defs.BasicAck, {deliveryTag: 1, multiple: false}, ch);
+          send(defs.BasicAck, { deliveryTag: 2, multiple: false }, ch);
+          send(defs.BasicAck, { deliveryTag: 1, multiple: false }, ch);
         }, done);
       },
     ),

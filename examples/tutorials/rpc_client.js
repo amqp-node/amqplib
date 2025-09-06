@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 const amqp = require('amqplib');
-const {basename} = require('node:path');
-const {v4: uuid} = require('uuid');
+const { basename } = require('node:path');
+const { v4: uuid } = require('uuid');
 
 const queue = 'rpc_queue';
 
@@ -20,7 +20,7 @@ if (Number.isNaN(n)) {
     const correlationId = uuid();
 
     const requestFib = new Promise(async (resolve) => {
-      const {queue: replyTo} = await channel.assertQueue('', {exclusive: true});
+      const { queue: replyTo } = await channel.assertQueue('', { exclusive: true });
 
       await channel.consume(
         replyTo,
@@ -30,10 +30,10 @@ if (Number.isNaN(n)) {
             resolve(message.content.toString());
           }
         },
-        {noAck: true},
+        { noAck: true },
       );
 
-      await channel.assertQueue(queue, {durable: false});
+      await channel.assertQueue(queue, { durable: false });
       console.log(' [x] Requesting fib(%d)', n);
       channel.sendToQueue(queue, Buffer.from(n.toString()), {
         correlationId,

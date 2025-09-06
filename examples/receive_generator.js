@@ -18,7 +18,7 @@ co(function* () {
   channel.sendToQueue(q, Buffer.from(msg));
   console.log(" [x] Sent '%s'", msg);
   // consume the message
-  yield channel.consume(q, myConsumer, {noAck: true});
+  yield channel.consume(q, myConsumer, { noAck: true });
 }).catch((err) => {
   console.warn('Error:', err);
 });

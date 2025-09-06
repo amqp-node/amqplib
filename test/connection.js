@@ -42,12 +42,12 @@ function happy_open(send, wait) {
   });
   return wait(defs.ConnectionStartOk)()
     .then((_f) => {
-      send(defs.ConnectionTune, {channelMax: 0, heartbeat: 0, frameMax: 0});
+      send(defs.ConnectionTune, { channelMax: 0, heartbeat: 0, frameMax: 0 });
     })
     .then(wait(defs.ConnectionTuneOk))
     .then(wait(defs.ConnectionOpen))
     .then((_f) => {
-      send(defs.ConnectionOpenOk, {knownHosts: ''});
+      send(defs.ConnectionOpenOk, { knownHosts: '' });
     });
 }
 module.exports.connection_handshake = happy_open;
@@ -115,7 +115,7 @@ suite('Connection open', () => {
       (send, _wait, done) => {
         // bad server! bad! whatever were you thinking?
         completes(() => {
-          send(defs.ConnectionTune, {channelMax: 0, heartbeat: 0, frameMax: 0});
+          send(defs.ConnectionTune, { channelMax: 0, heartbeat: 0, frameMax: 0 });
         }, done);
       },
     ),
@@ -159,7 +159,7 @@ suite('Connection running', () => {
             // there's actually nothing that would plausibly be sent to a
             // just opened connection, so this is violating more than one
             // rule. Nonetheless.
-            send(defs.ChannelOpenOk, {channelId: Buffer.from('')}, 0);
+            send(defs.ChannelOpenOk, { channelId: Buffer.from('') }, 0);
           })
           .then(wait(defs.ConnectionClose))
           .then((_close) => {
@@ -183,7 +183,7 @@ suite('Connection running', () => {
             // there's actually nothing that would plausibly be sent to a
             // just opened connection, so this is violating more than one
             // rule. Nonetheless.
-            send(defs.ChannelOpenOk, {channelId: Buffer.from('')}, 3);
+            send(defs.ChannelOpenOk, { channelId: Buffer.from('') }, 3);
           })
           .then(wait(defs.ConnectionClose))
           .then((_close) => {
@@ -229,7 +229,7 @@ suite('Connection running', () => {
       (send, wait, done, _socket) => {
         happy_open(send, wait)
           .then(() => {
-            send(defs.ConnectionBlocked, {reason: 'felt like it'}, 0);
+            send(defs.ConnectionBlocked, { reason: 'felt like it' }, 0);
           })
           .then(succeed(done));
       },

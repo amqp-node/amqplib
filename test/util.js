@@ -40,7 +40,7 @@ function socketPair() {
   server.end = end.bind(client);
   client.end = end.bind(server);
 
-  return {client: client, server: server};
+  return { client: client, server: server };
 }
 
 function runServer(socket, run) {

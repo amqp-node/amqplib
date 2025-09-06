@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const amqp = require('../..');
-const {basename} = require('node:path');
+const { basename } = require('node:path');
 
 const exchange = 'topic_logs';
 const bindingKeys = process.argv.slice(2);
@@ -20,8 +20,8 @@ if (bindingKeys.length < 1) {
       await connection.close();
     });
 
-    await channel.assertExchange(exchange, 'topic', {durable: false});
-    const {queue} = await channel.assertQueue('', {exclusive: true});
+    await channel.assertExchange(exchange, 'topic', { durable: false });
+    const { queue } = await channel.assertQueue('', { exclusive: true });
     await Promise.all(
       bindingKeys.map(async (bindingKey) => {
         await channel.bindQueue(queue, exchange, bindingKey);
@@ -34,7 +34,7 @@ if (bindingKeys.length < 1) {
         if (message) console.log(" [x] %s:'%s'", message.fields.routingKey, message.content.toString());
         else console.warn(' [x] Consumer cancelled');
       },
-      {noAck: true},
+      { noAck: true },
     );
 
     console.log(' [*] Waiting for logs. To exit press CTRL+C.');

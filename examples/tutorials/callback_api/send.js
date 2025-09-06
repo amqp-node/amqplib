@@ -9,7 +9,7 @@ amqp.connect((err, connection) => {
   if (err) return bail(err);
   connection.createChannel((err, channel) => {
     if (err) return bail(err, connection);
-    channel.assertQueue(queue, {durable: false}, (err) => {
+    channel.assertQueue(queue, { durable: false }, (err) => {
       if (err) return bail(err, connection);
       channel.sendToQueue(queue, Buffer.from(text));
       console.log(" [x] Sent '%s'", text);

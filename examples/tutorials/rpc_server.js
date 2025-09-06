@@ -14,7 +14,7 @@ const queue = 'rpc_queue';
       await connection.close();
     });
 
-    await channel.assertQueue(queue, {durable: false});
+    await channel.assertQueue(queue, { durable: false });
 
     channel.prefetch(1);
     await channel.consume(queue, (message) => {

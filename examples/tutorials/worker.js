@@ -13,7 +13,7 @@ const queue = 'task_queue';
     });
 
     const channel = await connection.createChannel();
-    await channel.assertQueue(queue, {durable: true});
+    await channel.assertQueue(queue, { durable: true });
 
     channel.prefetch(1);
     await channel.consume(
@@ -27,7 +27,7 @@ const queue = 'task_queue';
           channel.ack(message);
         }, seconds * 1000);
       },
-      {noAck: false},
+      { noAck: false },
     );
 
     console.log(' [*] Waiting for messages. To exit press CTRL+C');

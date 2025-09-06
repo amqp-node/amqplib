@@ -15,10 +15,10 @@ const queue = 'rpc_queue';
       await channel.close();
       await connection.close();
     },
-    {noAck: true},
+    { noAck: true },
   );
 
-  await channel.assertQueue(queue, {durable: false});
+  await channel.assertQueue(queue, { durable: false });
 
   channel.sendToQueue(queue, Buffer.from(' [X] ping'), {
     replyTo: 'amq.rabbitmq.reply-to',

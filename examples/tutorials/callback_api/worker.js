@@ -15,7 +15,7 @@ amqp.connect((err, connection) => {
       });
     });
 
-    channel.assertQueue(queue, {durable: true}, (err, {queue}) => {
+    channel.assertQueue(queue, { durable: true }, (err, { queue }) => {
       if (err) return bail(err, connection);
       channel.consume(
         queue,
@@ -28,7 +28,7 @@ amqp.connect((err, connection) => {
             channel.ack(message);
           }, seconds * 1000);
         },
-        {noAck: false},
+        { noAck: false },
       );
       console.log(' [*] Waiting for messages. To exit press CTRL+C');
     });

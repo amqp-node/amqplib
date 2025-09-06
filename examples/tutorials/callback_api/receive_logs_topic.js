@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const amqp = require('amqplib/callback_api');
-const {basename} = require('node:path');
+const { basename } = require('node:path');
 
 const exchange = 'topic_logs';
 const severities = process.argv.slice(2);
@@ -21,9 +21,9 @@ amqp.connect((err, connection) => {
       });
     });
 
-    channel.assertExchange(exchange, 'topic', {durable: false}, (err) => {
+    channel.assertExchange(exchange, 'topic', { durable: false }, (err) => {
       if (err) return bail(err, connection);
-      channel.assertQueue('', {exclusive: true}, (err, {queue}) => {
+      channel.assertQueue('', { exclusive: true }, (err, { queue }) => {
         if (err) return bail(err, connection);
         channel.consume(
           queue,
@@ -31,7 +31,7 @@ amqp.connect((err, connection) => {
             if (message) console.log(" [x] %s:'%s'", message.fields.routingKey, message.content.toString());
             else console.warn(' [x] Consumer cancelled');
           },
-          {noAck: true},
+          { noAck: true },
           (err) => {
             if (err) return bail(err, connection);
             console.log(' [*] Waiting for logs. To exit press CTRL+C.');

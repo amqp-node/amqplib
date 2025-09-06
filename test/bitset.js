@@ -1,7 +1,7 @@
 const claire = require('claire');
-const {BitSet} = require('../lib/bitset');
+const { BitSet } = require('../lib/bitset');
 
-const {forAll, data: arb, label, choice, transform} = claire;
+const { forAll, data: arb, label, choice, transform } = claire;
 
 const PosInt = transform(Math.floor, arb.Positive);
 

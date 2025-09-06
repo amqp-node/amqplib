@@ -12,7 +12,7 @@ const defs = require('../lib/defs');
 function inputs() {
   // don't coalesce buffers, since that could mess up properties
   // (e.g., encoded frame size)
-  return new PassThrough({objectMode: true});
+  return new PassThrough({ objectMode: true });
 }
 
 const HB = Buffer.from([
@@ -135,7 +135,7 @@ suite('Parsing', () => {
         if (ex) throw ex;
         return i === t.length;
       })
-      .asTest({times: 20});
+      .asTest({ times: 20 });
   }
 
   test(

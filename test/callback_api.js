@@ -197,7 +197,7 @@ suite('bindings', () => {
 suite('sending messages', () => {
   channel_test('send to queue and consume noAck', (ch, done) => {
     const msg = randomString();
-    ch.assertQueue('', {exclusive: true}, (e, q) => {
+    ch.assertQueue('', { exclusive: true }, (e, q) => {
       if (e !== null) return done(e);
       ch.consume(
         q.queue,
@@ -205,7 +205,7 @@ suite('sending messages', () => {
           if (m.content.toString() === msg) done();
           else done(new Error(`message content doesn't match:${msg} =/= ${m.content.toString()}`));
         },
-        {noAck: true, exclusive: true},
+        { noAck: true, exclusive: true },
       );
       ch.sendToQueue(q.queue, Buffer.from(msg));
     });
@@ -213,7 +213,7 @@ suite('sending messages', () => {
 
   channel_test('send to queue and consume ack', (ch, done) => {
     const msg = randomString();
-    ch.assertQueue('', {exclusive: true}, (e, q) => {
+    ch.assertQueue('', { exclusive: true }, (e, q) => {
       if (e !== null) return done(e);
       ch.consume(
         q.queue,
@@ -223,20 +223,20 @@ suite('sending messages', () => {
             done();
           } else done(new Error(`message content doesn't match:${msg} =/= ${m.content.toString()}`));
         },
-        {noAck: false, exclusive: true},
+        { noAck: false, exclusive: true },
       );
       ch.sendToQueue(q.queue, Buffer.from(msg));
     });
   });
 
   channel_test('send to and get from queue', (ch, done) => {
-    ch.assertQueue('', {exclusive: true}, (e, q) => {
+    ch.assertQueue('', { exclusive: true }, (e, q) => {
       if (e != null) return done(e);
       const msg = randomString();
       ch.sendToQueue(q.queue, Buffer.from(msg));
       waitForMessages(ch, q.queue, (e, _) => {
         if (e != null) return done(e);
-        ch.get(q.queue, {noAck: true}, (e, m) => {
+        ch.get(q.queue, { noAck: true }, (e, m) => {
           if (e != null) return done(e);
           else if (!m) return done(new Error('Empty (false) not expected'));
           else if (m.content.toString() === msg) return done();
@@ -251,7 +251,7 @@ suite('sending messages', () => {
   channel_test('find high watermark', (ch, done) => {
     const msg = randomString();
     let baseline = 0;
-    ch.assertQueue('', {exclusive: true}, (e, q) => {
+    ch.assertQueue('', { exclusive: true }, (e, q) => {
       if (e !== null) return done(e);
       while (ch.sendToQueue(q.queue, Buffer.from(msg))) {
         baseline++;
@@ -263,7 +263,7 @@ suite('sending messages', () => {
 
   channel_test('set high watermark', channelOptions, (ch, done) => {
     const msg = randomString();
-    ch.assertQueue('', {exclusive: true}, (e, q) => {
+    ch.assertQueue('', { exclusive: true }, (e, q) => {
       if (e !== null) return done(e);
       let ok;
       for (let i = 0; i < channelOptions.highWaterMark; i++) {
@@ -295,7 +295,7 @@ suite('ConfirmChannel', () => {
   confirm_channel_test('find high watermark', (ch, done) => {
     const msg = randomString();
     let baseline = 0;
-    ch.assertQueue('', {exclusive: true}, (e, q) => {
+    ch.assertQueue('', { exclusive: true }, (e, q) => {
       if (e !== null) return done(e);
       while (ch.sendToQueue(q.queue, Buffer.from(msg))) {
         baseline++;
@@ -307,7 +307,7 @@ suite('ConfirmChannel', () => {
 
   confirm_channel_test('set high watermark', channelOptions, (ch, done) => {
     const msg = randomString();
-    ch.assertQueue('', {exclusive: true}, (e, q) => {
+    ch.assertQueue('', { exclusive: true }, (e, q) => {
       if (e !== null) return done(e);
       let ok;
       for (let i = 0; i < channelOptions.highWaterMark; i++) {
@@ -384,7 +384,7 @@ suite('Error handling', () => {
   error_test('Get callback throws error', (ch, done, dom) => {
     dom.on('error', failCallback(done));
     ch.assertQueue('test.cb.get-with-error', {}, (_err, _ok) => {
-      ch.get('test.cb.get-with-error', {noAck: true}, () => {
+      ch.get('test.cb.get-with-error', { noAck: true }, () => {
         throw new Error('Spurious callback error');
       });
     });
@@ -393,7 +393,7 @@ suite('Error handling', () => {
   error_test('Consume callback throws error', (ch, done, dom) => {
     dom.on('error', failCallback(done));
     ch.assertQueue('test.cb.consume-with-error', {}, (_err, _ok) => {
-      ch.consume('test.cb.consume-with-error', ignore, {noAck: true}, () => {
+      ch.consume('test.cb.consume-with-error', ignore, { noAck: true }, () => {
         throw new Error('Spurious callback error');
       });
     });

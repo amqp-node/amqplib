@@ -12,7 +12,7 @@ const text = args.slice(1).join(' ') || 'Hello World!';
   try {
     connection = await amqp.connect('amqp://localhost');
     const channel = await connection.createChannel();
-    await channel.assertExchange(exchange, 'direct', {durable: false});
+    await channel.assertExchange(exchange, 'direct', { durable: false });
     channel.publish(exchange, routingKey, Buffer.from(text));
     console.log(" [x] Sent %s:'%s'", routingKey, text);
     await channel.close();
