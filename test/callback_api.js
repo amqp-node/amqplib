@@ -71,11 +71,9 @@ suite('connect', () => {
 
 suite('updateSecret', () => {
   test('updateSecret', (done) => {
-    connect(
-      kCallback((c) => {
-        c.updateSecret(Buffer.from('new secret'), 'no reason', doneCallback(done));
-      }),
-    );
+    connect(kCallback((c) => {
+      c.updateSecret(Buffer.from('new secret'), 'no reason', doneCallback(done));
+    }));
   });
 });
 
@@ -86,16 +84,11 @@ const channel_test_fn = (method) => {
       options = {};
     }
     test(name, (done) => {
-      connect(
-        kCallback((c) => {
-          c[method](
-            options,
-            kCallback((ch) => {
-              chfun(ch, done);
-            }, done),
-          );
-        }, done),
-      );
+      connect(kCallback((c) => {
+        c[method](options, kCallback((ch) => {
+          chfun(ch, done);
+        }, done));
+      }, done));
     });
   };
 };
@@ -114,34 +107,19 @@ suite('channel open', () => {
 
 suite('assert, check, delete', () => {
   channel_test('assert, check, delete queue', (ch, done) => {
-    ch.assertQueue(
-      'test.cb.queue',
-      {},
-      kCallback((_q) => {
-        ch.checkQueue(
-          'test.cb.queue',
-          kCallback((_ok) => {
-            ch.deleteQueue('test.cb.queue', {}, doneCallback(done));
-          }, done),
-        );
-      }, done),
-    );
+    ch.assertQueue('test.cb.queue', {}, kCallback((_q) => {
+      ch.checkQueue('test.cb.queue', kCallback((_ok) => {
+        ch.deleteQueue('test.cb.queue', {}, doneCallback(done));
+      }, done));
+    }, done));
   });
 
   channel_test('assert, check, delete exchange', (ch, done) => {
-    ch.assertExchange(
-      'test.cb.exchange',
-      'topic',
-      {},
-      kCallback((_ex) => {
-        ch.checkExchange(
-          'test.cb.exchange',
-          kCallback((_ok) => {
-            ch.deleteExchange('test.cb.exchange', {}, doneCallback(done));
-          }, done),
-        );
-      }, done),
-    );
+    ch.assertExchange('test.cb.exchange', 'topic', {}, kCallback((_ex) => {
+      ch.checkExchange('test.cb.exchange', kCallback((_ok) => {
+        ch.deleteExchange('test.cb.exchange', {}, doneCallback(done));
+      }, done));
+    }, done));
   });
 
   channel_test('fail on check non-queue', (ch, done) => {
@@ -159,38 +137,19 @@ suite('assert, check, delete', () => {
 
 suite('bindings', () => {
   channel_test('bind queue', (ch, done) => {
-    ch.assertQueue(
-      'test.cb.bindq',
-      {},
-      kCallback((q) => {
-        ch.assertExchange(
-          'test.cb.bindex',
-          'fanout',
-          {},
-          kCallback((ex) => {
-            ch.bindQueue(q.queue, ex.exchange, '', {}, doneCallback(done));
-          }, done),
-        );
-      }, done),
-    );
+    ch.assertQueue('test.cb.bindq', {}, kCallback((q) => {
+      ch.assertExchange('test.cb.bindex', 'fanout', {}, kCallback((ex) => {
+        ch.bindQueue(q.queue, ex.exchange, '', {}, doneCallback(done));
+      }, done));
+    }, done));
   });
 
   channel_test('bind exchange', (ch, done) => {
-    ch.assertExchange(
-      'test.cb.bindex1',
-      'fanout',
-      {},
-      kCallback((ex1) => {
-        ch.assertExchange(
-          'test.cb.bindex2',
-          'fanout',
-          {},
-          kCallback((ex2) => {
-            ch.bindExchange(ex1.exchange, ex2.exchange, '', {}, doneCallback(done));
-          }, done),
-        );
-      }, done),
-    );
+    ch.assertExchange('test.cb.bindex1', 'fanout', {}, kCallback((ex1) => {
+      ch.assertExchange('test.cb.bindex2', 'fanout', {}, kCallback((ex2) => {
+        ch.bindExchange(ex1.exchange, ex2.exchange, '', {}, doneCallback(done));
+      }, done));
+    }, done));
   });
 });
 

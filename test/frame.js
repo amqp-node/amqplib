@@ -138,25 +138,16 @@ suite('Parsing', () => {
       .asTest({times: 20});
   }
 
-  test(
-    'Parse trace of methods',
-    testPartitioning((bufs) => bufs),
-  );
+  test('Parse trace of methods', testPartitioning((bufs) => bufs));
 
-  test(
-    "Parse concat'd methods",
-    testPartitioning((bufs) => [Buffer.concat(bufs)]),
-  );
+  test("Parse concat'd methods", testPartitioning((bufs) => [Buffer.concat(bufs)]));
 
-  test(
-    'Parse partitioned methods',
-    testPartitioning((bufs) => {
-      const full = Buffer.concat(bufs);
-      const onethird = Math.floor(full.length / 3);
-      const twothirds = 2 * onethird;
-      return [full.subarray(0, onethird), full.subarray(onethird, twothirds), full.subarray(twothirds)];
-    }),
-  );
+  test('Parse partitioned methods', testPartitioning((bufs) => {
+    const full = Buffer.concat(bufs);
+    const onethird = Math.floor(full.length / 3);
+    const twothirds = 2 * onethird;
+    return [full.subarray(0, onethird), full.subarray(onethird, twothirds), full.subarray(twothirds)];
+  }));
 });
 
 const FRAME_MAX_MAX = 4096 * 4;
@@ -176,31 +167,26 @@ const Content = transform(
 );
 
 suite('Content framing', () => {
-  test(
-    'Adhere to frame max',
-    forAll(Content, FrameMax)
-      .satisfy((content, max) => {
-        const input = inputs();
-        const frames = new Frames(input);
-        frames.frameMax = max;
-        frames.sendMessage(0, defs.BasicDeliver, content.method, defs.BasicProperties, content.header, content.body);
-        let _i = 0;
-        let largest = 0;
-        let frame = input.read();
-        while (frame) {
-          _i++;
-          if (frame.length > largest) largest = frame.length;
-          if (frame.length > max) {
-            return false;
-          }
-          frame = input.read();
-        }
-        // The ratio of frames to 'contents' should always be >= 2
-        // (one properties frame and at least one content frame); > 2
-        // indicates fragmentation. The largest is always, of course <= frame max
-        //console.log('Frames: %d; frames per message: %d; largest frame %d', _i, _i / t.length, largest);
-        return true;
-      })
-      .asTest(),
-  );
+  test('Adhere to frame max', forAll(Content, FrameMax).satisfy((content, max) => {
+    const input = inputs();
+    const frames = new Frames(input);
+    frames.frameMax = max;
+    frames.sendMessage(0, defs.BasicDeliver, content.method, defs.BasicProperties, content.header, content.body);
+    let _i = 0;
+    let largest = 0;
+    let frame = input.read();
+    while (frame) {
+      _i++;
+      if (frame.length > largest) largest = frame.length;
+      if (frame.length > max) {
+        return false;
+      }
+      frame = input.read();
+    }
+    // The ratio of frames to 'contents' should always be >= 2
+    // (one properties frame and at least one content frame); > 2
+    // indicates fragmentation. The largest is always, of course <= frame max
+    //console.log('Frames: %d; frames per message: %d; largest frame %d', _i, _i / t.length, largest);
+    return true;
+  }).asTest());
 });

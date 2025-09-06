@@ -2,10 +2,8 @@
 
 ## v1.0.0
 - **BREAKING**: Update minimum Node.js requirement to v18
-- Introduce Biome formatter for consistent code formatting
-- Add automated formatting via pre-commit hooks using Lefthook
+- Introduce Biome and Lefthook for formatting and linting
 - Format entire codebase with standardised formatting rules
-- Add npm format script for manual code formatting
 - Enable noUnusedFunctionParameters lint rule and fix all violations
 - Enable noUnusedVariables lint rule and remove all unused variables from codebase
 - Replace all var declarations with let/const for modern JavaScript standards

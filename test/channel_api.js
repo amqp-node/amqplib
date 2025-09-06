@@ -91,8 +91,7 @@ suite('assert, check, delete', () => {
 
   chtest('fail on reasserting queue with different options', (ch) => {
     const q = 'test.reassert-queue';
-    return ch
-      .assertQueue(q, {durable: false, autoDelete: true})
+    return ch.assertQueue(q, {durable: false, autoDelete: true})
       .then(() => expectFail(ch.assertQueue(q, {durable: false, autoDelete: false})));
   });
 
@@ -105,14 +104,10 @@ suite('assert, check, delete', () => {
     return ch.assertExchange(ex, 'fanout', EX_OPTS).then(() => expectFail(ch.assertExchange(ex, 'direct', EX_OPTS)));
   });
 
-  chtest(
-    'channel break on publishing to non-exchange',
-    (ch) =>
-      new Promise((resolve) => {
-        ch.on('error', resolve);
-        ch.publish(randomString(), '', Buffer.from('foobar'));
-      }),
-  );
+  chtest('channel break on publishing to non-exchange', (ch) => new Promise((resolve) => {
+    ch.on('error', resolve);
+    ch.publish(randomString(), '', Buffer.from('foobar'));
+  }));
 
   chtest('delete queue', (ch) => {
     const q = 'test.delete-queue';

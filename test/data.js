@@ -26,10 +26,7 @@ function chooseInt(a, b) {
 }
 
 function rangeInt(name, a, b) {
-  return label(
-    name,
-    asGenerator((_) => chooseInt(a, b)),
-  );
+  return label(name, asGenerator((_) => chooseInt(a, b)));
 }
 
 function toFloat32(i) {
@@ -51,24 +48,15 @@ function floatChooser(maxExp) {
 }
 
 function explicitType(t, underlying) {
-  return label(
-    t,
-    transform((n) => ({'!': t, value: n}), underlying),
-  );
+  return label(t, transform((n) => ({'!': t, value: n}), underlying));
 }
 
 // FIXME null, byte array, others?
 
 const Octet = rangeInt('octet', 0, 255);
-const ShortStr = label(
-  'shortstr',
-  transform((s) => s.substr(0, 255), arb.Str),
-);
+const ShortStr = label('shortstr', transform((s) => s.substr(0, 255), arb.Str));
 
-const LongStr = label(
-  'longstr',
-  transform((bytes) => Buffer.from(bytes), repeat(Octet)),
-);
+const LongStr = label('longstr', transform((bytes) => Buffer.from(bytes), repeat(Octet)));
 
 const UShort = rangeInt('short-uint', 0, 0xffff);
 const ULong = rangeInt('long-uint', 0, 0xffffffff);
@@ -79,26 +67,11 @@ const LongLong = rangeInt('longlong-int', Number.MIN_SAFE_INTEGER, Number.MAX_SA
 const Bit = label('bit', arb.Bool);
 const Double = label('double', asGenerator(floatChooser(308)));
 const Float = label('float', transform(toFloat32, floatChooser(38)));
-const Timestamp = label(
-  'timestamp',
-  transform((n) => ({'!': 'timestamp', value: n}), ULongLong),
-);
-const Decimal = label(
-  'decimal',
-  transform((args) => ({'!': 'decimal', value: {places: args[1], digits: args[0]}}), sequence(arb.UInt, Octet)),
-);
-const UnsignedByte = label(
-  'unsignedbyte',
-  transform((n) => ({'!': 'unsignedbyte', value: n}), Octet),
-);
-const UnsignedShort = label(
-  'unsignedshort',
-  transform((n) => ({'!': 'unsignedshort', value: n}), UShort),
-);
-const UnsignedInt = label(
-  'unsignedint',
-  transform((n) => ({'!': 'unsignedint', value: n}), ULong),
-);
+const Timestamp = label('timestamp', transform((n) => ({'!': 'timestamp', value: n}), ULongLong));
+const Decimal = label('decimal', transform((args) => ({'!': 'decimal', value: {places: args[1], digits: args[0]}}), sequence(arb.UInt, Octet)));
+const UnsignedByte = label('unsignedbyte', transform((n) => ({'!': 'unsignedbyte', value: n}), Octet));
+const UnsignedShort = label('unsignedshort', transform((n) => ({'!': 'unsignedshort', value: n}), UShort));
+const UnsignedInt = label('unsignedint', transform((n) => ({'!': 'unsignedint', value: n}), ULong));
 
 // Signed 8 bit int
 const Byte = rangeInt('byte', -128, 127);
@@ -113,72 +86,17 @@ const ExInt32 = explicitType('int32', Long);
 const ExLong = explicitType('long', LongLong);
 const ExInt64 = explicitType('int64', LongLong);
 
-const FieldArray = label(
-  'field-array',
-  recursive(() =>
-    arb.Array(
-      arb.Null,
-      LongStr,
-      ShortStr,
-      Octet,
-      UShort,
-      ULong,
-      ULongLong,
-      Byte,
-      Short,
-      Long,
-      LongLong,
-      ExByte,
-      ExInt8,
-      ExShort,
-      ExInt16,
-      ExInt,
-      ExInt32,
-      ExLong,
-      ExInt64,
-      Bit,
-      Float,
-      Double,
-      FieldTable,
-      FieldArray,
-    ),
-  ),
-);
+const FieldArray = label('field-array', recursive(() => arb.Array(
+  arb.Null, LongStr, ShortStr, Octet, UShort, ULong, ULongLong, Byte, Short, Long, LongLong,
+  ExByte, ExInt8, ExShort, ExInt16, ExInt, ExInt32, ExLong, ExInt64, Bit, Float, Double,
+  FieldTable, FieldArray,
+)));
 
-const FieldTable = label(
-  'table',
-  recursive(() =>
-    sized(
-      () => 5,
-      arb.Object(
-        arb.Null,
-        LongStr,
-        ShortStr,
-        Octet,
-        UShort,
-        ULong,
-        ULongLong,
-        Byte,
-        Short,
-        Long,
-        LongLong,
-        ExByte,
-        ExInt8,
-        ExShort,
-        ExInt16,
-        ExInt,
-        ExInt32,
-        ExLong,
-        ExInt64,
-        Bit,
-        Float,
-        Double,
-        FieldArray,
-        FieldTable,
-      ),
-    ),
-  ),
-);
+const FieldTable = label('table', recursive(() => sized(() => 5, arb.Object(
+  arb.Null, LongStr, ShortStr, Octet, UShort, ULong, ULongLong, Byte, Short, Long, LongLong,
+  ExByte, ExInt8, ExShort, ExInt16, ExInt, ExInt32, ExLong, ExInt64, Bit, Float, Double,
+  FieldArray, FieldTable,
+))));
 
 // Internal tests of our properties
 const domainProps = [
@@ -248,10 +166,7 @@ const defs = require('../lib/defs');
 function method(info) {
   const domain = sequence.apply(null, info.args.map(argtype));
   const names = info.args.map(name);
-  return label(
-    info.name,
-    transform((fieldVals) => ({id: info.id, fields: zipObject(fieldVals, names)}), domain),
-  );
+  return label(info.name, transform((fieldVals) => ({id: info.id, fields: zipObject(fieldVals, names)}), domain));
 }
 
 function properties(info) {
@@ -259,10 +174,7 @@ function properties(info) {
   types.unshift(ULongLong); // size
   const domain = sequence.apply(null, types);
   const names = info.args.map(name);
-  return label(
-    info.name,
-    transform((fieldVals) => ({id: info.id, size: fieldVals[0], fields: zipObject(fieldVals.slice(1), names)}), domain),
-  );
+  return label(info.name, transform((fieldVals) => ({id: info.id, size: fieldVals[0], fields: zipObject(fieldVals.slice(1), names)}), domain));
 }
 
 const methods = [];
