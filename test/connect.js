@@ -111,7 +111,8 @@ suite('Connect API', () => {
       p = 'guest';
     if (parts.auth) {
       const auth = parts.auth.split(':');
-      (u = auth[0]), (p = auth[1]);
+      u = auth[0];
+      p = auth[1];
     }
     connect(URL, {credentials: require('../lib/credentials').plain(u, p)}, kCallback(succeed(done), fail(done)));
   });
@@ -123,7 +124,8 @@ suite('Connect API', () => {
       p = 'guest';
     if (parts.auth) {
       const auth = parts.auth.split(':');
-      (u = auth[0]), (p = auth[1]);
+      u = auth[0];
+      p = auth[1];
     }
     connect(URL, {credentials: require('../lib/credentials').amqplain(u, p)}, kCallback(succeed(done), fail(done)));
   });

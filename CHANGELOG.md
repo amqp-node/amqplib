@@ -18,6 +18,7 @@
 - Replace string concatenation with modern template literals
 - Remove redundant 'use strict' directives as modules are automatically in strict mode
 - Refactor assignment-in-expression patterns to improve code clarity and readability
+- Replace comma operators with individual statements for clearer, more readable code
 - Replace Object.prototype.hasOwnProperty() with safer Object.hasOwn() method
 - Enforce strict equality checks (=== and !==) instead of loose equality (== and !=)
 - Replace global isNaN with Number.isNaN for safer type checking

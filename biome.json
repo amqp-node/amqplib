@@ -12,7 +12,7 @@
     "enabled": true,
     "rules": {
       "complexity": {
-        "noCommaOperator": "off",
+        "noCommaOperator": "error",
         "noUselessCatch": "error",
         "useArrowFunction": "error",
         "useOptionalChain": "off",
