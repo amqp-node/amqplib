@@ -35,7 +35,7 @@
   "javascript": {
     "formatter": {
       "arrowParentheses": "always",
-      "bracketSameLine": false,
+      "bracketSameLine": true,
       "bracketSpacing": false,
       "jsxQuoteStyle": "double",
       "quoteProperties": "asNeeded",
@@ -46,5 +46,13 @@
   },
   "files": {
     "includes": ["**/*.js", "!lib/defs.js"]
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["test/**/*.js"],
+      "formatter": {
+        "enabled": false
+      }
+    }
+  ]
 }
