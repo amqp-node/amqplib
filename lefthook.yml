@@ -2,6 +2,8 @@ pre-commit:
   commands:
     format:
       glob: "**/*.js"
+      exclude:
+        - "test/*.js"
       run: npx biome format {staged_files} --write
       stage_fixed: true
     lint:
