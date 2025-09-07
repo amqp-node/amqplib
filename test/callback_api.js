@@ -63,14 +63,14 @@ function waitForMessages(ch, q, k) {
   });
 }
 
-suite('connect', () => {
-  test('at all', (done) => {
+describe('connect', () => {
+  it('at all', (done) => {
     connect(doneCallback(done));
   });
 });
 
-suite('updateSecret', () => {
-  test('updateSecret', (done) => {
+describe('updateSecret', () => {
+  it('updateSecret', (done) => {
     connect(kCallback((c) => {
       c.updateSecret(Buffer.from('new secret'), 'no reason', doneCallback(done));
     }));
@@ -83,7 +83,7 @@ const channel_test_fn = (method) => {
       chfun = options;
       options = {};
     }
-    test(name, (done) => {
+    it(name, (done) => {
       connect(kCallback((c) => {
         c[method](options, kCallback((ch) => {
           chfun(ch, done);
@@ -95,7 +95,7 @@ const channel_test_fn = (method) => {
 const channel_test = channel_test_fn('createChannel');
 const confirm_channel_test = channel_test_fn('createConfirmChannel');
 
-suite('channel open', () => {
+describe('channel open', () => {
   channel_test('at all', (_ch, done) => {
     done();
   });
@@ -105,7 +105,7 @@ suite('channel open', () => {
   });
 });
 
-suite('assert, check, delete', () => {
+describe('assert, check, delete', () => {
   channel_test('assert, check, delete queue', (ch, done) => {
     ch.assertQueue(
       'test.cb.queue',
@@ -139,7 +139,7 @@ suite('assert, check, delete', () => {
   });
 });
 
-suite('bindings', () => {
+describe('bindings', () => {
   channel_test('bind queue', (ch, done) => {
     ch.assertQueue('test.cb.bindq', {}, kCallback((q) => {
       ch.assertExchange('test.cb.bindex', 'fanout',  {}, kCallback((ex) => {
@@ -157,7 +157,7 @@ suite('bindings', () => {
   });
 });
 
-suite('sending messages', () => {
+describe('sending messages', () => {
   channel_test('send to queue and consume noAck', (ch, done) => {
     const msg = randomString();
     ch.assertQueue('', { exclusive: true }, (e, q) => {
@@ -230,7 +230,7 @@ suite('sending messages', () => {
   });
 });
 
-suite('ConfirmChannel', () => {
+describe('ConfirmChannel', () => {
   confirm_channel_test('Receive confirmation', (ch, done) => {
     // An unroutable message, on the basis that you're not allowed a
     // queue with an empty name, and you can't make bindings to the
@@ -274,33 +274,19 @@ suite('ConfirmChannel', () => {
   });
 });
 
-suite('Error handling', () => {
-  /*
-  I don't like having to do this, but there appears to be something
-  broken about domains in Node.JS v0.8 and mocha. Apparently it has to
-  do with how mocha and domains hook into error propogation:
-  https://github.com/visionmedia/mocha/issues/513 (summary: domains in
-  Node.JS v0.8 don't prevent uncaughtException from firing, and that's
-  what mocha uses to detect .. an uncaught exception).
+describe('Error handling', () => {
 
-  Using domains with amqplib *does* work in practice in Node.JS v0.8:
-  that is, it's possible to throw an exception in a callback and deal
-  with it in the active domain, and thereby avoid it crashing the
-  program.
-   */
-  if (util.versionGreaterThan(process.versions.node, '0.8')) {
-    test('Throw error in connection open callback', (done) => {
-      const dom = domain.createDomain();
-      dom.on('error', failCallback(done));
-      connect(dom.bind((_err, _conn) => {
-        throw new Error('Spurious connection open callback error');
-      }));
-    });
-  }
+  it('Throw error in connection open callback', (done) => {
+    const dom = domain.createDomain();
+    dom.on('error', failCallback(done));
+    connect(dom.bind((_err, _conn) => {
+      throw new Error('Spurious connection open callback error');
+    }));
+  });
 
   // TODO: refactor {error_test, channel_test}
   function error_test(name, fun) {
-    test(name, (done) => {
+    it(name, (done) => {
       const dom = domain.createDomain();
       dom.run(() => {
         connect(kCallback((c) => {

@@ -34,7 +34,7 @@ function logErrors(c) {
 // channel, and returns a promise that is resolved on test success or
 // rejected on test failure.
 function channel_test(chmethod, name, chfun) {
-  test(name, (done) => {
+  it(name, (done) => {
     connect(URL)
       .then(logErrors)
       .then((c) => {
@@ -52,8 +52,8 @@ function channel_test(chmethod, name, chfun) {
 
 const chtest = channel_test.bind(null, 'createChannel');
 
-suite('connect', () => {
-  test('at all', (done) => {
+describe('connect', () => {
+  it('at all', (done) => {
     connect(URL)
       .then((c) => c.close())
       .then(succeed(done), fail(done));
@@ -62,8 +62,8 @@ suite('connect', () => {
   chtest('create channel', ignore); // i.e., just don't bork
 });
 
-suite('updateSecret', () => {
-  test('updateSecret', (done) => {
+describe('updateSecret', () => {
+  it('updateSecret', (done) => {
     connect().then((c) => {
       c.updateSecret(Buffer.from('new secret'), 'no reason')
         .then(succeed(done), fail(done))
@@ -77,7 +77,7 @@ suite('updateSecret', () => {
 const QUEUE_OPTS = { durable: false };
 const EX_OPTS = { durable: false };
 
-suite('assert, check, delete', () => {
+describe('assert, check, delete', () => {
   chtest('assert and check queue', (ch) =>
     ch.assertQueue('test.check-queue', QUEUE_OPTS).then((_qok) => ch.checkQueue('test.check-queue')),
   );
@@ -154,7 +154,7 @@ function waitForMessages(q, num) {
   return waitForQueue(q, (qok) => qok.messageCount >= min);
 }
 
-suite('sendMessage', () => {
+describe('sendMessage', () => {
   // publish different size messages
   chtest('send to queue and get from queue', (ch) => {
     const q = 'test.send-to-q';
@@ -187,7 +187,7 @@ suite('sendMessage', () => {
   });
 });
 
-suite('binding, consuming', () => {
+describe('binding, consuming', () => {
   // bind, publish, get
   chtest('route message', (ch) => {
     const ex = 'test.route-message';
@@ -498,7 +498,7 @@ suite('binding, consuming', () => {
 
 const confirmtest = channel_test.bind(null, 'createConfirmChannel');
 
-suite('confirms', () => {
+describe('confirms', () => {
   confirmtest('message is confirmed', (ch) => {
     const q = 'test.confirm-message';
     return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)]).then(() => ch.sendToQueue(q, Buffer.from('bleep')));

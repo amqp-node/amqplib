@@ -77,8 +77,8 @@ function open(ch) {
   })();
 }
 
-suite('channel open and close', () => {
-  test('open', channelTest(
+describe('channel open and close', () => {
+  it('open', channelTest(
     (ch, done) => {
       open(ch).then(succeed(done), fail(done));
     },
@@ -87,18 +87,18 @@ suite('channel open and close', () => {
     }
   ));
 
-  test('bad server', baseChannelTest((c, done) => {
-      const ch = new Channel(c);
-      open(ch).then(fail(done), succeed(done));
-    }, (send, wait, done) =>
-      wait(defs.ChannelOpen)()
-        .then((open) => {
-          send(defs.ChannelCloseOk, {}, open.channel);
-        })
-        .then(succeed(done), fail(done)))
+  it('bad server', baseChannelTest((c, done) => {
+    const ch = new Channel(c);
+    open(ch).then(fail(done), succeed(done));
+  }, (send, wait, done) =>
+    wait(defs.ChannelOpen)()
+      .then((open) => {
+        send(defs.ChannelCloseOk, {}, open.channel);
+      })
+      .then(succeed(done), fail(done)))
   );
 
-  test('open, close', channelTest((ch, done) => {
+  it('open, close', channelTest((ch, done) => {
     open(ch)
       .then(() => new Promise((resolve) => {
         ch.closeBecause('Bye', defs.constants.REPLY_SUCCESS, resolve);
@@ -112,7 +112,7 @@ suite('channel open and close', () => {
       .then(succeed(done), fail(done)))
   );
 
-  test('server close', channelTest((ch, done) => {
+  it('server close', channelTest((ch, done) => {
     ch.on('error', (error) => {
       assert.strictEqual(504, error.code);
       assert.strictEqual(0, error.classId);
@@ -130,7 +130,7 @@ suite('channel open and close', () => {
     wait(defs.ChannelCloseOk)().then(succeed(done), fail(done));
   }));
 
-  test('overlapping channel/server close', channelTest(
+  it('overlapping channel/server close', channelTest(
     (ch, done, conn) => {
       const both = latch(2, done);
       conn.on('error', succeed(both));
@@ -152,7 +152,7 @@ suite('channel open and close', () => {
         .then(succeed(done), fail(done));
   }));
 
-  test('double close', channelTest((ch, done) => {
+  it('double close', channelTest((ch, done) => {
     open(ch)
       .then(() => {
         ch.closeBecause('First close', defs.constants.REPLY_SUCCESS);
@@ -170,8 +170,8 @@ suite('channel open and close', () => {
   }));
 });
 
-suite('channel machinery', () => {
-  test('RPC', channelTest((ch, done) => {
+describe('channel machinery', () => {
+  it('RPC', channelTest((ch, done) => {
     const rpcLatch = latch(3, done);
     open(ch)
       .then(() => {
@@ -205,7 +205,7 @@ suite('channel machinery', () => {
         .then(succeed(done), fail(done));
   }));
 
-  test('Bad RPC', channelTest(
+  it('Bad RPC', channelTest(
     (ch, done) => {
       // We want to see the RPC rejected and the channel closed (with an
       // error)
@@ -236,7 +236,7 @@ suite('channel machinery', () => {
         .then(succeed(done), fail(done)),
   ));
 
-  test('RPC on closed channel', channelTest(
+  it('RPC on closed channel', channelTest(
     (ch, done) => {
       open(ch);
 
@@ -282,7 +282,7 @@ suite('channel machinery', () => {
     },
   ));
 
-  test('publish all < single chunk threshold', channelTest(
+  it('publish all < single chunk threshold', channelTest(
     (ch, done) => {
       open(ch)
         .then(() => {
@@ -307,37 +307,34 @@ suite('channel machinery', () => {
     },
   ));
 
-  test(
-    'publish content > single chunk threshold',
-    channelTest(
-      (ch, done) => {
-        open(ch);
-        completes(() => {
-          ch.sendMessage(
-            {
-              exchange: 'foo',
-              routingKey: 'bar',
-              mandatory: false,
-              immediate: false,
-              ticket: 0,
-            },
-            {},
-            Buffer.alloc(3000),
-          );
-        }, done);
-      }, (_send, wait, done, _ch) => {
-        wait(defs.BasicPublish)()
-          .then(wait(defs.BasicProperties))
-          .then(wait(undefined)) // content frame
-          .then((f) => {
-            assert.equal(3000, f.content.length);
-          })
-          .then(succeed(done), fail(done));
-      }
-    )
-  );
+  it('publish content > single chunk threshold', channelTest(
+    (ch, done) => {
+      open(ch);
+      completes(() => {
+        ch.sendMessage(
+          {
+            exchange: 'foo',
+            routingKey: 'bar',
+            mandatory: false,
+            immediate: false,
+            ticket: 0,
+          },
+          {},
+          Buffer.alloc(3000),
+        );
+      }, done);
+    }, (_send, wait, done, _ch) => {
+      wait(defs.BasicPublish)()
+        .then(wait(defs.BasicProperties))
+        .then(wait(undefined)) // content frame
+        .then((f) => {
+          assert.equal(3000, f.content.length);
+        })
+        .then(succeed(done), fail(done));
+    }
+  ));
 
-  test('publish method & headers > threshold', channelTest(
+  it('publish method & headers > threshold', channelTest(
     (ch, done) => {
       open(ch);
       completes(() => {
@@ -362,7 +359,7 @@ suite('channel machinery', () => {
     }
   ));
 
-  test('publish zero-length message', channelTest((ch, done) => {
+  it('publish zero-length message', channelTest((ch, done) => {
     open(ch);
     completes(() => {
       ch.sendMessage({
@@ -388,7 +385,7 @@ suite('channel machinery', () => {
       .then(succeed(done), fail(done));
   }));
 
-  test('delivery', channelTest((ch, done) => {
+  it('delivery', channelTest((ch, done) => {
     open(ch);
     ch.on('delivery', (m) => {
       completes(() => {
@@ -401,26 +398,23 @@ suite('channel machinery', () => {
     }, done);
   }));
 
-  test(
-    'zero byte msg',
-    channelTest(
-      (ch, done) => {
-        open(ch);
-        ch.on('delivery', (m) => {
-          completes(() => {
-            assert.deepEqual(Buffer.alloc(0), m.content);
-          }, done);
-        });
-      },
-      (send, _wait, done, ch) => {
+  it('zero byte msg', channelTest(
+    (ch, done) => {
+      open(ch);
+      ch.on('delivery', (m) => {
         completes(() => {
-          send(defs.BasicDeliver, DELIVER_FIELDS, ch, Buffer.from(''));
+          assert.deepEqual(Buffer.alloc(0), m.content);
         }, done);
-      },
-    ),
-  );
+      });
+    },
+    (send, _wait, done, ch) => {
+      completes(() => {
+        send(defs.BasicDeliver, DELIVER_FIELDS, ch, Buffer.from(''));
+      }, done);
+    }
+  ));
 
-  test('bad delivery', channelTest((ch, done) => {
+  it('bad delivery', channelTest((ch, done) => {
     const errorAndClose = latch(2, done);
     ch.on('error', (error) => {
       assert.strictEqual(505, error.code);
@@ -441,7 +435,7 @@ suite('channel machinery', () => {
       .then(succeed(done), fail(done));
   }));
 
-  test('bad content send', channelTest((ch, done) => {
+  it('bad content send', channelTest((ch, done) => {
     completes(() => {
       open(ch);
       assert.throws(() => {
@@ -452,7 +446,7 @@ suite('channel machinery', () => {
     done();
   }));
 
-  test('bad properties send', channelTest(
+  it('bad properties send', channelTest(
       (ch, done) => {
         completes(() => {
           open(ch);
@@ -467,7 +461,7 @@ suite('channel machinery', () => {
     ),
   );
 
-  test('bad consumer', channelTest((ch, done) => {
+  it('bad consumer', channelTest((ch, done) => {
     const errorAndClose = latch(2, done);
     ch.on('delivery', () => {
       throw new Error('I am a bad consumer');
@@ -489,7 +483,7 @@ suite('channel machinery', () => {
       .then(succeed(done), fail(done));
   }));
 
-  test('bad send in consumer', channelTest((ch, done) => {
+  it('bad send in consumer', channelTest((ch, done) => {
     const errorAndClose = latch(2, done);
     ch.on('close', succeed(errorAndClose));
     ch.on('error', (error) => {
@@ -515,7 +509,7 @@ suite('channel machinery', () => {
       .then(succeed(done), fail(done));
   }));
 
-  test('return', channelTest((ch, done) => {
+  it('return', channelTest((ch, done) => {
     ch.on('return', (m) => {
       completes(() => {
         assert.equal('barfoo', m.content.toString());
@@ -528,7 +522,7 @@ suite('channel machinery', () => {
     }, done);
   }));
 
-  test('cancel', channelTest((ch, done) => {
+  it('cancel', channelTest((ch, done) => {
     ch.on('cancel', (f) => {
       completes(() => {
         assert.equal('product of society', f.consumerTag);
@@ -545,7 +539,7 @@ suite('channel machinery', () => {
   }));
 
   function confirmTest(variety, Method) {
-    return test(`confirm ${variety}`, channelTest((ch, done) => {
+    return it(`confirm ${variety}`, channelTest((ch, done) => {
       ch.on(variety, (f) => {
         completes(() => {
           assert.equal(1, f.deliveryTag);
@@ -565,7 +559,7 @@ suite('channel machinery', () => {
   confirmTest('ack', defs.BasicAck);
   confirmTest('nack', defs.BasicNack);
 
-  test('out-of-order acks', channelTest((ch, done) => {
+  it('out-of-order acks', channelTest((ch, done) => {
     const allConfirms = latch(3, () => {
       completes(() => {
         assert.equal(0, ch.unconfirmed.length);
@@ -584,7 +578,7 @@ suite('channel machinery', () => {
     }, done);
   }));
 
-  test('not all out-of-order acks', channelTest((ch, done) => {
+  it('not all out-of-order acks', channelTest((ch, done) => {
     const allConfirms = latch(2, () => {
       completes(() => {
         assert.equal(1, ch.unconfirmed.length);

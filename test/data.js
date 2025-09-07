@@ -200,9 +200,9 @@ const domainProps = [
   [FieldArray, (a) => Array.isArray(a)],
 ];
 
-suite('Domains', () => {
+describe('Domains', () => {
   domainProps.forEach((p) => {
-    test(`${p[0]} domain`, forAll(p[0]).satisfy(p[1]).asTest({ times: 500 }));
+    it(`${p[0]} domain`, forAll(p[0]).satisfy(p[1]).asTest({ times: 500 }));
   });
 });
 

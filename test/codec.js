@@ -81,12 +81,12 @@ function bufferToArray(b) {
   return Array.prototype.slice.call(b);
 }
 
-suite('Implicit encodings', () => {
+describe('Implicit encodings', () => {
   testCases.forEach((tc) => {
     const name = tc[0];
     const val = tc[1];
     const expect = tc[2];
-    test(name, () => {
+    it(name, () => {
       const buffer = Buffer.alloc(1000);
       const size = codec.encodeTable(buffer, val, 0);
       const result = buffer.subarray(4, size);
@@ -115,7 +115,7 @@ function roundtrips(T) {
   return forAll(T).satisfy((v) => roundtrip_table({ value: v }));
 }
 
-suite('Roundtrip values', () => {
+describe('Roundtrip values', () => {
   [
     amqp.Octet,
     amqp.ShortStr,
@@ -137,7 +137,7 @@ suite('Roundtrip values', () => {
     amqp.FieldArray,
     amqp.FieldTable,
   ].forEach((T) => {
-    test(`${T.toString()} roundtrip`, roundtrips(T).asTest());
+    it(`${T.toString()} roundtrip`, roundtrips(T).asTest());
   });
 });
 
@@ -240,14 +240,14 @@ function roundtripProperties(Properties) {
   });
 }
 
-suite('Roundtrip methods', () => {
+describe('Roundtrip methods', () => {
   amqp.methods.forEach((Method) => {
-    test(`${Method.toString()} roundtrip`, roundtripMethod(Method).asTest());
+    it(`${Method.toString()} roundtrip`, roundtripMethod(Method).asTest());
   });
 });
 
-suite('Roundtrip properties', () => {
+describe('Roundtrip properties', () => {
   amqp.properties.forEach((Properties) => {
-    test(`${Properties.toString()} roundtrip`, roundtripProperties(Properties).asTest());
+    it(`${Properties.toString()} roundtrip`, roundtripProperties(Properties).asTest());
   });
 });
