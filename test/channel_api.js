@@ -105,13 +105,11 @@ suite('assert, check, delete', () => {
     return ch.assertExchange(ex, 'fanout', EX_OPTS).then(() => expectFail(ch.assertExchange(ex, 'direct', EX_OPTS)));
   });
 
-  chtest(
-    'channel break on publishing to non-exchange',
-    (ch) =>
-      new Promise((resolve) => {
-        ch.on('error', resolve);
-        ch.publish(randomString(), '', Buffer.from('foobar'));
-      }),
+  chtest('channel break on publishing to non-exchange', (ch) =>
+    new Promise((resolve) => {
+      ch.on('error', resolve);
+      ch.publish(randomString(), '', Buffer.from('foobar'));
+    })
   );
 
   chtest('delete queue', (ch) => {

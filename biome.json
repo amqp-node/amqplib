@@ -6,7 +6,8 @@
     "indentWidth": 2,
     "lineWidth": 140,
     "lineEnding": "lf",
-    "attributePosition": "auto"
+    "attributePosition": "auto",
+    "includes": ["**/*.js", "!test"]
   },
   "linter": {
     "enabled": true,
@@ -30,7 +31,8 @@
       "style": {
         "useSingleVarDeclarator": "error"
       }
-    }
+    },
+    "includes": ["**/*.js", "!lib/defs.js"]
   },
   "javascript": {
     "formatter": {
@@ -43,8 +45,5 @@
       "semicolons": "always",
       "trailingCommas": "all"
     }
-  },
-  "files": {
-    "includes": ["**/*.js", "!lib/defs.js"]
   }
 }

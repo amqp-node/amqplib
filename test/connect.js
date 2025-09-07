@@ -31,21 +31,25 @@ suite('Credentials', () => {
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'guest', 'guest', done);
   });
+
   test('usual user:pass', (done) => {
     const parts = urlparse('amqp://user:pass@localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'user', 'pass', done);
   });
+
   test('missing user', (done) => {
     const parts = urlparse('amqps://:password@localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, '', 'password', done);
   });
+
   test('missing password', (done) => {
     const parts = urlparse('amqps://username:@localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'username', '', done);
   });
+
   test('escaped colons', (done) => {
     const parts = urlparse('amqp://user%3Aname:pass%3Aword@localhost');
     const creds = credentialsFromUrl(parts);
