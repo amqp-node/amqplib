@@ -1,3 +1,4 @@
+const { describe, it } = require('node:test');
 const claire = require('claire');
 const { BitSet } = require('../lib/bitset');
 

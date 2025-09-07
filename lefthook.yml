@@ -10,3 +10,5 @@ pre-commit:
       glob: "**/*.js"
       run: npx biome lint {staged_files} --write
       stage_fixed: true
+    test:
+      run: npm test

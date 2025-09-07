@@ -16,16 +16,17 @@ error:
 	@exit 1
 
 test:
-	$(MOCHA) --check-leaks --exit test/
+	$(MOCHA) --check-leaks --exit --ignore test/**/*.test.js test/
+	node --test test/**/*.test.js
 
 test-all-nodejs:
 	for v in $(NODEJS_VERSIONS); \
 		do echo "-- Node version $$v --"; \
-		nave use $$v $(MOCHA) --exit -R progress test; \
+		nave use $$v $(MOCHA) --exit -R --ignore test/**/*.test.js progress test; \
 		done
 
 coverage: $(NYC)
-	$(NYC) --clean --reporter=lcov --reporter=text $(_MOCHA) --exit -R progress test/
+	$(NYC) --clean --reporter=lcov --reporter=text $(_MOCHA) --exit -R progress --ignore test/**/*.test.js test/
 	@echo "HTML report at file://$$(pwd)/coverage/lcov-report/index.html"
 
 lib/defs.js: clean bin/generate-defs test
