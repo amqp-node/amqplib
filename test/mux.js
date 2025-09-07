@@ -28,7 +28,7 @@ function readAllObjects(s, cb) {
   read();
 }
 
-test('single input', (done) => {
+it('single input', (done) => {
   const input = stream();
   const output = stream();
   input.on('end', () => {
@@ -54,7 +54,7 @@ test('single input', (done) => {
   input.end();
 });
 
-test('single input, resuming stream', (done) => {
+it('single input, resuming stream', (done) => {
   const input = stream();
   const output = stream();
   input.on('end', () => {
@@ -92,7 +92,7 @@ test('single input, resuming stream', (done) => {
   input.end();
 });
 
-test('two sequential inputs', (done) => {
+it('two sequential inputs', (done) => {
   const input1 = stream();
   const input2 = stream();
   const output = stream();
@@ -122,7 +122,7 @@ test('two sequential inputs', (done) => {
   });
 });
 
-test('two interleaved inputs', (done) => {
+it('two interleaved inputs', (done) => {
   const input1 = stream();
   const input2 = stream();
   const output = stream();
@@ -153,7 +153,7 @@ test('two interleaved inputs', (done) => {
   });
 });
 
-test('unpipe', (done) => {
+it('unpipe', (done) => {
   const input = stream();
   const output = stream();
   const mux = new Mux(output);
@@ -201,7 +201,7 @@ test('unpipe', (done) => {
   });
 });
 
-test('roundrobin', (done) => {
+it('roundrobin', (done) => {
   const input1 = stream();
   const input2 = stream();
   const output = stream();

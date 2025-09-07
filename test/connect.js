@@ -15,7 +15,7 @@ const URL = process.env.URL || 'amqp://localhost';
 
 const urlparse = require('url-parse');
 
-suite('Credentials', () => {
+describe('Credentials', () => {
   function checkCreds(creds, user, pass, done) {
     if (creds.mechanism !== 'PLAIN') {
       return done('expected mechanism PLAIN');
@@ -26,50 +26,50 @@ suite('Credentials', () => {
     done();
   }
 
-  test('no creds', (done) => {
+  it('no creds', (done) => {
     const parts = urlparse('amqp://localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'guest', 'guest', done);
   });
 
-  test('usual user:pass', (done) => {
+  it('usual user:pass', (done) => {
     const parts = urlparse('amqp://user:pass@localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'user', 'pass', done);
   });
 
-  test('missing user', (done) => {
+  it('missing user', (done) => {
     const parts = urlparse('amqps://:password@localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, '', 'password', done);
   });
 
-  test('missing password', (done) => {
+  it('missing password', (done) => {
     const parts = urlparse('amqps://username:@localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'username', '', done);
   });
 
-  test('escaped colons', (done) => {
+  it('escaped colons', (done) => {
     const parts = urlparse('amqp://user%3Aname:pass%3Aword@localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'user:name', 'pass:word', done);
   });
 });
 
-suite('Connect API', () => {
-  test('Connection refused', (done) => {
+describe('Connect API', () => {
+  it('Connection refused', (done) => {
     connect('amqp://localhost:23450', {}, kCallback(fail(done), succeed(done)));
   });
 
   // %% this ought to fail the promise, rather than throwing an error
-  test('bad URL', () => {
+  it('bad URL', () => {
     assert.throws(() => {
       connect('blurble');
     });
   });
 
-  test('wrongly typed open option', (done) => {
+  it('wrongly typed open option', (done) => {
     const url = require('node:url');
     const parts = url.parse(URL, true);
     const q = parts.query || {};
@@ -79,7 +79,7 @@ suite('Connect API', () => {
     connect(u, {}, kCallback(fail(done), succeed(done)));
   });
 
-  test('serverProperties', (done) => {
+  it('serverProperties', (done) => {
     const url = require('node:url');
     const parts = url.parse(URL, true);
     const config = parts.query || {};
@@ -92,7 +92,7 @@ suite('Connect API', () => {
     });
   });
 
-  test('using custom heartbeat option', (done) => {
+  it('using custom heartbeat option', (done) => {
     const url = require('node:url');
     const parts = url.parse(URL, true);
     const config = parts.query || {};
@@ -100,7 +100,7 @@ suite('Connect API', () => {
     connect(config, {}, kCallback(succeedIfAttributeEquals('heartbeat', 20, done), fail(done)));
   });
 
-  test('wrongly typed heartbeat option', (done) => {
+  it('wrongly typed heartbeat option', (done) => {
     const url = require('node:url');
     const parts = url.parse(URL, true);
     const config = parts.query || {};
@@ -108,7 +108,7 @@ suite('Connect API', () => {
     connect(config, {}, kCallback(fail(done), succeed(done)));
   });
 
-  test('using plain credentials', (done) => {
+  it('using plain credentials', (done) => {
     const url = require('node:url');
     const parts = url.parse(URL, true);
     let u = 'guest';
@@ -121,7 +121,7 @@ suite('Connect API', () => {
     connect(URL, { credentials: require('../lib/credentials').plain(u, p) }, kCallback(succeed(done), fail(done)));
   });
 
-  test('using amqplain credentials', (done) => {
+  it('using amqplain credentials', (done) => {
     const url = require('node:url');
     const parts = url.parse(URL, true);
     let u = 'guest';
@@ -134,7 +134,7 @@ suite('Connect API', () => {
     connect(URL, { credentials: require('../lib/credentials').amqplain(u, p) }, kCallback(succeed(done), fail(done)));
   });
 
-  test('ipv6', (done) => {
+  it('ipv6', (done) => {
     connect('amqp://[::1]', {}, (err, _connection) => {
       if (err) {
         return done(err);
@@ -143,7 +143,7 @@ suite('Connect API', () => {
     });
   });
 
-  test('using unsupported mechanism', (done) => {
+  it('using unsupported mechanism', (done) => {
     const creds = {
       mechanism: 'UNSUPPORTED',
       response: () => Buffer.from(''),
@@ -151,7 +151,7 @@ suite('Connect API', () => {
     connect(URL, { credentials: creds }, kCallback(fail(done), succeed(done)));
   });
 
-  test('with a given connection timeout', (done) => {
+  it('with a given connection timeout', (done) => {
     const timeoutServer = net.createServer(() => {}).listen(31991);
 
     connect('amqp://localhost:31991', { timeout: 50 }, (_err, val) => {
@@ -162,15 +162,15 @@ suite('Connect API', () => {
   });
 });
 
-suite('Errors on connect', () => {
+describe('Errors on connect', () => {
   let server;
-  teardown(() => {
+  afterEach(() => {
     if (server) {
       server.close();
     }
   });
 
-  test('closes underlying connection on authentication error', (done) => {
+  it('closes underlying connection on authentication error', (done) => {
     const bothDone = latch(2, done);
     server = net
       .createServer((socket) => {

@@ -26,8 +26,8 @@ const HB = Buffer.from([
   defs.constants.FRAME_END,
 ]);
 
-suite('Explicit parsing', () => {
-  test('Parse heartbeat', () => {
+describe('Explicit parsing', () => {
+  it('Parse heartbeat', () => {
     const input = inputs();
     const frames = new Frames(input);
     input.write(HB);
@@ -35,7 +35,7 @@ suite('Explicit parsing', () => {
     assert(!frames.recvFrame());
   });
 
-  test('Parse partitioned', () => {
+  it('Parse partitioned', () => {
     const input = inputs();
     const frames = new Frames(input);
     input.write(HB.subarray(0, 3));
@@ -46,7 +46,7 @@ suite('Explicit parsing', () => {
   });
 
   function testBogusFrame(name, bytes) {
-    test(name, (done) => {
+    it(name, (done) => {
       const input = inputs();
       const frames = new Frames(input);
       frames.frameMax = 5; //for the max frame test
@@ -102,7 +102,7 @@ const assertEqualModuloDefaults = require('./codec').assertEqualModuloDefaults;
 
 const Trace = label('frame trace', repeat(choice.apply(choice, amqp.methods)));
 
-suite('Parsing', () => {
+describe('Parsing', () => {
   function testPartitioning(partition) {
     return forAll(Trace)
       .satisfy((t) => {
@@ -138,11 +138,11 @@ suite('Parsing', () => {
       .asTest({ times: 20 });
   }
 
-  test('Parse trace of methods', testPartitioning((bufs) => bufs));
+  it('Parse trace of methods', testPartitioning((bufs) => bufs));
 
-  test("Parse concat'd methods", testPartitioning((bufs) => [Buffer.concat(bufs)]));
+  it("Parse concat'd methods", testPartitioning((bufs) => [Buffer.concat(bufs)]));
 
-  test('Parse partitioned methods', testPartitioning((bufs) => {
+  it('Parse partitioned methods', testPartitioning((bufs) => {
     const full = Buffer.concat(bufs);
     const onethird = Math.floor(full.length / 3);
     const twothirds = 2 * onethird;
@@ -166,8 +166,8 @@ const Content = transform(
   sequence(amqp.methods['BasicDeliver'], amqp.properties['BasicProperties'], Body),
 );
 
-suite('Content framing', () => {
-  test('Adhere to frame max', forAll(Content, FrameMax)
+describe('Content framing', () => {
+  it('Adhere to frame max', forAll(Content, FrameMax)
     .satisfy((content, max) => {
       const input = inputs();
       const frames = new Frames(input);
