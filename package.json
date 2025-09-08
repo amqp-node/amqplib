@@ -26,6 +26,7 @@
   "scripts": {
     "test": "make test",
     "test:node": "node --test test/**/*.test.js",
+    "test:only": "node --test --test-only test/**/*.test.js",
     "format": "biome format . --write",
     "lint": "biome lint --max-diagnostics=1000 ."
   },

@@ -173,22 +173,24 @@ function versionGreaterThan(actual, spec) {
   return false;
 }
 
-describe('versionGreaterThan', () => {
-  it('full spec', () => {
-    assert(versionGreaterThan('0.8.26', '0.6.12'));
-    assert(versionGreaterThan('0.8.26', '0.8.21'));
-  });
+if (global.describe) {
+  describe('versionGreaterThan', () => {
+    it('full spec', () => {
+      assert(versionGreaterThan('0.8.26', '0.6.12'));
+      assert(versionGreaterThan('0.8.26', '0.8.21'));
+    });
 
-  it('partial spec', () => {
-    assert(versionGreaterThan('0.9.12', '0.8'));
-  });
+    it('partial spec', () => {
+      assert(versionGreaterThan('0.9.12', '0.8'));
+    });
 
-  it('not greater', () => {
-    assert(!versionGreaterThan('0.8.12', '0.8.26'));
-    assert(!versionGreaterThan('0.6.2', '0.6.12'));
-    assert(!versionGreaterThan('0.8.29', '0.8'));
+    it('not greater', () => {
+      assert(!versionGreaterThan('0.8.12', '0.8.26'));
+      assert(!versionGreaterThan('0.6.2', '0.6.12'));
+      assert(!versionGreaterThan('0.8.29', '0.8'));
+    });
   });
-});
+}
 
 module.exports = {
   socketPair: socketPair,
