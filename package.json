@@ -9,7 +9,7 @@
     "url": "git+https://github.com/amqp-node/amqplib.git"
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "dependencies": {
     "buffer-more-ints": "~1.0.0",
@@ -25,7 +25,8 @@
   },
   "scripts": {
     "test": "make test",
-    "format": "biome format . --write"
+    "format": "biome format . --write",
+    "lint": "biome lint ."
   },
   "keywords": [
     "AMQP",
