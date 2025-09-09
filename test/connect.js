@@ -1,21 +1,21 @@
 'use strict';
 
-var connect = require('../lib/connect').connect;
-var credentialsFromUrl = require('../lib/connect').credentialsFromUrl;
-var defs = require('../lib/defs');
-var assert = require('assert');
-var util = require('./util');
-var net = require('net');
-var fail = util.fail,
+const connect = require('../lib/connect').connect;
+const credentialsFromUrl = require('../lib/connect').credentialsFromUrl;
+const defs = require('../lib/defs');
+const assert = require('assert');
+const util = require('./util');
+const net = require('net');
+const fail = util.fail,
   succeed = util.succeed,
   latch = util.latch,
   kCallback = util.kCallback,
   succeedIfAttributeEquals = util.succeedIfAttributeEquals;
-var format = require('util').format;
+const format = require('util').format;
 
-var URL = process.env.URL || 'amqp://localhost';
+const URL = process.env.URL || 'amqp://localhost';
 
-var urlparse = require('url-parse');
+const urlparse = require('url-parse');
 
 suite('Credentials', function () {
   function checkCreds(creds, user, pass, done) {
@@ -29,28 +29,28 @@ suite('Credentials', function () {
   }
 
   test('no creds', function (done) {
-    var parts = urlparse('amqp://localhost');
-    var creds = credentialsFromUrl(parts);
+    const parts = urlparse('amqp://localhost');
+    const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'guest', 'guest', done);
   });
   test('usual user:pass', function (done) {
-    var parts = urlparse('amqp://user:pass@localhost');
-    var creds = credentialsFromUrl(parts);
+    const parts = urlparse('amqp://user:pass@localhost');
+    const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'user', 'pass', done);
   });
   test('missing user', function (done) {
-    var parts = urlparse('amqps://:password@localhost');
-    var creds = credentialsFromUrl(parts);
+    const parts = urlparse('amqps://:password@localhost');
+    const creds = credentialsFromUrl(parts);
     checkCreds(creds, '', 'password', done);
   });
   test('missing password', function (done) {
-    var parts = urlparse('amqps://username:@localhost');
-    var creds = credentialsFromUrl(parts);
+    const parts = urlparse('amqps://username:@localhost');
+    const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'username', '', done);
   });
   test('escaped colons', function (done) {
-    var parts = urlparse('amqp://user%3Aname:pass%3Aword@localhost');
-    var creds = credentialsFromUrl(parts);
+    const parts = urlparse('amqp://user%3Aname:pass%3Aword@localhost');
+    const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'user:name', 'pass:word', done);
   });
 });
@@ -68,19 +68,19 @@ suite('Connect API', function () {
   });
 
   test('wrongly typed open option', function (done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
-    var q = parts.query || {};
+    const url = require('url');
+    const parts = url.parse(URL, true);
+    const q = parts.query || {};
     q.frameMax = 'NOT A NUMBER';
     parts.query = q;
-    var u = url.format(parts);
+    const u = url.format(parts);
     connect(u, {}, kCallback(fail(done), succeed(done)));
   });
 
   test('serverProperties', function (done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
-    var config = parts.query || {};
+    const url = require('url');
+    const parts = url.parse(URL, true);
+    const config = parts.query || {};
     connect(config, {}, function (err, connection) {
       if (err) {
         return done(err);
@@ -91,40 +91,40 @@ suite('Connect API', function () {
   });
 
   test('using custom heartbeat option', function (done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
-    var config = parts.query || {};
+    const url = require('url');
+    const parts = url.parse(URL, true);
+    const config = parts.query || {};
     config.heartbeat = 20;
     connect(config, {}, kCallback(succeedIfAttributeEquals('heartbeat', 20, done), fail(done)));
   });
 
   test('wrongly typed heartbeat option', function (done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
-    var config = parts.query || {};
+    const url = require('url');
+    const parts = url.parse(URL, true);
+    const config = parts.query || {};
     config.heartbeat = 'NOT A NUMBER';
     connect(config, {}, kCallback(fail(done), succeed(done)));
   });
 
   test('using plain credentials', function (done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
-    var u = 'guest',
+    const url = require('url');
+    const parts = url.parse(URL, true);
+    let u = 'guest',
       p = 'guest';
     if (parts.auth) {
-      var auth = parts.auth.split(':');
+      const auth = parts.auth.split(':');
       (u = auth[0]), (p = auth[1]);
     }
     connect(URL, {credentials: require('../lib/credentials').plain(u, p)}, kCallback(succeed(done), fail(done)));
   });
 
   test('using amqplain credentials', function (done) {
-    var url = require('url');
-    var parts = url.parse(URL, true);
-    var u = 'guest',
+    const url = require('url');
+    const parts = url.parse(URL, true);
+    let u = 'guest',
       p = 'guest';
     if (parts.auth) {
-      var auth = parts.auth.split(':');
+      const auth = parts.auth.split(':');
       (u = auth[0]), (p = auth[1]);
     }
     connect(URL, {credentials: require('../lib/credentials').amqplain(u, p)}, kCallback(succeed(done), fail(done)));
@@ -140,7 +140,7 @@ suite('Connect API', function () {
   });
 
   test('using unsupported mechanism', function (done) {
-    var creds = {
+    const creds = {
       mechanism: 'UNSUPPORTED',
       response: function () {
         return Buffer.from('');
@@ -150,7 +150,7 @@ suite('Connect API', function () {
   });
 
   test('with a given connection timeout', function (done) {
-    var timeoutServer = net.createServer(function () {}).listen(31991);
+    const timeoutServer = net.createServer(function () {}).listen(31991);
 
     connect('amqp://localhost:31991', {timeout: 50}, function (_err, val) {
       timeoutServer.close();
@@ -161,7 +161,7 @@ suite('Connect API', function () {
 });
 
 suite('Errors on connect', function () {
-  var server;
+  let server;
   teardown(function () {
     if (server) {
       server.close();
@@ -169,7 +169,7 @@ suite('Errors on connect', function () {
   });
 
   test('closes underlying connection on authentication error', function (done) {
-    var bothDone = latch(2, done);
+    const bothDone = latch(2, done);
     server = net
       .createServer(function (socket) {
         socket.once('data', function (protocolHeader) {

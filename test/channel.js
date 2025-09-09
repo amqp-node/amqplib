@@ -2,26 +2,26 @@
 
 'use strict';
 
-var assert = require('assert');
-var promisify = require('util').promisify;
-var Channel = require('../lib/channel').Channel;
-var Connection = require('../lib/connection').Connection;
-var util = require('./util');
-var succeed = util.succeed,
+const assert = require('assert');
+const promisify = require('util').promisify;
+const Channel = require('../lib/channel').Channel;
+const Connection = require('../lib/connection').Connection;
+const util = require('./util');
+const succeed = util.succeed,
   fail = util.fail,
   latch = util.latch;
-var completes = util.completes;
-var defs = require('../lib/defs');
-var conn_handshake = require('./connection').connection_handshake;
-var OPEN_OPTS = require('./connection').OPEN_OPTS;
+const completes = util.completes;
+const defs = require('../lib/defs');
+const conn_handshake = require('./connection').connection_handshake;
+const OPEN_OPTS = require('./connection').OPEN_OPTS;
 
-var LOG_ERRORS = process.env.LOG_ERRORS;
+const LOG_ERRORS = process.env.LOG_ERRORS;
 
 function baseChannelTest(client, server) {
   return function (done) {
-    var bothDone = latch(2, done);
-    var pair = util.socketPair();
-    var c = new Connection(pair.client);
+    const bothDone = latch(2, done);
+    const pair = util.socketPair();
+    const c = new Connection(pair.client);
 
     if (LOG_ERRORS) c.on('error', console.warn);
 
@@ -42,7 +42,7 @@ function baseChannelTest(client, server) {
 function channelTest(client, server) {
   return baseChannelTest(
     function (conn, done) {
-      var ch = new Channel(conn);
+      const ch = new Channel(conn);
       if (LOG_ERRORS) ch.on('error', console.warn);
       client(ch, done, conn);
     },
@@ -66,7 +66,7 @@ function channel_handshake(send, wait) {
 }
 
 // fields for deliver and publish and get-ok
-var DELIVER_FIELDS = {
+const DELIVER_FIELDS = {
   consumerTag: 'fake',
   deliveryTag: 1,
   redelivered: false,
@@ -100,7 +100,7 @@ suite('channel open and close', function () {
     'bad server',
     baseChannelTest(
       function (c, done) {
-        var ch = new Channel(c);
+        const ch = new Channel(c);
         open(ch).then(fail(done), succeed(done));
       },
       function (send, wait, done) {
@@ -167,7 +167,7 @@ suite('channel open and close', function () {
     'overlapping channel/server close',
     channelTest(
       function (ch, done, conn) {
-        var both = latch(2, done);
+        const both = latch(2, done);
         conn.on('error', succeed(both));
         ch.on('close', succeed(both));
         open(ch).then(function () {
@@ -224,7 +224,7 @@ suite('channel machinery', function () {
     'RPC',
     channelTest(
       function (ch, done) {
-        var rpcLatch = latch(3, done);
+        const rpcLatch = latch(3, done);
         open(ch)
           .then(function () {
             function wheeboom(err, _f) {
@@ -232,7 +232,7 @@ suite('channel machinery', function () {
               else rpcLatch();
             }
 
-            var fields = {
+            const fields = {
               prefetchCount: 10,
               prefetchSize: 0,
               global: false,
@@ -266,7 +266,7 @@ suite('channel machinery', function () {
       function (ch, done) {
         // We want to see the RPC rejected and the channel closed (with an
         // error)
-        var errLatch = latch(2, done);
+        const errLatch = latch(2, done);
         ch.on('error', function (error) {
           assert.strictEqual(505, error.code);
           assert.strictEqual(60, error.classId);
@@ -301,7 +301,7 @@ suite('channel machinery', function () {
       function (ch, done) {
         open(ch);
 
-        var close = new Promise(function (resolve) {
+        const close = new Promise(function (resolve) {
           ch.on('error', function (error) {
             assert.strictEqual(504, error.code);
             assert.strictEqual(0, error.classId);
@@ -317,11 +317,11 @@ suite('channel machinery', function () {
           };
         }
 
-        var fail1 = new Promise(function (resolve, reject) {
+        const fail1 = new Promise(function (resolve, reject) {
           return ch._rpc(defs.BasicRecover, {requeue: true}, defs.BasicRecoverOk, failureCb(resolve, reject));
         });
 
-        var fail2 = new Promise(function (resolve, reject) {
+        const fail2 = new Promise(function (resolve, reject) {
           return ch._rpc(defs.BasicRecover, {requeue: true}, defs.BasicRecoverOk, failureCb(resolve, reject));
         });
 
@@ -526,7 +526,7 @@ suite('channel machinery', function () {
     'bad delivery',
     channelTest(
       function (ch, done) {
-        var errorAndClose = latch(2, done);
+        const errorAndClose = latch(2, done);
         ch.on('error', function (error) {
           assert.strictEqual(505, error.code);
           assert.strictEqual(60, error.classId);
@@ -587,7 +587,7 @@ suite('channel machinery', function () {
     'bad consumer',
     channelTest(
       function (ch, done) {
-        var errorAndClose = latch(2, done);
+        const errorAndClose = latch(2, done);
         ch.on('delivery', function () {
           throw new Error('I am a bad consumer');
         });
@@ -615,7 +615,7 @@ suite('channel machinery', function () {
     'bad send in consumer',
     channelTest(
       function (ch, done) {
-        var errorAndClose = latch(2, done);
+        const errorAndClose = latch(2, done);
         ch.on('close', succeed(errorAndClose));
         ch.on('error', function (error) {
           assert.strictEqual(541, error.code);
@@ -723,7 +723,7 @@ suite('channel machinery', function () {
     'out-of-order acks',
     channelTest(
       function (ch, done) {
-        var allConfirms = latch(3, function () {
+        const allConfirms = latch(3, function () {
           completes(function () {
             assert.equal(0, ch.unconfirmed.length);
             assert.equal(4, ch.lwm);
@@ -748,7 +748,7 @@ suite('channel machinery', function () {
     'not all out-of-order acks',
     channelTest(
       function (ch, done) {
-        var allConfirms = latch(2, function () {
+        const allConfirms = latch(2, function () {
           completes(function () {
             assert.equal(1, ch.unconfirmed.length);
             assert.equal(3, ch.lwm);

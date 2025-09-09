@@ -1,21 +1,21 @@
 'use strict';
 
-var assert = require('assert');
-var Mux = require('../lib/mux').Mux;
-var PassThrough = require('stream').PassThrough;
+const assert = require('assert');
+const Mux = require('../lib/mux').Mux;
+const PassThrough = require('stream').PassThrough;
 
-var latch = require('./util').latch;
-var schedule = require('./util').schedule;
+const latch = require('./util').latch;
+const schedule = require('./util').schedule;
 
 function stream() {
   return new PassThrough({objectMode: true});
 }
 
 function readAllObjects(s, cb) {
-  var objs = [];
+  const objs = [];
 
   function read() {
-    var v = s.read();
+    let v = s.read();
     while (v !== null) {
       objs.push(v);
       v = s.read();
@@ -31,16 +31,16 @@ function readAllObjects(s, cb) {
 }
 
 test('single input', function (done) {
-  var input = stream();
-  var output = stream();
+  const input = stream();
+  const output = stream();
   input.on('end', function () {
     output.end();
   });
 
-  var mux = new Mux(output);
+  const mux = new Mux(output);
   mux.pipeFrom(input);
 
-  var data = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const data = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   // not 0, it's treated specially by PassThrough for some reason. By
   // 'specially' I mean it breaks the stream. See e.g.,
   // https://github.com/isaacs/readable-stream/pull/55
@@ -57,22 +57,22 @@ test('single input', function (done) {
 });
 
 test('single input, resuming stream', function (done) {
-  var input = stream();
-  var output = stream();
+  const input = stream();
+  const output = stream();
   input.on('end', function () {
     output.end();
   });
 
-  var mux = new Mux(output);
+  const mux = new Mux(output);
   mux.pipeFrom(input);
 
   // Streams might be blocked and become readable again, simulate this
   // using a special read function and a marker
-  var data = [1, 2, 3, 4, 'skip', 6, 7, 8, 9];
+  const data = [1, 2, 3, 4, 'skip', 6, 7, 8, 9];
 
-  var oldRead = input.read;
+  const oldRead = input.read;
   input.read = function (size) {
-    var val = oldRead.call(input, size);
+    const val = oldRead.call(input, size);
 
     if (val === 'skip') {
       input.emit('readable');
@@ -95,14 +95,14 @@ test('single input, resuming stream', function (done) {
 });
 
 test('two sequential inputs', function (done) {
-  var input1 = stream();
-  var input2 = stream();
-  var output = stream();
-  var mux = new Mux(output);
+  const input1 = stream();
+  const input2 = stream();
+  const output = stream();
+  const mux = new Mux(output);
   mux.pipeFrom(input1);
   mux.pipeFrom(input2);
 
-  var data = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const data = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   data.forEach(function (v) {
     input1.write(v);
   });
@@ -125,20 +125,20 @@ test('two sequential inputs', function (done) {
 });
 
 test('two interleaved inputs', function (done) {
-  var input1 = stream();
-  var input2 = stream();
-  var output = stream();
-  var mux = new Mux(output);
+  const input1 = stream();
+  const input2 = stream();
+  const output = stream();
+  const mux = new Mux(output);
   mux.pipeFrom(input1);
   mux.pipeFrom(input2);
 
-  var endLatch = latch(2, function () {
+  const endLatch = latch(2, function () {
     output.end();
   });
   input1.on('end', endLatch);
   input2.on('end', endLatch);
 
-  var data = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const data = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   data.forEach(function (v) {
     input1.write(v);
   });
@@ -156,12 +156,12 @@ test('two interleaved inputs', function (done) {
 });
 
 test('unpipe', function (done) {
-  var input = stream();
-  var output = stream();
-  var mux = new Mux(output);
+  const input = stream();
+  const output = stream();
+  const mux = new Mux(output);
 
-  var pipedData = [1, 2, 3, 4, 5];
-  var unpipedData = [6, 7, 8, 9];
+  const pipedData = [1, 2, 3, 4, 5];
+  const unpipedData = [6, 7, 8, 9];
 
   mux.pipeFrom(input);
 
@@ -180,7 +180,7 @@ test('unpipe', function (done) {
         input.end();
         schedule(function () {
           // exhaust so that 'end' fires
-          var v;
+          let v;
           while ((v = input.read()));
         });
       });
@@ -202,27 +202,27 @@ test('unpipe', function (done) {
 });
 
 test('roundrobin', function (done) {
-  var input1 = stream();
-  var input2 = stream();
-  var output = stream();
-  var mux = new Mux(output);
+  const input1 = stream();
+  const input2 = stream();
+  const output = stream();
+  const mux = new Mux(output);
 
   mux.pipeFrom(input1);
   mux.pipeFrom(input2);
 
-  var endLatch = latch(2, function () {
+  const endLatch = latch(2, function () {
     output.end();
   });
   input1.on('end', endLatch);
   input2.on('end', endLatch);
 
-  var ones = [1, 1, 1, 1, 1];
+  const ones = [1, 1, 1, 1, 1];
   ones.forEach(function (v) {
     input1.write(v);
   });
   input1.end();
 
-  var twos = [2, 2, 2, 2, 2];
+  const twos = [2, 2, 2, 2, 2];
   twos.forEach(function (v) {
     input2.write(v);
   });

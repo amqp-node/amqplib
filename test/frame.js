@@ -1,13 +1,13 @@
 'use strict';
 
-var assert = require('assert');
-var connection = require('../lib/connection');
-var Frames = connection.Connection;
-var HEARTBEAT = require('../lib/frame').HEARTBEAT;
-var Stream = require('stream');
-var PassThrough = Stream.PassThrough;
+const assert = require('assert');
+const connection = require('../lib/connection');
+const Frames = connection.Connection;
+const HEARTBEAT = require('../lib/frame').HEARTBEAT;
+const Stream = require('stream');
+const PassThrough = Stream.PassThrough;
 
-var defs = require('../lib/defs');
+const defs = require('../lib/defs');
 
 // We'll need to supply a stream which we manipulate ourselves
 
@@ -17,7 +17,7 @@ function inputs() {
   return new PassThrough({objectMode: true});
 }
 
-var HB = Buffer.from([
+const HB = Buffer.from([
   defs.constants.FRAME_HEARTBEAT,
   0,
   0, // channel 0
@@ -30,16 +30,16 @@ var HB = Buffer.from([
 
 suite('Explicit parsing', function () {
   test('Parse heartbeat', function () {
-    var input = inputs();
-    var frames = new Frames(input);
+    const input = inputs();
+    const frames = new Frames(input);
     input.write(HB);
     assert(frames.recvFrame() === HEARTBEAT);
     assert(!frames.recvFrame());
   });
 
   test('Parse partitioned', function () {
-    var input = inputs();
-    var frames = new Frames(input);
+    const input = inputs();
+    const frames = new Frames(input);
     input.write(HB.subarray(0, 3));
     assert(!frames.recvFrame());
     input.write(HB.subarray(3));
@@ -49,8 +49,8 @@ suite('Explicit parsing', function () {
 
   function testBogusFrame(name, bytes) {
     test(name, function (done) {
-      var input = inputs();
-      var frames = new Frames(input);
+      const input = inputs();
+      const frames = new Frames(input);
       frames.frameMax = 5; //for the max frame test
       input.write(Buffer.from(bytes));
       frames.step(function (err, _frame) {
@@ -90,28 +90,28 @@ suite('Explicit parsing', function () {
 
 // Now for a bit more fun.
 
-var amqp = require('./data');
-var claire = require('claire');
-var choice = claire.choice;
-var forAll = claire.forAll;
-var repeat = claire.repeat;
-var label = claire.label;
-var sequence = claire.sequence;
-var transform = claire.transform;
-var sized = claire.sized;
+const amqp = require('./data');
+const claire = require('claire');
+const choice = claire.choice;
+const forAll = claire.forAll;
+const repeat = claire.repeat;
+const label = claire.label;
+const sequence = claire.sequence;
+const transform = claire.transform;
+const sized = claire.sized;
 
-var assertEqualModuloDefaults = require('./codec').assertEqualModuloDefaults;
+const assertEqualModuloDefaults = require('./codec').assertEqualModuloDefaults;
 
-var Trace = label('frame trace', repeat(choice.apply(choice, amqp.methods)));
+const Trace = label('frame trace', repeat(choice.apply(choice, amqp.methods)));
 
 suite('Parsing', function () {
   function testPartitioning(partition) {
     return forAll(Trace)
       .satisfy(function (t) {
-        var bufs = [];
-        var input = inputs();
-        var frames = new Frames(input);
-        var i = 0,
+        const bufs = [];
+        const input = inputs();
+        const frames = new Frames(input);
+        let i = 0,
           ex;
         frames.accept = function (f) {
           // A minor hack to make sure we get the assertion exception;
@@ -157,24 +157,24 @@ suite('Parsing', function () {
   test(
     'Parse partitioned methods',
     testPartitioning(function (bufs) {
-      var full = Buffer.concat(bufs);
-      var onethird = Math.floor(full.length / 3);
-      var twothirds = 2 * onethird;
+      const full = Buffer.concat(bufs);
+      const onethird = Math.floor(full.length / 3);
+      const twothirds = 2 * onethird;
       return [full.subarray(0, onethird), full.subarray(onethird, twothirds), full.subarray(twothirds)];
     }),
   );
 });
 
-var FRAME_MAX_MAX = 4096 * 4;
-var FRAME_MAX_MIN = 4096;
+const FRAME_MAX_MAX = 4096 * 4;
+const FRAME_MAX_MIN = 4096;
 
-var FrameMax = amqp.rangeInt('frame max', FRAME_MAX_MIN, FRAME_MAX_MAX);
+const FrameMax = amqp.rangeInt('frame max', FRAME_MAX_MIN, FRAME_MAX_MAX);
 
-var Body = sized(function (_n) {
+const Body = sized(function (_n) {
   return Math.floor(Math.random() * FRAME_MAX_MAX);
 }, repeat(amqp.Octet));
 
-var Content = transform(
+const Content = transform(
   function (args) {
     return {
       method: args[0].fields,
@@ -190,11 +190,11 @@ suite('Content framing', function () {
     'Adhere to frame max',
     forAll(Content, FrameMax)
       .satisfy(function (content, max) {
-        var input = inputs();
-        var frames = new Frames(input);
+        const input = inputs();
+        const frames = new Frames(input);
         frames.frameMax = max;
         frames.sendMessage(0, defs.BasicDeliver, content.method, defs.BasicProperties, content.header, content.body);
-        var f,
+        let f,
           _i = 0,
           largest = 0;
         while ((f = input.read())) {

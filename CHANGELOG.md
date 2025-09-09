@@ -8,6 +8,7 @@
 - Add npm format script for manual code formatting
 - Enable noUnusedFunctionParameters lint rule and fix all violations
 - Enable noUnusedVariables lint rule and remove all unused variables from codebase
+- Replace all var declarations with let/const for modern JavaScript standards
 
 ## v0.10.9
 - Add support for IPv6 urls

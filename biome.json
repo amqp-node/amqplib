@@ -22,10 +22,10 @@
       "correctness": {
         "noUnusedFunctionParameters": "error",
         "noUnusedVariables": "error",
-        "noInnerDeclarations": "off",
+        "noInnerDeclarations": "error",
         "useParseIntRadix": "off",
         "noSwitchDeclarations": "off",
-        "noInvalidUseBeforeDeclaration": "off",
+        "noInvalidUseBeforeDeclaration": "error",
         "noPrecisionLoss": "off"
       },
       "style": {
@@ -42,7 +42,8 @@
         "noGlobalIsNan": "off",
         "noRedeclare": "off",
         "noGlobalIsFinite": "off",
-        "noPrototypeBuiltins": "off"
+        "noPrototypeBuiltins": "off",
+        "noVar": "error"
       }
     }
   },

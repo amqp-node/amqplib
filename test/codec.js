@@ -1,16 +1,16 @@
 'use strict';
 
-var codec = require('../lib/codec');
-var defs = require('../lib/defs');
-var assert = require('assert');
-var ints = require('buffer-more-ints');
-var C = require('claire');
-var forAll = C.forAll;
+const codec = require('../lib/codec');
+const defs = require('../lib/defs');
+const assert = require('assert');
+const ints = require('buffer-more-ints');
+const C = require('claire');
+const forAll = C.forAll;
 
 // These just test known encodings; to generate the answers I used
 // RabbitMQ's binary generator module.
 
-var testCases = [
+const testCases = [
   // integers
   ['byte', {byte: 112}, [4, 98, 121, 116, 101, 98, 112]],
   ['byte max value', {byte: 127}, [4, 98, 121, 116, 101, 98, 127]],
@@ -81,13 +81,13 @@ function bufferToArray(b) {
 
 suite('Implicit encodings', function () {
   testCases.forEach(function (tc) {
-    var name = tc[0],
+    const name = tc[0],
       val = tc[1],
       expect = tc[2];
     test(name, function () {
-      var buffer = Buffer.alloc(1000);
-      var size = codec.encodeTable(buffer, val, 0);
-      var result = buffer.subarray(4, size);
+      const buffer = Buffer.alloc(1000);
+      const size = codec.encodeTable(buffer, val, 0);
+      const result = buffer.subarray(4, size);
       assert.deepEqual(expect, bufferToArray(result));
     });
   });
@@ -95,12 +95,12 @@ suite('Implicit encodings', function () {
 
 // Whole frames
 
-var amqp = require('./data');
+const amqp = require('./data');
 
 function roundtrip_table(t) {
-  var buf = Buffer.alloc(4096);
-  var size = codec.encodeTable(buf, t, 0);
-  var decoded = codec.decodeFields(buf.subarray(4, size)); // ignore the length-prefix
+  const buf = Buffer.alloc(4096);
+  const size = codec.encodeTable(buf, t, 0);
+  const decoded = codec.decodeFields(buf.subarray(4, size)); // ignore the length-prefix
   try {
     assert.deepEqual(removeExplicitTypes(t), decoded);
   } catch {
@@ -151,8 +151,8 @@ function removeExplicitTypes(input) {
         return null;
       }
       if (Array.isArray(input)) {
-        var newArr = [];
-        for (var i = 0; i < input.length; i++) {
+        const newArr = [];
+        for (let i = 0; i < input.length; i++) {
           newArr[i] = removeExplicitTypes(input[i]);
         }
         return newArr;
@@ -166,8 +166,8 @@ function removeExplicitTypes(input) {
         case 'float':
           return input;
         case undefined:
-          var newObj = {};
-          for (var k in input) {
+          const newObj = {};
+          for (const k in input) {
             newObj[k] = removeExplicitTypes(input[k]);
           }
           return newObj;
@@ -191,11 +191,11 @@ function removeExplicitTypes(input) {
 // substituted for missing fields when decoding. The effect is the
 // same so far as these tests are concerned.
 function assertEqualModuloDefaults(original, decodedFields) {
-  var args = defs.info(original.id).args;
-  for (var i = 0; i < args.length; i++) {
-    var arg = args[i];
-    var originalValue = original.fields[arg.name];
-    var decodedValue = decodedFields[arg.name];
+  const args = defs.info(original.id).args;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    const originalValue = original.fields[arg.name];
+    const decodedValue = decodedFields[arg.name];
     try {
       if (originalValue === undefined) {
         // longstr gets special treatment here, since the defaults are
@@ -206,7 +206,7 @@ function assertEqualModuloDefaults(original, decodedFields) {
         assert.deepEqual(removeExplicitTypes(originalValue), decodedValue);
       }
     } catch (assertionErr) {
-      var methodOrProps = defs.info(original.id).name;
+      const methodOrProps = defs.info(original.id).name;
       assertionErr.message += ' (frame ' + methodOrProps + ' field ' + arg.name + ')';
       throw assertionErr;
     }
@@ -220,9 +220,9 @@ module.exports.assertEqualModuloDefaults = assertEqualModuloDefaults;
 
 function roundtripMethod(Method) {
   return forAll(Method).satisfy(function (method) {
-    var buf = defs.encodeMethod(method.id, 0, method.fields);
+    const buf = defs.encodeMethod(method.id, 0, method.fields);
     // FIXME depends on framing, ugh
-    var fs1 = defs.decode(method.id, buf.subarray(11, buf.length));
+    const fs1 = defs.decode(method.id, buf.subarray(11, buf.length));
     assertEqualModuloDefaults(method, fs1);
     return true;
   });
@@ -230,9 +230,9 @@ function roundtripMethod(Method) {
 
 function roundtripProperties(Properties) {
   return forAll(Properties).satisfy(function (properties) {
-    var buf = defs.encodeProperties(properties.id, 0, properties.size, properties.fields);
+    const buf = defs.encodeProperties(properties.id, 0, properties.size, properties.fields);
     // FIXME depends on framing, ugh
-    var fs1 = defs.decode(properties.id, buf.subarray(19, buf.length));
+    const fs1 = defs.decode(properties.id, buf.subarray(19, buf.length));
     assert.equal(properties.size, ints.readUInt64BE(buf, 11));
     assertEqualModuloDefaults(properties, fs1);
     return true;

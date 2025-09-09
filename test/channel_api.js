@@ -1,15 +1,15 @@
 'use strict';
 
-var assert = require('assert');
-var api = require('../channel_api');
-var util = require('./util');
-var succeed = util.succeed,
+const assert = require('assert');
+const api = require('../channel_api');
+const util = require('./util');
+const succeed = util.succeed,
   fail = util.fail;
-var schedule = util.schedule;
-var randomString = util.randomString;
-var promisify = require('util').promisify;
+const schedule = util.schedule;
+const randomString = util.randomString;
+const promisify = require('util').promisify;
 
-var URL = process.env.URL || 'amqp://localhost';
+const URL = process.env.URL || 'amqp://localhost';
 
 function connect() {
   return api.connect(URL);
@@ -54,7 +54,7 @@ function channel_test(chmethod, name, chfun) {
   });
 }
 
-var chtest = channel_test.bind(null, 'createChannel');
+const chtest = channel_test.bind(null, 'createChannel');
 
 suite('connect', function () {
   test('at all', function (done) {
@@ -80,8 +80,8 @@ suite('updateSecret', function () {
   });
 });
 
-var QUEUE_OPTS = {durable: false};
-var EX_OPTS = {durable: false};
+const QUEUE_OPTS = {durable: false};
+const EX_OPTS = {durable: false};
 
 suite('assert, check, delete', function () {
   chtest('assert and check queue', function (ch) {
@@ -98,7 +98,7 @@ suite('assert, check, delete', function () {
   });
 
   chtest('fail on reasserting queue with different options', function (ch) {
-    var q = 'test.reassert-queue';
+    const q = 'test.reassert-queue';
     return ch.assertQueue(q, {durable: false, autoDelete: true}).then(function () {
       return expectFail(ch.assertQueue(q, {durable: false, autoDelete: false}));
     });
@@ -113,7 +113,7 @@ suite('assert, check, delete', function () {
   });
 
   chtest('fail on reasserting exchange with different type', function (ch) {
-    var ex = 'test.reassert-ex';
+    const ex = 'test.reassert-ex';
     return ch.assertExchange(ex, 'fanout', EX_OPTS).then(function () {
       return expectFail(ch.assertExchange(ex, 'direct', EX_OPTS));
     });
@@ -127,7 +127,7 @@ suite('assert, check, delete', function () {
   });
 
   chtest('delete queue', function (ch) {
-    var q = 'test.delete-queue';
+    const q = 'test.delete-queue';
     return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.checkQueue(q)])
       .then(function () {
         return ch.deleteQueue(q);
@@ -138,7 +138,7 @@ suite('assert, check, delete', function () {
   });
 
   chtest('delete exchange', function (ch) {
-    var ex = 'test.delete-exchange';
+    const ex = 'test.delete-exchange';
     return Promise.all([ch.assertExchange(ex, 'fanout', EX_OPTS), ch.checkExchange(ex)])
       .then(function () {
         return ch.deleteExchange(ex);
@@ -172,7 +172,7 @@ function waitForQueue(q, condition) {
 // Return a promise that resolves when the queue has at least `num`
 // messages. If num is not supplied its assumed to be 1.
 function waitForMessages(q, num) {
-  var min = num === undefined ? 1 : num;
+  const min = num === undefined ? 1 : num;
   return waitForQueue(q, function (qok) {
     return qok.messageCount >= min;
   });
@@ -181,8 +181,8 @@ function waitForMessages(q, num) {
 suite('sendMessage', function () {
   // publish different size messages
   chtest('send to queue and get from queue', function (ch) {
-    var q = 'test.send-to-q';
-    var msg = randomString();
+    const q = 'test.send-to-q';
+    const msg = randomString();
     return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)])
       .then(function () {
         ch.sendToQueue(q, Buffer.from(msg));
@@ -198,8 +198,8 @@ suite('sendMessage', function () {
   });
 
   chtest('send (and get) zero content to queue', function (ch) {
-    var q = 'test.send-to-q';
-    var msg = Buffer.alloc(0);
+    const q = 'test.send-to-q';
+    const msg = Buffer.alloc(0);
     return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)])
       .then(function () {
         ch.sendToQueue(q, msg);
@@ -218,9 +218,9 @@ suite('sendMessage', function () {
 suite('binding, consuming', function () {
   // bind, publish, get
   chtest('route message', function (ch) {
-    var ex = 'test.route-message';
-    var q = 'test.route-message-q';
-    var msg = randomString();
+    const ex = 'test.route-message';
+    const q = 'test.route-message-q';
+    const msg = randomString();
 
     return Promise.all([
       ch.assertExchange(ex, 'fanout', EX_OPTS),
@@ -243,7 +243,7 @@ suite('binding, consuming', function () {
 
   // send to queue, purge, get-empty
   chtest('purge queue', function (ch) {
-    var q = 'test.purge-queue';
+    const q = 'test.purge-queue';
     return ch
       .assertQueue(q, {durable: false})
       .then(function () {
@@ -261,10 +261,10 @@ suite('binding, consuming', function () {
 
   // bind again, unbind, publish, get-empty
   chtest('unbind queue', function (ch) {
-    var ex = 'test.unbind-queue-ex';
-    var q = 'test.unbind-queue';
-    var viabinding = randomString();
-    var direct = randomString();
+    const ex = 'test.unbind-queue-ex';
+    const q = 'test.unbind-queue';
+    const viabinding = randomString();
+    const direct = randomString();
 
     return Promise.all([
       ch.assertExchange(ex, 'fanout', EX_OPTS),
@@ -305,10 +305,10 @@ suite('binding, consuming', function () {
   // To some extent this is now just testing semantics of the server,
   // but we can at least try out a few settings, and consume.
   chtest('consume via exchange-exchange binding', function (ch) {
-    var ex1 = 'test.ex-ex-binding1',
+    const ex1 = 'test.ex-ex-binding1',
       ex2 = 'test.ex-ex-binding2';
-    var q = 'test.ex-ex-binding-q';
-    var rk = 'test.routing.key',
+    const q = 'test.ex-ex-binding-q';
+    const rk = 'test.routing.key',
       msg = randomString();
     return Promise.all([
       ch.assertExchange(ex1, 'direct', EX_OPTS),
@@ -332,11 +332,11 @@ suite('binding, consuming', function () {
 
   // bind again, unbind, publish, get-empty
   chtest('unbind exchange', function (ch) {
-    var source = 'test.unbind-ex-source';
-    var dest = 'test.unbind-ex-dest';
-    var q = 'test.unbind-ex-queue';
-    var viabinding = randomString();
-    var direct = randomString();
+    const source = 'test.unbind-ex-source';
+    const dest = 'test.unbind-ex-dest';
+    const q = 'test.unbind-ex-queue';
+    const viabinding = randomString();
+    const direct = randomString();
 
     return Promise.all([
       ch.assertExchange(source, 'fanout', EX_OPTS),
@@ -378,9 +378,9 @@ suite('binding, consuming', function () {
 
   // This is a bit convoluted. Sorry.
   chtest('cancel consumer', function (ch) {
-    var q = 'test.consumer-cancel';
-    var ctag;
-    var recv1 = new Promise(function (resolve, _reject) {
+    const q = 'test.consumer-cancel';
+    let ctag;
+    const recv1 = new Promise(function (resolve, _reject) {
       Promise.all([
         ch.assertQueue(q, QUEUE_OPTS),
         ch.purgeQueue(q),
@@ -396,7 +396,7 @@ suite('binding, consuming', function () {
 
     // A message should arrive because of the consume
     return recv1.then(function () {
-      var recv2 = Promise.all([
+      const recv2 = Promise.all([
         ch.cancel(ctag).then(function () {
           return ch.sendToQueue(q, Buffer.from('bar'));
         }),
@@ -419,7 +419,7 @@ suite('binding, consuming', function () {
   });
 
   chtest('cancelled consumer', function (ch) {
-    var q = 'test.cancelled-consumer';
+    const q = 'test.cancelled-consumer';
     return new Promise(function (resolve, reject) {
       return Promise.all([
         ch.assertQueue(q),
@@ -436,8 +436,8 @@ suite('binding, consuming', function () {
 
   // ack, by default, removes a single message from the queue
   chtest('ack', function (ch) {
-    var q = 'test.ack';
-    var msg1 = randomString(),
+    const q = 'test.ack';
+    const msg1 = randomString(),
       msg2 = randomString();
 
     return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)])
@@ -465,8 +465,8 @@ suite('binding, consuming', function () {
   // Nack, by default, puts a message back on the queue (where in the
   // queue is up to the server)
   chtest('nack', function (ch) {
-    var q = 'test.nack';
-    var msg1 = randomString();
+    const q = 'test.nack';
+    const msg1 = randomString();
 
     return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)])
       .then(function () {
@@ -493,8 +493,8 @@ suite('binding, consuming', function () {
   // reject is a near-synonym for nack, the latter of which is not
   // available in earlier RabbitMQ (or in AMQP proper).
   chtest('reject', function (ch) {
-    var q = 'test.reject';
-    var msg1 = randomString();
+    const q = 'test.reject';
+    const msg1 = randomString();
 
     return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)])
       .then(function () {
@@ -519,7 +519,7 @@ suite('binding, consuming', function () {
   });
 
   chtest('prefetch', function (ch) {
-    var q = 'test.prefetch';
+    const q = 'test.prefetch';
     return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q), ch.prefetch(1)])
       .then(function () {
         ch.sendToQueue(q, Buffer.from('foobar'));
@@ -528,7 +528,7 @@ suite('binding, consuming', function () {
       })
       .then(function () {
         return new Promise(function (resolve) {
-          var messageCount = 0;
+          let messageCount = 0;
           function receive(msg) {
             ch.ack(msg);
             if (++messageCount > 1) {
@@ -550,11 +550,11 @@ suite('binding, consuming', function () {
   });
 });
 
-var confirmtest = channel_test.bind(null, 'createConfirmChannel');
+const confirmtest = channel_test.bind(null, 'createConfirmChannel');
 
 suite('confirms', function () {
   confirmtest('message is confirmed', function (ch) {
-    var q = 'test.confirm-message';
+    const q = 'test.confirm-message';
     return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)]).then(function () {
       return ch.sendToQueue(q, Buffer.from('bleep'));
     });
@@ -566,24 +566,24 @@ suite('confirms', function () {
   // the acknowledgements coming through to see if we really did get a
   // multi-ack.
   confirmtest('multiple confirms', function (ch) {
-    var q = 'test.multiple-confirms';
+    const q = 'test.multiple-confirms';
     return Promise.all([ch.assertQueue(q, QUEUE_OPTS), ch.purgeQueue(q)]).then(function () {
-      var multipleRainbows = false;
+      let multipleRainbows = false;
       ch.on('ack', function (a) {
         if (a.multiple) multipleRainbows = true;
       });
 
       function prod(num) {
-        var cs = [];
+        const cs = [];
 
         function sendAndPushPromise() {
-          var conf = promisify(function (cb) {
+          const conf = promisify(function (cb) {
             return ch.sendToQueue(q, Buffer.from('bleep'), {}, cb);
           })();
           cs.push(conf);
         }
 
-        for (var i = 0; i < num; i++) sendAndPushPromise();
+        for (let i = 0; i < num; i++) sendAndPushPromise();
 
         return Promise.all(cs).then(function () {
           if (multipleRainbows) return true;
@@ -599,14 +599,14 @@ suite('confirms', function () {
   });
 
   confirmtest('wait for confirms', function (ch) {
-    for (var i = 0; i < 1000; i++) {
+    for (let i = 0; i < 1000; i++) {
       ch.publish('', '', Buffer.from('foobar'), {});
     }
     return ch.waitForConfirms();
   });
 
   confirmtest('works when channel is closed', function (ch) {
-    for (var i = 0; i < 1000; i++) {
+    for (let i = 0; i < 1000; i++) {
       ch.publish('', '', Buffer.from('foobar'), {});
     }
     return ch

@@ -1,5 +1,5 @@
-var raw_connect = require('./lib/connect').connect;
-var CallbackModel = require('./lib/callback_model').CallbackModel;
+const raw_connect = require('./lib/connect').connect;
+const CallbackModel = require('./lib/callback_model').CallbackModel;
 
 // Supports three shapes:
 // connect(url, options, callback)
