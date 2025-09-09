@@ -9,7 +9,42 @@
     "attributePosition": "auto"
   },
   "linter": {
-    "enabled": false
+    "enabled": true,
+    "rules": {
+      "complexity": {
+        "noCommaOperator": "off",
+        "noUselessCatch": "off",
+        "useArrowFunction": "off",
+        "useOptionalChain": "off",
+        "noArguments": "off",
+        "useLiteralKeys": "off"
+      },
+      "correctness": {
+        "noUnusedFunctionParameters": "off",
+        "noUnusedVariables": "off",
+        "noInnerDeclarations": "off",
+        "useParseIntRadix": "off",
+        "noSwitchDeclarations": "off",
+        "noInvalidUseBeforeDeclaration": "off",
+        "noPrecisionLoss": "off"
+      },
+      "style": {
+        "useConst": "off",
+        "useNodejsImportProtocol": "off",
+        "useTemplate": "off",
+        "useExponentiationOperator": "off"
+      },
+      "suspicious": {
+        "noRedundantUseStrict": "off",
+        "noAssignInExpressions": "off",
+        "noAsyncPromiseExecutor": "off",
+        "noDoubleEquals": "off",
+        "noGlobalIsNan": "off",
+        "noRedeclare": "off",
+        "noGlobalIsFinite": "off",
+        "noPrototypeBuiltins": "off"
+      }
+    }
   },
   "javascript": {
     "formatter": {
