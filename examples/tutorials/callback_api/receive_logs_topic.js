@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const amqp = require('amqplib/callback_api');
-const { basename } = require('path');
+const {basename} = require('path');
 
 const exchange = 'topic_logs';
 const severities = process.argv.slice(2);
@@ -21,20 +21,25 @@ amqp.connect((err, connection) => {
       });
     });
 
-    channel.assertExchange(exchange, 'topic', { durable: false }, (err) => {
+    channel.assertExchange(exchange, 'topic', {durable: false}, (err) => {
       if (err) return bail(err, connection);
-      channel.assertQueue('', { exclusive: true }, (err, { queue }) => {
+      channel.assertQueue('', {exclusive: true}, (err, {queue}) => {
         if (err) return bail(err, connection);
-        channel.consume(queue, (message) => {
-          if (message) console.log(" [x] %s:'%s'", message.fields.routingKey, message.content.toString());
-          else console.warn(' [x] Consumer cancelled');
-        }, {noAck: true}, function(err) {
-          if (err) return bail(err, connection);
-          console.log(' [*] Waiting for logs. To exit press CTRL+C.');
-          subscribeAll(channel, queue, severities, (err) => {
+        channel.consume(
+          queue,
+          (message) => {
+            if (message) console.log(" [x] %s:'%s'", message.fields.routingKey, message.content.toString());
+            else console.warn(' [x] Consumer cancelled');
+          },
+          {noAck: true},
+          function (err) {
             if (err) return bail(err, connection);
-          });
-        });
+            console.log(' [*] Waiting for logs. To exit press CTRL+C.');
+            subscribeAll(channel, queue, severities, (err) => {
+              if (err) return bail(err, connection);
+            });
+          },
+        );
       });
     });
   });
@@ -51,8 +56,8 @@ function subscribeAll(channel, queue, bindingKeys, cb) {
 
 function bail(err, connection) {
   console.error(err);
-  if (connection) connection.close(() => {
-    process.exit(1);
-  });
+  if (connection)
+    connection.close(() => {
+      process.exit(1);
+    });
 }
-

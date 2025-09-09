@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 const amqp = require('amqplib');
-const { basename } = require('path');
-const { v4: uuid } = require('uuid');
+const {basename} = require('path');
+const {v4: uuid} = require('uuid');
 
 const queue = 'rpc_queue';
 
@@ -20,18 +20,22 @@ if (isNaN(n)) {
     const correlationId = uuid();
 
     const requestFib = new Promise(async (resolve) => {
-      const { queue: replyTo } = await channel.assertQueue('', { exclusive: true });
+      const {queue: replyTo} = await channel.assertQueue('', {exclusive: true});
 
-      await channel.consume(replyTo, (message) => {
-        if (!message) console.warn(' [x] Consumer cancelled');
-        else if (message.properties.correlationId === correlationId) {
-          resolve(message.content.toString());
-        }
-      }, { noAck: true });
+      await channel.consume(
+        replyTo,
+        (message) => {
+          if (!message) console.warn(' [x] Consumer cancelled');
+          else if (message.properties.correlationId === correlationId) {
+            resolve(message.content.toString());
+          }
+        },
+        {noAck: true},
+      );
 
-      await channel.assertQueue(queue, { durable: false });
+      await channel.assertQueue(queue, {durable: false});
       console.log(' [x] Requesting fib(%d)', n);
-      channel.sendToQueue(queue, Buffer.from(n.toString()), { 
+      channel.sendToQueue(queue, Buffer.from(n.toString()), {
         correlationId,
         replyTo,
       });
@@ -39,11 +43,9 @@ if (isNaN(n)) {
 
     const fibN = await requestFib;
     console.log(' [.] Got %d', fibN);
-  }
-  catch (err) {
+  } catch (err) {
     console.warn(err);
-  }
-  finally {
+  } finally {
     if (connection) await connection.close();
-  };
-})();  
+  }
+})();

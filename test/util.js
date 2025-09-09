@@ -6,15 +6,13 @@ var PassThrough = require('stream').PassThrough;
 var defs = require('../lib/defs');
 var assert = require('assert');
 
-var schedule = (typeof setImmediate === 'function') ?
-  setImmediate : process.nextTick;
+var schedule = typeof setImmediate === 'function' ? setImmediate : process.nextTick;
 
 function randomString() {
   var hash = crypto.createHash('sha1');
   hash.update(crypto.randomBytes(64));
   return hash.digest('base64');
 }
-
 
 // Set up a socket pair {client, server}, such that writes to the
 // client are readable from the server, and writes to the server are
@@ -60,34 +58,27 @@ function runServer(socket, run) {
   function send(id, fields, channel, content) {
     channel = channel || 0;
     if (content) {
-      schedule(function() {
-        frames.sendMessage(channel, id, fields,
-                           defs.BasicProperties, fields,
-                           content);
+      schedule(function () {
+        frames.sendMessage(channel, id, fields, defs.BasicProperties, fields, content);
       });
-    }
-    else {
-      schedule(function() {
+    } else {
+      schedule(function () {
         frames.sendMethod(channel, id, fields);
       });
     }
   }
 
   function wait(method) {
-    return function() {
-      return new Promise(function(resolve, reject) {
+    return function () {
+      return new Promise(function (resolve, reject) {
         if (method) {
-          frames.step(function(e, f) {
+          frames.step(function (e, f) {
             if (e !== null) return reject(e);
-            if (f.id === method)
-              resolve(f);
-            else
-              reject(new Error("Expected method: " + method +
-                                 ", got " + f.id));
+            if (f.id === method) resolve(f);
+            else reject(new Error('Expected method: ' + method + ', got ' + f.id));
           });
-        }
-        else {
-          frames.step(function(e, f) {
+        } else {
+          frames.step(function (e, f) {
             if (e !== null) return reject(e);
             else resolve(f);
           });
@@ -101,19 +92,21 @@ function runServer(socket, run) {
 
 // Produce a callback that will complete the test successfully
 function succeed(done) {
-  return function() { done(); }
+  return function () {
+    done();
+  };
 }
 
 // Produce a callback that will complete the test successfully
 // only if the value is an object, it has the specified
 // attribute, and its value is equals to the expected value
 function succeedIfAttributeEquals(attribute, value, done) {
-  return function(object) {
+  return function (object) {
     if (object && !(object instanceof Error) && value === object[attribute]) {
       return done();
     }
 
-    done(new Error(attribute + " is not equal to " + value));
+    done(new Error(attribute + ' is not equal to ' + value));
   };
 }
 
@@ -121,10 +114,10 @@ function succeedIfAttributeEquals(attribute, value, done) {
 // (to be used as a failure continuation) or any other value (to be
 // used as a success continuation when failure is expected)
 function fail(done) {
-  return function(err) {
+  return function (err) {
     if (err instanceof Error) done(err);
-    else done(new Error("Expected to fail, instead got " + err.toString()));
-  }
+    else done(new Error('Expected to fail, instead got ' + err.toString()));
+  };
 }
 
 // Create a function that will call done once it's been called itself
@@ -133,12 +126,11 @@ function fail(done) {
 function latch(count, done) {
   var awaiting = count;
   var alive = true;
-  return function(err) {
+  return function (err) {
     if (err instanceof Error && alive) {
       alive = false;
       done(err);
-    }
-    else {
+    } else {
       awaiting--;
       if (awaiting === 0 && alive) {
         alive = false;
@@ -154,14 +146,15 @@ function completes(thunk, done) {
   try {
     thunk();
     done();
+  } catch (e) {
+    done(e);
   }
-  catch (e) { done(e); }
 }
 
 // Construct a Node.JS-style callback from a success continuation and
 // an error continuation
 function kCallback(k, ek) {
-  return function(err, val) {
+  return function (err, val) {
     if (err === null) k && k(val);
     else ek && ek(err);
   };
@@ -169,37 +162,37 @@ function kCallback(k, ek) {
 
 // A noddy way to make tests depend on the node version.
 function versionGreaterThan(actual, spec) {
-
-  function int(e) { return parseInt(e); }
+  function int(e) {
+    return parseInt(e);
+  }
 
   var version = actual.split('.').map(int);
   var desired = spec.split('.').map(int);
-  for (var i=0; i < desired.length; i++) {
-    var a = version[i], b = desired[i];
+  for (var i = 0; i < desired.length; i++) {
+    var a = version[i],
+      b = desired[i];
     if (a != b) return a > b;
   }
   return false;
 }
 
-suite('versionGreaterThan', function() {
+suite('versionGreaterThan', function () {
+  test('full spec', function () {
+    assert(versionGreaterThan('0.8.26', '0.6.12'));
+    assert(versionGreaterThan('0.8.26', '0.8.21'));
+  });
 
-test('full spec', function() {
-  assert(versionGreaterThan('0.8.26', '0.6.12'));
-  assert(versionGreaterThan('0.8.26', '0.8.21'));
-});
+  test('partial spec', function () {
+    assert(versionGreaterThan('0.9.12', '0.8'));
+  });
 
-test('partial spec', function() {
-  assert(versionGreaterThan('0.9.12', '0.8'));
-});
+  test('not greater', function () {
+    assert(!versionGreaterThan('0.8.12', '0.8.26'));
+    assert(!versionGreaterThan('0.6.2', '0.6.12'));
+    assert(!versionGreaterThan('0.8.29', '0.8'));
+  });
 
-test('not greater', function() {
-  assert(!versionGreaterThan('0.8.12', '0.8.26'));
-  assert(!versionGreaterThan('0.6.2', '0.6.12'));
-  assert(!versionGreaterThan('0.8.29', '0.8'));
-});
-
-test
-
+  test;
 });
 
 module.exports = {
@@ -213,5 +206,5 @@ module.exports = {
   kCallback: kCallback,
   schedule: schedule,
   randomString: randomString,
-  versionGreaterThan: versionGreaterThan
+  versionGreaterThan: versionGreaterThan,
 };

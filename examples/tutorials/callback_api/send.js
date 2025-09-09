@@ -9,7 +9,7 @@ amqp.connect((err, connection) => {
   if (err) return bail(err);
   connection.createChannel((err, channel) => {
     if (err) return bail(err, connection);
-    channel.assertQueue(queue, { durable: false }, (err) => {
+    channel.assertQueue(queue, {durable: false}, (err) => {
       if (err) return bail(err, connection);
       channel.sendToQueue(queue, Buffer.from(text));
       console.log(" [x] Sent '%s'", text);
@@ -22,7 +22,8 @@ amqp.connect((err, connection) => {
 
 function bail(err, connection) {
   console.error(err);
-  if (connection) connection.close(() => {
-    process.exit(1);
-  });
+  if (connection)
+    connection.close(() => {
+      process.exit(1);
+    });
 }

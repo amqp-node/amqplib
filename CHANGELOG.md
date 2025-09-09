@@ -1,5 +1,12 @@
 # Change log for amqplib
 
+## v1.0.0
+- **BREAKING**: Update minimum Node.js requirement to v16
+- Introduce Biome formatter for consistent code formatting
+- Add automated formatting via pre-commit hooks using Lefthook
+- Format entire codebase with standardised formatting rules
+- Add npm format script for manual code formatting
+
 ## v0.10.9
 - Add support for IPv6 urls
 

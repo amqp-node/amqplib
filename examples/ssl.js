@@ -40,7 +40,7 @@ const opts = {
   // cert and key or
   // pfx: fs.readFileSync('../etc/client/keycert.p12'),
   passphrase: 'MySecretPassword',
-  ca: [fs.readFileSync('../etc/testca/cacert.pem')]
+  ca: [fs.readFileSync('../etc/testca/cacert.pem')],
 };
 
 // Options for just confidentiality. This requires RabbitMQ's SSL
@@ -67,4 +67,3 @@ const opts = {
 
   console.log(' [x] To exit press CTRL+C.');
 })();
-
