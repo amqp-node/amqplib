@@ -55,7 +55,7 @@ suite('Explicit parsing', function () {
       var frames = new Frames(input);
       frames.frameMax = 5; //for the max frame test
       input.write(Buffer.from(bytes));
-      frames.step(function (err, frame) {
+      frames.step(function (err, _frame) {
         if (err != null) done();
         else done(new Error('Was a bogus frame!'));
       });

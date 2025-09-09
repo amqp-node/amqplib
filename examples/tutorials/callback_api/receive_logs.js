@@ -15,7 +15,7 @@ amqp.connect((err, connection) => {
       });
     });
 
-    channel.assertExchange(exchange, 'fanout', {durable: false}, (err, {queue}) => {
+    channel.assertExchange(exchange, 'fanout', {durable: false}, (err, {queue: _queue}) => {
       if (err) return bail(err, connection);
       channel.assertQueue('', {exclusive: true}, (err, {queue}) => {
         if (err) return bail(err, connection);

@@ -6,6 +6,7 @@
 - Add automated formatting via pre-commit hooks using Lefthook
 - Format entire codebase with standardised formatting rules
 - Add npm format script for manual code formatting
+- Enable noUnusedFunctionParameters lint rule and fix all violations
 
 ## v0.10.9
 - Add support for IPv6 urls
