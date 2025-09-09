@@ -20,7 +20,7 @@
         "useLiteralKeys": "off"
       },
       "correctness": {
-        "noUnusedFunctionParameters": "off",
+        "noUnusedFunctionParameters": "error",
         "noUnusedVariables": "off",
         "noInnerDeclarations": "off",
         "useParseIntRadix": "off",
@@ -59,6 +59,6 @@
     }
   },
   "files": {
-    "includes": ["**/*.js"]
+    "includes": ["**/*.js", "!lib/defs.js"]
   }
 }

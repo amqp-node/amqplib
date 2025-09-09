@@ -85,7 +85,7 @@ var EX_OPTS = {durable: false};
 
 suite('assert, check, delete', function () {
   chtest('assert and check queue', function (ch) {
-    return ch.assertQueue('test.check-queue', QUEUE_OPTS).then(function (qok) {
+    return ch.assertQueue('test.check-queue', QUEUE_OPTS).then(function (_qok) {
       return ch.checkQueue('test.check-queue');
     });
   });
@@ -154,7 +154,7 @@ suite('assert, check, delete', function () {
 function waitForQueue(q, condition) {
   return connect(URL).then(function (c) {
     return c.createChannel().then(function (ch) {
-      return ch.checkQueue(q).then(function (qok) {
+      return ch.checkQueue(q).then(function (_qok) {
         function check() {
           return ch.checkQueue(q).then(function (qok) {
             if (condition(qok)) {
@@ -380,7 +380,7 @@ suite('binding, consuming', function () {
   chtest('cancel consumer', function (ch) {
     var q = 'test.consumer-cancel';
     var ctag;
-    var recv1 = new Promise(function (resolve, reject) {
+    var recv1 = new Promise(function (resolve, _reject) {
       Promise.all([
         ch.assertQueue(q, QUEUE_OPTS),
         ch.purgeQueue(q),

@@ -26,7 +26,7 @@
   "scripts": {
     "test": "make test",
     "format": "biome format . --write",
-    "lint": "biome lint ."
+    "lint": "biome lint --max-diagnostics=1000 ."
   },
   "keywords": [
     "AMQP",
