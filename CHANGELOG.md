@@ -7,6 +7,7 @@
 - Format entire codebase with standardised formatting rules
 - Add npm format script for manual code formatting
 - Enable noUnusedFunctionParameters lint rule and fix all violations
+- Enable noUnusedVariables lint rule and remove all unused variables from codebase
 
 ## v0.10.9
 - Add support for IPv6 urls

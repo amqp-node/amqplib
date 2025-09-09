@@ -31,7 +31,7 @@ function baseChannelTest(client, server) {
     });
 
     pair.server.read(8); // discard the protocol header
-    var s = util.runServer(pair.server, function (send, wait) {
+    util.runServer(pair.server, function (send, wait) {
       conn_handshake(send, wait).then(function () {
         server(send, wait, bothDone);
       }, fail(bothDone));

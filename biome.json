@@ -21,7 +21,7 @@
       },
       "correctness": {
         "noUnusedFunctionParameters": "error",
-        "noUnusedVariables": "off",
+        "noUnusedVariables": "error",
         "noInnerDeclarations": "off",
         "useParseIntRadix": "off",
         "noSwitchDeclarations": "off",
