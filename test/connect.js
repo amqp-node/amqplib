@@ -13,9 +13,7 @@ const fail = util.fail,
   succeedIfAttributeEquals = util.succeedIfAttributeEquals;
 const format = require('util').format;
 
-const URL = process.env.URL || 'amqp://localhost';
-
-const urlparse = require('url-parse');
+const AMQP_URL = process.env.URL || 'amqp://localhost';
 
 suite('Credentials', function () {
   function checkCreds(creds, user, pass, done) {
@@ -29,27 +27,27 @@ suite('Credentials', function () {
   }
 
   test('no creds', function (done) {
-    const parts = urlparse('amqp://localhost');
+    const parts = new URL('amqp://localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'guest', 'guest', done);
   });
   test('usual user:pass', function (done) {
-    const parts = urlparse('amqp://user:pass@localhost');
+    const parts = new URL('amqp://user:pass@localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'user', 'pass', done);
   });
   test('missing user', function (done) {
-    const parts = urlparse('amqps://:password@localhost');
+    const parts = new URL('amqps://:password@localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, '', 'password', done);
   });
   test('missing password', function (done) {
-    const parts = urlparse('amqps://username:@localhost');
+    const parts = new URL('amqps://username:@localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'username', '', done);
   });
   test('escaped colons', function (done) {
-    const parts = urlparse('amqp://user%3Aname:pass%3Aword@localhost');
+    const parts = new URL('amqp://user%3Aname:pass%3Aword@localhost');
     const creds = credentialsFromUrl(parts);
     checkCreds(creds, 'user:name', 'pass:word', done);
   });
@@ -67,20 +65,22 @@ suite('Connect API', function () {
     });
   });
 
+  test('empty protocol on URL-like object defaults to amqp', function (done) {
+    assert.doesNotThrow(function () {
+      connect({protocol: '', hostname: 'localhost', port: 23450}, {}, kCallback(fail(done), succeed(done)));
+    });
+  });
+
   test('wrongly typed open option', function (done) {
-    const url = require('url');
-    const parts = url.parse(URL, true);
-    const q = parts.query || {};
-    q.frameMax = 'NOT A NUMBER';
-    parts.query = q;
-    const u = url.format(parts);
+    const parts = new URL(AMQP_URL);
+    parts.searchParams.set('frameMax', 'NOT A NUMBER');
+    const u = parts.toString();
     connect(u, {}, kCallback(fail(done), succeed(done)));
   });
 
   test('serverProperties', function (done) {
-    const url = require('url');
-    const parts = url.parse(URL, true);
-    const config = parts.query || {};
+    const parts = new URL(AMQP_URL);
+    const config = Object.fromEntries(parts.searchParams.entries());
     connect(config, {}, function (err, connection) {
       if (err) {
         return done(err);
@@ -91,43 +91,39 @@ suite('Connect API', function () {
   });
 
   test('using custom heartbeat option', function (done) {
-    const url = require('url');
-    const parts = url.parse(URL, true);
-    const config = parts.query || {};
+    const parts = new URL(AMQP_URL);
+    const config = Object.fromEntries(parts.searchParams.entries());
     config.heartbeat = 20;
     connect(config, {}, kCallback(succeedIfAttributeEquals('heartbeat', 20, done), fail(done)));
   });
 
   test('wrongly typed heartbeat option', function (done) {
-    const url = require('url');
-    const parts = url.parse(URL, true);
-    const config = parts.query || {};
+    const parts = new URL(AMQP_URL);
+    const config = Object.fromEntries(parts.searchParams.entries());
     config.heartbeat = 'NOT A NUMBER';
     connect(config, {}, kCallback(fail(done), succeed(done)));
   });
 
   test('using plain credentials', function (done) {
-    const url = require('url');
-    const parts = url.parse(URL, true);
+    const parts = new URL(AMQP_URL);
     let u = 'guest',
       p = 'guest';
-    if (parts.auth) {
-      const auth = parts.auth.split(':');
-      (u = auth[0]), (p = auth[1]);
+    if (parts.username !== '' || parts.password !== '') {
+      u = unescape(parts.username);
+      p = unescape(parts.password);
     }
-    connect(URL, {credentials: require('../lib/credentials').plain(u, p)}, kCallback(succeed(done), fail(done)));
+    connect(AMQP_URL, {credentials: require('../lib/credentials').plain(u, p)}, kCallback(succeed(done), fail(done)));
   });
 
   test('using amqplain credentials', function (done) {
-    const url = require('url');
-    const parts = url.parse(URL, true);
+    const parts = new URL(AMQP_URL);
     let u = 'guest',
       p = 'guest';
-    if (parts.auth) {
-      const auth = parts.auth.split(':');
-      (u = auth[0]), (p = auth[1]);
+    if (parts.username !== '' || parts.password !== '') {
+      u = unescape(parts.username);
+      p = unescape(parts.password);
     }
-    connect(URL, {credentials: require('../lib/credentials').amqplain(u, p)}, kCallback(succeed(done), fail(done)));
+    connect(AMQP_URL, {credentials: require('../lib/credentials').amqplain(u, p)}, kCallback(succeed(done), fail(done)));
   });
 
   test('ipv6', function (done) {
@@ -146,7 +142,7 @@ suite('Connect API', function () {
         return Buffer.from('');
       },
     };
-    connect(URL, {credentials: creds}, kCallback(fail(done), succeed(done)));
+    connect(AMQP_URL, {credentials: creds}, kCallback(fail(done), succeed(done)));
   });
 
   test('with a given connection timeout', function (done) {
@@ -202,6 +198,99 @@ suite('Errors on connect', function () {
 
     connect('amqp://localhost:' + server.address().port, {}, function (err) {
       if (!err) bothDone(new Error('Expected authentication error'));
+      bothDone();
+    });
+  });
+
+  test('uses vhost from URL pathname', function (done) {
+    const expectedVhost = 'my-vhost';
+    const bothDone = latch(2, done);
+
+    server = net
+      .createServer(function (socket) {
+        socket.once('data', function (protocolHeader) {
+          assert.deepStrictEqual(protocolHeader, Buffer.from('AMQP' + String.fromCharCode(0, 0, 9, 1)));
+          util.runServer(socket, function (send, wait) {
+            send(defs.ConnectionStart, {
+              versionMajor: 0,
+              versionMinor: 9,
+              serverProperties: {},
+              mechanisms: Buffer.from('PLAIN'),
+              locales: Buffer.from('en_US'),
+            });
+
+            wait(defs.ConnectionStartOk)()
+              .then(function () {
+                send(defs.ConnectionTune, {
+                  channelMax: 0,
+                  heartbeat: 0,
+                  frameMax: 0,
+                });
+              })
+              .then(wait(defs.ConnectionTuneOk))
+              .then(wait(defs.ConnectionOpen))
+              .then(function (frame) {
+                assert.strictEqual(frame.fields.virtualHost, expectedVhost);
+                send(defs.ConnectionOpenOk, {knownHosts: ''});
+                bothDone();
+              })
+              .catch(bothDone);
+          });
+        });
+      })
+      .listen(0);
+
+    connect('amqp://localhost:' + server.address().port + '/' + expectedVhost, {}, function (err, connection) {
+      if (err) {
+        return bothDone(err);
+      }
+      connection.close();
+      bothDone();
+    });
+  });
+
+  test('uses first locale when query contains duplicates', function (done) {
+    const bothDone = latch(2, done);
+
+    server = net
+      .createServer(function (socket) {
+        socket.once('data', function (protocolHeader) {
+          assert.deepStrictEqual(protocolHeader, Buffer.from('AMQP' + String.fromCharCode(0, 0, 9, 1)));
+          util.runServer(socket, function (send, wait) {
+            send(defs.ConnectionStart, {
+              versionMajor: 0,
+              versionMinor: 9,
+              serverProperties: {},
+              mechanisms: Buffer.from('PLAIN'),
+              locales: Buffer.from('en_US'),
+            });
+
+            wait(defs.ConnectionStartOk)()
+              .then(function (frame) {
+                assert.strictEqual(frame.fields.locale, 'en_US');
+                bothDone();
+                send(defs.ConnectionTune, {
+                  channelMax: 0,
+                  heartbeat: 0,
+                  frameMax: 0,
+                });
+              })
+              .then(wait(defs.ConnectionTuneOk))
+              .then(wait(defs.ConnectionOpen))
+              .then(function () {
+                send(defs.ConnectionOpenOk, {knownHosts: ''});
+              })
+              .catch(bothDone);
+          });
+        });
+      })
+      .listen(0);
+
+    connect('amqp://localhost:' + server.address().port + '?locale=en_US&locale=fr_FR', {}, function (err, connection) {
+      if (err) {
+        return bothDone(err);
+      }
+      connection.close();
       bothDone();
     });
   });
