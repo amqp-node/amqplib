@@ -12,8 +12,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "buffer-more-ints": "~1.0.0",
-    "url-parse": "~1.5.10"
+    "buffer-more-ints": "~1.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.2",
