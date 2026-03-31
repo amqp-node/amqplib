@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## v1.0.3
+- Fix AssertionError crash when backpressure occurs while draining newStreams in Mux (fixes #841)
+
 ## v1.0.2
 - Replace url-parse with WHATWG URL API
 
