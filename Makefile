@@ -18,11 +18,11 @@ test:
 test-all-nodejs:
 	for v in $(NODEJS_VERSIONS); \
 		do echo "-- Node version $$v --"; \
-		nave use $$v node --test; \
+		nave use $$v node --test --test-reporter=spec; \
 		done
 
 coverage:
-	node --test --test-coverage
+	node --test --test-coverage --test-reporter=spec
 
 lib/defs.js: clean bin/generate-defs test
 
