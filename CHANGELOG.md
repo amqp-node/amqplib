@@ -3,6 +3,7 @@
 ## Unreleased
 - Updated build to use RabbitMQ 4.2
 - Fix memory leak in ConfirmChannel.publish when channel is already closed (fixes #842)
+- Close connection immediately when close() is called while the connection is blocked (fixes #744)
 
 ## v1.0.3
 - Fix AssertionError crash when backpressure occurs while draining newStreams in Mux (fixes #841)
