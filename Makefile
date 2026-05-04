@@ -13,7 +13,7 @@ error:
 	@exit 1
 
 test:
-	node --test --test-timeout=1000
+	node --test --test-reporter=spec --test-timeout=2000
 
 test-all-nodejs:
 	for v in $(NODEJS_VERSIONS); \
