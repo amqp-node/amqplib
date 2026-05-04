@@ -470,6 +470,10 @@ everything you need to before calling this. Will be resolved once the
 connection, and underlying socket, are closed. The model will also
 emit `'close'` at that point.
 
+If the connection is currently blocked (see `'blocked'` event), calling
+`close()` will close the connection immediately rather than waiting for
+it to become unblocked, which may never happen.
+
 Although it's not strictly necessary, it will avoid some warnings in
 the server log if you close the connection before exiting:
 
@@ -1399,10 +1403,13 @@ connection, then call `#createConfirmChannel`.
 
 `#publish(exchange, routingKey, content, options, function(err, ok) {...})`
 
-**NOTE**: Does not return a promise and stil expects a callback in the promises API; see
+**NOTE**: Does not return a promise and still expects a callback in the promises API; see
 [flow control](#flowcontrol)
 
 `options` argument must be supplied, at least as an empty object.
+
+If the channel is already closed when `#publish` is called, the callback will be
+invoked immediately with an error rather than being retained in memory indefinitely.
 
 
 ### ConfirmChannel#sendToQueue {#confirmchannel_sendToQueue}
@@ -1411,7 +1418,7 @@ connection, then call `#createConfirmChannel`.
 
 `#sendToQueue(queue, content, options, function(err, ok) {...})`
 
-**NOTE**: Does not return a promise and stil expects a callback in the promises API; see
+**NOTE**: Does not return a promise and still expects a callback in the promises API; see
 [flow control](#flowcontrol)
 
 `options` argument must be supplied, at least as an empty object.
