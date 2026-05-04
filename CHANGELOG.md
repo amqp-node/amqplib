@@ -1,6 +1,6 @@
 # Change log for amqplib
 
-## Unreleased
+## v1.0.4
 - Updated build to use RabbitMQ 4.2
 - Fix memory leak in ConfirmChannel.publish when channel is already closed (fixes #842)
 - Close connection immediately when close() is called while the connection is blocked (fixes #744)
