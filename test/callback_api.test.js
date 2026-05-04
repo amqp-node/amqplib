@@ -305,6 +305,17 @@ describe('Callback API', () => {
         done();
       });
     });
+
+    confirm_channel_test('publish on closed channel does not leak callbacks', (_ch, done) => {
+      ch = _ch;
+      ch.close(() => {
+        for (let i = 0; i < 10; i++) {
+          try { ch.publish('', '', Buffer.from('x'), {}, () => {}); } catch (_) {}
+        }
+        assert.strictEqual(ch.unconfirmed.length, 0);
+        done();
+      });
+    });
   });
 
   describe('Error handling', () => {

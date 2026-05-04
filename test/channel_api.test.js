@@ -499,6 +499,17 @@ describe('confirms', () => {
         }));
     });
   });
+
+  it('publish on closed channel does not leak callbacks', () => {
+    return withConfirmChannel((ch) => {
+      return ch.close().then(() => {
+        for (let i = 0; i < 10; i++) {
+          try { ch.publish('', '', Buffer.from('x'), {}, () => {}); } catch (_) {}
+        }
+        assert.strictEqual(ch.unconfirmed.length, 0);
+      });
+    });
+  });
 });
 
 function connect() {
