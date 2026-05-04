@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## Unreleased
+- Updated build to use RabbitMQ 4.2
+
 ## v1.0.3
 - Fix AssertionError crash when backpressure occurs while draining newStreams in Mux (fixes #841)
 
