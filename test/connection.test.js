@@ -278,6 +278,26 @@ describe('Connection', () => {
         .then(() => send(defs.ConnectionCloseOk, {}))
         .then(cb, cb);
     }));
+
+    it('close while blocked closes immediately', connectionTest((c, cb) => {
+      const decrementLatch = latch(2, cb);
+      c.on('close', () => decrementLatch());
+      c.open(OPEN_OPTS, (err) => {
+        assert.ifError(err);
+        c.once('blocked', () => {
+          c.close((err) => {
+            assert.ifError(err);
+            decrementLatch();
+          });
+        });
+      });
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(() => send(defs.ConnectionBlocked, { reason: 'memory' }, 0))
+        .then(wait(defs.ConnectionClose))
+        // deliberately do NOT send ConnectionCloseOk — client must close anyway
+        .then(cb, cb);
+    }));
   });
 
   describe('heartbeats', () => {
