@@ -1436,9 +1436,12 @@ invoked immediately with an error rather than being retained in memory indefinit
 
 Resolves the promise, or invokes the callback, when all published
 messages have been confirmed. If any of the messages has been nacked,
-this will result in an error; otherwise the result is no value. Either
+or if the channel closes before all messages are confirmed, this will
+result in an error; otherwise the result is no value. Note that
+`waitForConfirms` rejects as soon as the first failure occurs, without
+waiting for any remaining outstanding confirmations to settle. Either
 way, the channel is still usable afterwards. It is also possible to
-call waitForConfirms multiple times without waiting for previous
+call `waitForConfirms` multiple times without waiting for previous
 invocations to complete.
 
 ## RabbitMQ and deletion {#idempotent-deletes}
