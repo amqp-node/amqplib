@@ -588,5 +588,25 @@ describe('Channel', () => {
         send(defs.BasicAck, { deliveryTag: 1, multiple: false }, ch);
       }, cb);
     }));
+
+    // Regression test for https://github.com/amqp-node/amqplib/issues/191
+    // pushConfirmCallback stores `false` for publishes with no callback.
+    // The close drain used `while (cb)` which stops at the first `false`,
+    // silently dropping all callbacks that follow it.
+    it('invokes all pending callbacks on close even when some publishes had no callback', channelTest((ch, cb) => {
+      let called = 0;
+      const countErr = (err) => { if (err) called++; };
+      ch.pushConfirmCallback(countErr); // tag = 1 — has callback
+      ch.pushConfirmCallback(null);     // tag = 2 — no callback, stored as `false`
+      ch.pushConfirmCallback(countErr); // tag = 3 — has callback, dropped by while(cb) bug
+      open(ch).then(() => {
+        ch.toClosed('test close');
+        completes(() => {
+          assert.equal(2, called);
+        }, cb);
+      }, cb);
+    }, (_send, _wait, cb) => {
+      cb();
+    }));
   });
 });
