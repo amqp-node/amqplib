@@ -10,5 +10,8 @@ pre-commit:
       glob: "**/*.js"
       run: npx biome lint {staged_files} --write
       stage_fixed: true
+    typecheck:
+      glob: "{**/*.d.ts,types/*.ts}"
+      run: npm run typecheck
     test:
       run: npm test

@@ -5,3 +5,5 @@ scratch
 .travis.yml
 etc/
 coverage/
+tsconfig.types.json
+types/
