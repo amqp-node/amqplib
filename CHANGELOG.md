@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## Unreleased
+- Fix ConfirmChannel callbacks silently dropped on channel close when some publishes had no callback (fixes #191)
+
 ## v1.0.4
 - Updated build to use RabbitMQ 4.2
 - Fix memory leak in ConfirmChannel.publish when channel is already closed (fixes #842)
