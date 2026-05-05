@@ -1,6 +1,6 @@
 # Change log for amqplib
 
-## Unreleased
+## v1.0.5
 - Fix ConfirmChannel callbacks silently dropped on channel close when some publishes had no callback (fixes #191)
 
 ## v1.0.4
