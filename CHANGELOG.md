@@ -1,6 +1,6 @@
 # Change log for amqplib
 
-## Unreleased
+## v1.0.6
 - Fix channel.get() not invoking callback with error on channel close; previously only an error event was emitted (fixes #832). **Note:** if you use the callback API, ensure your channel.get() callbacks handle errors — they will now be invoked in error cases where previously they were not. If you use the promise API, the returned promise now rejects with a proper Error object (with .code, .classId and .methodId properties) rather than a raw close frame.
 
 ## v1.0.5
