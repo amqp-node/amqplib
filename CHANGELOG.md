@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## Unreleased
+- Fix channel.get() not invoking callback with error on channel close; previously only an error event was emitted (fixes #832)
+
 ## v1.0.5
 - Fix ConfirmChannel callbacks silently dropped on channel close when some publishes had no callback (fixes #191)
 
