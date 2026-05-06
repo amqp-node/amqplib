@@ -176,6 +176,48 @@ describe('sendMessage', () => {
   });
 });
 
+describe('get', () => {
+  it('returns false when queue is empty', () => {
+    return withChannel((ch) =>
+      ch.assertQueue('test.get-empty', QUEUE_OPTS)
+        .then(() => ch.purgeQueue('test.get-empty'))
+        .then(() => ch.get('test.get-empty', { noAck: true }))
+        .then((m) => assert.strictEqual(false, m))
+    );
+  });
+
+  it('returns a message when queue has messages', () => {
+    const msg = randomString();
+    return withChannel((ch) =>
+      ch.assertQueue('test.get-message', QUEUE_OPTS)
+        .then(() => ch.purgeQueue('test.get-message'))
+        .then(() => {
+          ch.sendToQueue('test.get-message', Buffer.from(msg));
+          return waitForMessages('test.get-message');
+        })
+        .then(() => ch.get('test.get-message', { noAck: true }))
+        .then((m) => {
+          assert(m);
+          assert.equal(msg, m.content.toString());
+        })
+    );
+  });
+
+  it('rejects with a proper error when queue does not exist', () => {
+    return withChannel((ch) => {
+      ch.once('error', ignore);
+      return assert.rejects(() => ch.get('', {}), (err) => {
+        assert(err instanceof Error);
+        assert.match(err.message, /NOT_FOUND/);
+        assert.strictEqual(404, err.code);
+        assert.strictEqual(60, err.classId);
+        assert.strictEqual(70, err.methodId);
+        return true;
+      });
+    });
+  });
+});
+
 describe('binding, consuming', () => {
   // bind, publish, get
   it('route message', () => {

@@ -404,36 +404,23 @@ describe('Callback API', () => {
     /*
     When this test was refactored as part of the move to the node test framework
     it failed because only the domain error handler was ever invoked and not the
-    channel.get error callback.
+    channel.get error callback because of https://github.com/amqp-node/amqplib/issues/832
 
-    The original test passed because twice.first (refactored to use util.latch) short circuits on error rather
-    than waiting for twice.second to be invoked. I have verified that the pre-refactored
-    amqplib does not invoke the channel.get callback when the queue does not exist.
-    See lib/callback_model.js
+    Once issue #832 is fixed, the test should be refactored to remove the err parameter
+    passed to both decrementLatch calls.
     */
     error_test('Get from non-queue invokes error', (ch, done, dom) => {
       const decrementLatch = latch(2, () => done());
       dom.on('error', (err) => {
         assert.match(err.message, /404 \(NOT-FOUND\)/);
-        decrementLatch(err);
+        decrementLatch();
       });
       ch.get('', {}, (err) => {
         assert.match(err.message, /404 \(NOT-FOUND\)/)
-        decrementLatch(err)
+        decrementLatch()
       });
     });
 
-    /*
-    When this test was refactored as part of the move to the node test framework
-    it failed because only the domain error handler was ever invoked and not the
-    channel.consume error callback. Unlike the above channel.get test,
-    channel.consume does invoke the channel.consume callback with an error, but
-    the original test did not supply one, mistakenly providing a message handler
-    function instead.
-
-    The original test passed because twice.first (refactored to use util.latch) short circuits on error
-    rather than waiting for twice.second to be invoked.
-    */
     error_test('Consume from non-queue invokes error', (ch, done, dom) => {
       const decrementLatch = latch(2, done);
       dom.on('error', (err) => {
