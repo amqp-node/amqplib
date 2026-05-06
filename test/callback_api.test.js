@@ -401,14 +401,6 @@ describe('Callback API', () => {
       });
     });
 
-    /*
-    When this test was refactored as part of the move to the node test framework
-    it failed because only the domain error handler was ever invoked and not the
-    channel.get error callback because of https://github.com/amqp-node/amqplib/issues/832
-
-    Once issue #832 is fixed, the test should be refactored to remove the err parameter
-    passed to both decrementLatch calls.
-    */
     error_test('Get from non-queue invokes error', (ch, done, dom) => {
       const decrementLatch = latch(2, () => done());
       dom.on('error', (err) => {
