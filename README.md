@@ -147,7 +147,7 @@ amqplib.connect(
     recovery: {
       initialDelay: 200,
       maxDelay: 5000,
-      setup(model, _client, done) {
+      setup(model, done) {
         model.createChannel((err, ch) => {
           if (err) return done(err);
           ch.assertQueue('tasks', {durable: true}, done);
