@@ -300,6 +300,229 @@ describe('Connection', () => {
     }));
   });
 
+  describe('Event handler errors - without handler-event listener', () => {
+    let prevUncaughtExceptionListeners;
+
+    beforeEach(() => {
+      prevUncaughtExceptionListeners = process.rawListeners('uncaughtException').slice();
+      process.removeAllListeners('uncaughtException');
+    });
+
+    afterEach(() => {
+      prevUncaughtExceptionListeners.forEach((h) => process.on('uncaughtException', h));
+    });
+
+    it('throw in close handler from server-initiated close is swallowed without handler-error listener', connectionTest((c, cb) => {
+      c.on('close', () => { throw new Error('user handler explodes'); });
+      c.open(OPEN_OPTS);
+      cb();
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(() => send(defs.ConnectionClose, {
+          replyText: 'Begone',
+          replyCode: defs.constants.CONNECTION_FORCED,
+          methodId: 0,
+          classId: 0,
+        }))
+        .then(wait(defs.ConnectionCloseOk))
+        .then(cb, cb);
+    }));
+
+    it('throw in close handler from client-initiated close is swallowed without handler-error listener', connectionTest((c, cb) => {
+      c.open(OPEN_OPTS, (err) => {
+        assert.ifError(err);
+        c.on('close', () => { throw new Error('user handler explodes on client close'); });
+        c.close();
+        cb();
+      });
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(wait(defs.ConnectionClose))
+        .then(() => send(defs.ConnectionCloseOk, {}))
+        .then(cb, cb);
+    }));
+
+    it('throw in error handler becomes uncaught exception', connectionTest((c, cb) => {
+      const expectedErr = new Error('user error handler explodes');
+      process.once('uncaughtException', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      c.on('error', () => { throw expectedErr; });
+      c.open(OPEN_OPTS);
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(() => send(defs.ConnectionClose, {
+          replyText: 'Begone',
+          replyCode: defs.constants.INTERNAL_ERROR,
+          methodId: 0,
+          classId: 0,
+        }))
+        .then(wait(defs.ConnectionCloseOk))
+        .then(cb, cb);
+    }));
+
+    it('throw in blocked handler becomes uncaught exception', connectionTest((c, cb) => {
+      const expectedErr = new Error('user blocked handler explodes');
+      process.once('uncaughtException', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      c.on('blocked', () => { throw expectedErr; });
+      c.open(OPEN_OPTS);
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(() => send(defs.ConnectionBlocked, { reason: 'memory' }, 0))
+        .then(cb, cb);
+    }));
+
+    it('throw in unblocked handler becomes uncaught exception', connectionTest((c, cb) => {
+      const expectedErr = new Error('user unblocked handler explodes');
+      process.once('uncaughtException', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      c.on('unblocked', () => { throw expectedErr; });
+      c.open(OPEN_OPTS);
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(() => send(defs.ConnectionUnblocked, {}, 0))
+        .then(cb, cb);
+    }));
+
+    it('throw in update-secret-ok handler becomes uncaught exception', connectionTest((c, cb) => {
+      const expectedErr = new Error('user update-secret-ok handler explodes');
+      process.once('uncaughtException', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      c.open(OPEN_OPTS, (err) => {
+        assert.ifError(err);
+        c.on('update-secret-ok', () => { throw expectedErr; });
+        c._updateSecret(Buffer.from('new secret'), 'reason', () => {});
+      });
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(wait(defs.ConnectionUpdateSecret))
+        .then(() => send(defs.ConnectionUpdateSecretOk, {}, 0))
+        .then(cb, cb);
+    }));
+  });
+
+  describe('Event handler errors - with handler-error listener', () => {
+    let prevUncaughtExceptionListeners;
+
+    beforeEach(() => {
+      prevUncaughtExceptionListeners = process.rawListeners('uncaughtException').slice();
+      process.removeAllListeners('uncaughtException');
+    });
+
+    afterEach(() => {
+      prevUncaughtExceptionListeners.forEach((h) => process.on('uncaughtException', h));
+    });
+
+    it('throw in close handler is delivered via handler-error event', connectionTest((c, cb) => {
+      const expectedErr = new Error('user close handler explodes');
+      c.on('handler-error', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      c.on('close', () => { throw expectedErr; });
+      c.open(OPEN_OPTS);
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(() => send(defs.ConnectionClose, {
+          replyText: 'Begone',
+          replyCode: defs.constants.CONNECTION_FORCED,
+          methodId: 0,
+          classId: 0,
+        }))
+        .then(wait(defs.ConnectionCloseOk))
+        .then(cb, cb);
+    }));
+
+    it('throw in error handler is delivered via handler-error event', connectionTest((c, cb) => {
+      const expectedErr = new Error('user error handler explodes');
+      c.on('handler-error', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      c.on('error', () => { throw expectedErr; });
+      c.open(OPEN_OPTS);
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(() => send(defs.ConnectionClose, {
+          replyText: 'Begone',
+          replyCode: defs.constants.INTERNAL_ERROR,
+          methodId: 0,
+          classId: 0,
+        }))
+        .then(wait(defs.ConnectionCloseOk))
+        .then(cb, cb);
+    }));
+
+    it('throw in blocked handler is delivered via handler-error event', connectionTest((c, cb) => {
+      const expectedErr = new Error('user blocked handler explodes');
+      c.on('handler-error', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      c.on('blocked', () => { throw expectedErr; });
+      c.open(OPEN_OPTS);
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(() => send(defs.ConnectionBlocked, { reason: 'memory' }, 0))
+        .then(cb, cb);
+    }));
+
+    it('throw in unblocked handler is delivered via handler-error event', connectionTest((c, cb) => {
+      const expectedErr = new Error('user unblocked handler explodes');
+      c.on('handler-error', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      c.on('unblocked', () => { throw expectedErr; });
+      c.open(OPEN_OPTS);
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(() => send(defs.ConnectionUnblocked, {}, 0))
+        .then(cb, cb);
+    }));
+
+    it('throw in update-secret-ok handler is delivered via handler-error event', connectionTest((c, cb) => {
+      const expectedErr = new Error('user update-secret-ok handler explodes');
+      c.on('handler-error', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      c.open(OPEN_OPTS, (err) => {
+        assert.ifError(err);
+        c.on('update-secret-ok', () => { throw expectedErr; });
+        c._updateSecret(Buffer.from('new secret'), 'reason', () => {});
+      });
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(wait(defs.ConnectionUpdateSecret))
+        .then(() => send(defs.ConnectionUpdateSecretOk, {}, 0))
+        .then(cb, cb);
+    }));
+
+    it('throw in handler-error handler becomes uncaught exception', connectionTest((c, cb) => {
+      const expectedErr = new Error('handler-error handler explodes');
+      process.once('uncaughtException', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      c.on('handler-error', () => { throw expectedErr; });
+      c.on('blocked', () => { throw new Error('user blocked handler explodes'); });
+      c.open(OPEN_OPTS);
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(() => send(defs.ConnectionBlocked, { reason: 'memory' }, 0))
+        .then(cb, cb);
+    }));
+  });
+
   describe('heartbeats', () => {
 
     beforeEach(() => {

@@ -1,4 +1,4 @@
-const { describe, it } = require('node:test');
+const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const promisify = require('node:util').promisify;
 const Channel = require('../lib/channel').Channel;
@@ -607,6 +607,304 @@ describe('Channel', () => {
       }, cb);
     }, (_send, _wait, cb) => {
       cb();
+    }));
+  });
+
+  describe('Event handler errors - without handler-error listener', () => {
+    let prevUncaughtExceptionListeners;
+
+    beforeEach(() => {
+      prevUncaughtExceptionListeners = process.rawListeners('uncaughtException').slice();
+      process.removeAllListeners('uncaughtException');
+    });
+
+    afterEach(() => {
+      prevUncaughtExceptionListeners.forEach((h) => process.on('uncaughtException', h));
+    });
+
+    it('throw in close handler kills the connection without handler-error listener', channelTest((ch, cb, conn) => {
+      const expectedErr = new Error('user close handler explodes');
+      let connErrorSeen = false;
+      // The throw propagates to acceptLoop → frameError → onSocketError → connection.emit('error')
+      conn.on('error', (err) => {
+        assert.strictEqual(err, expectedErr);
+        connErrorSeen = true;
+      });
+      // The ChannelCloseOk buffered before the kill is flushed by the mux after the
+      // stream is ended, producing ERR_STREAM_PUSH_AFTER_EOF. Absorb it and use it
+      // as the signal to end the test, since it fires after the conn error.
+      process.once('uncaughtException', (err) => {
+        assert.strictEqual(err.code, 'ERR_STREAM_PUSH_AFTER_EOF');
+        assert.ok(connErrorSeen);
+        cb();
+      });
+      ch.once('error', (err) => { assert.match(err.message, /Channel closed by server/); });
+      ch.on('close', () => { throw expectedErr; });
+      open(ch);
+    }, (send, _wait, cb, ch) => {
+      completes(() => {
+        send(defs.ChannelClose, {
+          replyText: 'Forced close',
+          replyCode: defs.constants.CHANNEL_ERROR,
+          classId: 0,
+          methodId: 0,
+        }, ch);
+      }, cb);
+    }));
+
+    it('throw in error handler becomes uncaught exception', channelTest((ch, cb) => {
+      const expectedErr = new Error('user error handler explodes');
+      process.once('uncaughtException', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      ch.on('error', () => { throw expectedErr; });
+      open(ch);
+    }, (send, wait, cb, ch) => {
+      send(defs.ChannelClose, {
+        replyText: 'Forced close',
+        replyCode: defs.constants.CHANNEL_ERROR,
+        classId: 0,
+        methodId: 0,
+      }, ch);
+      wait(defs.ChannelCloseOk)().then(cb, cb);
+    }));
+
+    it('throw in drain handler becomes uncaught exception', channelTest((ch, cb) => {
+      const expectedErr = new Error('user drain handler explodes');
+      process.once('uncaughtException', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      ch.on('drain', () => { throw expectedErr; });
+      // Call outside a Promise chain so the throw becomes an uncaughtException
+      open(ch).then(() => setImmediate(() => ch.onBufferDrain()));
+    }, (_send, _wait, cb) => { cb(); }));
+
+    it('throw in ack handler becomes uncaught exception', channelTest((ch, cb) => {
+      const expectedErr = new Error('user ack handler explodes');
+      process.once('uncaughtException', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      ch.on('ack', () => { throw expectedErr; });
+      open(ch);
+    }, (send, _wait, cb, ch) => {
+      completes(() => {
+        send(defs.BasicAck, { deliveryTag: 1, multiple: false }, ch);
+      }, cb);
+    }));
+
+    it('throw in nack handler becomes uncaught exception', channelTest((ch, cb) => {
+      const expectedErr = new Error('user nack handler explodes');
+      process.once('uncaughtException', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      ch.on('nack', () => { throw expectedErr; });
+      open(ch);
+    }, (send, _wait, cb, ch) => {
+      completes(() => {
+        send(defs.BasicNack, { deliveryTag: 1, multiple: false, requeue: false }, ch);
+      }, cb);
+    }));
+
+    it('throw in cancel handler becomes uncaught exception', channelTest((ch, cb) => {
+      const expectedErr = new Error('user cancel handler explodes');
+      process.once('uncaughtException', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      ch.on('cancel', () => { throw expectedErr; });
+      open(ch);
+    }, (send, _wait, cb, ch) => {
+      completes(() => {
+        send(defs.BasicCancel, { consumerTag: 'tag', nowait: false }, ch);
+      }, cb);
+    }));
+
+    it('throw in delivery handler closes channel with error', channelTest((ch, cb) => {
+      // acceptMessageFrame catches the throw and routes it to closeWithError,
+      // which fires channel 'error' then 'close' — it does NOT become an uncaughtException.
+      const expectedErr = new Error('user delivery handler explodes');
+      const decrementLatch = latch(2, cb);
+      ch.on('error', (err) => {
+        assert.strictEqual(err, expectedErr);
+        decrementLatch();
+      });
+      ch.on('close', decrementLatch);
+      ch.on('delivery', () => { throw expectedErr; });
+      open(ch);
+    }, (send, wait, cb, ch) => {
+      send(defs.BasicDeliver, DELIVER_FIELDS, ch, Buffer.from('hello'));
+      wait(defs.ChannelClose)()
+        .then(() => send(defs.ChannelCloseOk, {}, ch))
+        .then(cb, cb);
+    }));
+
+    it('throw in return handler closes channel with error', channelTest((ch, cb) => {
+      // acceptMessageFrame catches the throw and routes it to closeWithError.
+      const expectedErr = new Error('user return handler explodes');
+      const decrementLatch = latch(2, cb);
+      ch.on('error', (err) => {
+        assert.strictEqual(err, expectedErr);
+        decrementLatch();
+      });
+      ch.on('close', decrementLatch);
+      ch.on('return', () => { throw expectedErr; });
+      open(ch);
+    }, (send, wait, cb, ch) => {
+      send(defs.BasicReturn, DELIVER_FIELDS, ch, Buffer.from('hello'));
+      wait(defs.ChannelClose)()
+        .then(() => send(defs.ChannelCloseOk, {}, ch))
+        .then(cb, cb);
+    }));
+  });
+
+  describe('Event handler errors - with handler-error listener', () => {
+    let prevUncaughtExceptionListeners;
+
+    beforeEach(() => {
+      prevUncaughtExceptionListeners = process.rawListeners('uncaughtException').slice();
+      process.removeAllListeners('uncaughtException');
+    });
+
+    afterEach(() => {
+      prevUncaughtExceptionListeners.forEach((h) => process.on('uncaughtException', h));
+    });
+
+    it('throw in close handler is delivered via handler-error event', channelTest((ch, cb) => {
+      const expectedErr = new Error('user close handler explodes');
+      ch.on('handler-error', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      // A server-initiated ChannelClose always fires 'error' before 'close' (line 291 in channel.js).
+      // Handle it so only the throw from the close handler reaches handler-error.
+      ch.once('error', (err) => { assert.match(err.message, /Channel closed by server/); });
+      ch.on('close', () => { throw expectedErr; });
+      open(ch);
+    }, (send, wait, cb, ch) => {
+      send(defs.ChannelClose, {
+        replyText: 'Forced close',
+        replyCode: defs.constants.CHANNEL_ERROR,
+        classId: 0,
+        methodId: 0,
+      }, ch);
+      wait(defs.ChannelCloseOk)().then(cb, cb);
+    }));
+
+    it('throw in error handler is delivered via handler-error event', channelTest((ch, cb) => {
+      const expectedErr = new Error('user error handler explodes');
+      ch.on('handler-error', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      ch.on('error', () => { throw expectedErr; });
+      open(ch);
+    }, (send, wait, cb, ch) => {
+      send(defs.ChannelClose, {
+        replyText: 'Forced close',
+        replyCode: defs.constants.CHANNEL_ERROR,
+        classId: 0,
+        methodId: 0,
+      }, ch);
+      wait(defs.ChannelCloseOk)().then(cb, cb);
+    }));
+
+    it('throw in drain handler is delivered via handler-error event', channelTest((ch, cb) => {
+      const expectedErr = new Error('user drain handler explodes');
+      ch.on('handler-error', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      ch.on('drain', () => { throw expectedErr; });
+      open(ch).then(() => setImmediate(() => ch.onBufferDrain()));
+    }, (_send, _wait, cb) => { cb(); }));
+
+    it('throw in ack handler is delivered via handler-error event', channelTest((ch, cb) => {
+      const expectedErr = new Error('user ack handler explodes');
+      ch.on('handler-error', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      ch.on('ack', () => { throw expectedErr; });
+      open(ch);
+    }, (send, _wait, cb, ch) => {
+      completes(() => {
+        send(defs.BasicAck, { deliveryTag: 1, multiple: false }, ch);
+      }, cb);
+    }));
+
+    it('throw in nack handler is delivered via handler-error event', channelTest((ch, cb) => {
+      const expectedErr = new Error('user nack handler explodes');
+      ch.on('handler-error', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      ch.on('nack', () => { throw expectedErr; });
+      open(ch);
+    }, (send, _wait, cb, ch) => {
+      completes(() => {
+        send(defs.BasicNack, { deliveryTag: 1, multiple: false, requeue: false }, ch);
+      }, cb);
+    }));
+
+    it('throw in cancel handler is delivered via handler-error event', channelTest((ch, cb) => {
+      const expectedErr = new Error('user cancel handler explodes');
+      ch.on('handler-error', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      ch.on('cancel', () => { throw expectedErr; });
+      open(ch);
+    }, (send, _wait, cb, ch) => {
+      completes(() => {
+        send(defs.BasicCancel, { consumerTag: 'tag', nowait: false }, ch);
+      }, cb);
+    }));
+
+    it('throw in delivery handler is delivered via handler-error event', channelTest((ch, cb) => {
+      const expectedErr = new Error('user delivery handler explodes');
+      ch.on('handler-error', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      ch.on('delivery', () => { throw expectedErr; });
+      open(ch);
+    }, (send, _wait, cb, ch) => {
+      completes(() => {
+        send(defs.BasicDeliver, DELIVER_FIELDS, ch, Buffer.from('hello'));
+      }, cb);
+    }));
+
+    it('throw in return handler is delivered via handler-error event', channelTest((ch, cb) => {
+      const expectedErr = new Error('user return handler explodes');
+      ch.on('handler-error', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      ch.on('return', () => { throw expectedErr; });
+      open(ch);
+    }, (send, _wait, cb, ch) => {
+      completes(() => {
+        send(defs.BasicReturn, DELIVER_FIELDS, ch, Buffer.from('hello'));
+      }, cb);
+    }));
+
+    it('throw in handler-error handler becomes uncaught exception', channelTest((ch, cb) => {
+      const expectedErr = new Error('handler-error handler explodes');
+      process.once('uncaughtException', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      ch.on('handler-error', () => { throw expectedErr; });
+      ch.on('ack', () => { throw new Error('user ack handler explodes'); });
+      open(ch);
+    }, (send, _wait, cb, ch) => {
+      completes(() => {
+        send(defs.BasicAck, { deliveryTag: 1, multiple: false }, ch);
+      }, cb);
     }));
   });
 });
