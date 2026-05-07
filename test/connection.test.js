@@ -423,8 +423,9 @@ describe('Connection', () => {
 
     it('throw in close handler is delivered via handler-error event', connectionTest((c, cb) => {
       const expectedErr = new Error('user close handler explodes');
-      c.on('handler-error', (err) => {
+      c.on('handler-error', (err, event) => {
         assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'close');
         cb();
       });
       c.on('close', () => { throw expectedErr; });
@@ -443,8 +444,9 @@ describe('Connection', () => {
 
     it('throw in error handler is delivered via handler-error event', connectionTest((c, cb) => {
       const expectedErr = new Error('user error handler explodes');
-      c.on('handler-error', (err) => {
+      c.on('handler-error', (err, event) => {
         assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'error');
         cb();
       });
       c.on('error', () => { throw expectedErr; });
@@ -463,8 +465,9 @@ describe('Connection', () => {
 
     it('throw in blocked handler is delivered via handler-error event', connectionTest((c, cb) => {
       const expectedErr = new Error('user blocked handler explodes');
-      c.on('handler-error', (err) => {
+      c.on('handler-error', (err, event) => {
         assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'blocked');
         cb();
       });
       c.on('blocked', () => { throw expectedErr; });
@@ -477,8 +480,9 @@ describe('Connection', () => {
 
     it('throw in unblocked handler is delivered via handler-error event', connectionTest((c, cb) => {
       const expectedErr = new Error('user unblocked handler explodes');
-      c.on('handler-error', (err) => {
+      c.on('handler-error', (err, event) => {
         assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'unblocked');
         cb();
       });
       c.on('unblocked', () => { throw expectedErr; });
@@ -491,8 +495,9 @@ describe('Connection', () => {
 
     it('throw in update-secret-ok handler is delivered via handler-error event', connectionTest((c, cb) => {
       const expectedErr = new Error('user update-secret-ok handler explodes');
-      c.on('handler-error', (err) => {
+      c.on('handler-error', (err, event) => {
         assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'update-secret-ok');
         cb();
       });
       c.open(OPEN_OPTS, (err) => {
