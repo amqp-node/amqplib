@@ -775,8 +775,9 @@ describe('Channel', () => {
 
     it('throw in close handler is delivered via handler-error event', channelTest((ch, cb) => {
       const expectedErr = new Error('user close handler explodes');
-      ch.on('handler-error', (err) => {
+      ch.on('handler-error', (err, event) => {
         assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'close');
         cb();
       });
       // A server-initiated ChannelClose always fires 'error' before 'close' (line 291 in channel.js).
@@ -796,8 +797,9 @@ describe('Channel', () => {
 
     it('throw in error handler is delivered via handler-error event', channelTest((ch, cb) => {
       const expectedErr = new Error('user error handler explodes');
-      ch.on('handler-error', (err) => {
+      ch.on('handler-error', (err, event) => {
         assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'error');
         cb();
       });
       ch.on('error', () => { throw expectedErr; });
@@ -814,8 +816,9 @@ describe('Channel', () => {
 
     it('throw in drain handler is delivered via handler-error event', channelTest((ch, cb) => {
       const expectedErr = new Error('user drain handler explodes');
-      ch.on('handler-error', (err) => {
+      ch.on('handler-error', (err, event) => {
         assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'drain');
         cb();
       });
       ch.on('drain', () => { throw expectedErr; });
@@ -824,8 +827,9 @@ describe('Channel', () => {
 
     it('throw in ack handler is delivered via handler-error event', channelTest((ch, cb) => {
       const expectedErr = new Error('user ack handler explodes');
-      ch.on('handler-error', (err) => {
+      ch.on('handler-error', (err, event) => {
         assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'ack');
         cb();
       });
       ch.on('ack', () => { throw expectedErr; });
@@ -838,8 +842,9 @@ describe('Channel', () => {
 
     it('throw in nack handler is delivered via handler-error event', channelTest((ch, cb) => {
       const expectedErr = new Error('user nack handler explodes');
-      ch.on('handler-error', (err) => {
+      ch.on('handler-error', (err, event) => {
         assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'nack');
         cb();
       });
       ch.on('nack', () => { throw expectedErr; });
@@ -852,8 +857,9 @@ describe('Channel', () => {
 
     it('throw in cancel handler is delivered via handler-error event', channelTest((ch, cb) => {
       const expectedErr = new Error('user cancel handler explodes');
-      ch.on('handler-error', (err) => {
+      ch.on('handler-error', (err, event) => {
         assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'cancel');
         cb();
       });
       ch.on('cancel', () => { throw expectedErr; });
@@ -866,8 +872,9 @@ describe('Channel', () => {
 
     it('throw in delivery handler is delivered via handler-error event', channelTest((ch, cb) => {
       const expectedErr = new Error('user delivery handler explodes');
-      ch.on('handler-error', (err) => {
+      ch.on('handler-error', (err, event) => {
         assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'delivery');
         cb();
       });
       ch.on('delivery', () => { throw expectedErr; });
@@ -880,8 +887,9 @@ describe('Channel', () => {
 
     it('throw in return handler is delivered via handler-error event', channelTest((ch, cb) => {
       const expectedErr = new Error('user return handler explodes');
-      ch.on('handler-error', (err) => {
+      ch.on('handler-error', (err, event) => {
         assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'return');
         cb();
       });
       ch.on('return', () => { throw expectedErr; });
