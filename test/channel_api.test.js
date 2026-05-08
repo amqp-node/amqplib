@@ -25,6 +25,15 @@ describe('updateSecret', () => {
         .finally(() => c.close())
     );
   });
+
+  it('emits update-secret-ok event', () => {
+    return connect().then((c) =>
+      new Promise((resolve, reject) => {
+        c.on('update-secret-ok', resolve);
+        c.updateSecret(Buffer.from('new secret'), 'no reason').catch(reject);
+      }).finally(() => c.close())
+    );
+  });
 });
 
 describe('assert, check, delete', () => {
