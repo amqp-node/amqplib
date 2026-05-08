@@ -42,6 +42,17 @@ describe('Callback API', () => {
         });
       });
     });
+
+    it('emits update-secret-ok event', (_t, done) => {
+      connect((err, _c) => {
+        assert.ifError(err);
+        c = _c;
+        c.on('update-secret-ok', () => done());
+        c.updateSecret(Buffer.from('new secret'), 'no reason', (err) => {
+          assert.ifError(err);
+        });
+      });
+    });
   });
 
   const channel_test_fn = (method) => {
