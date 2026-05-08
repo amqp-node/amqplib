@@ -310,6 +310,7 @@ describe('Connection', () => {
 
     afterEach(() => {
       prevUncaughtExceptionListeners.forEach((h) => process.on('uncaughtException', h));
+      heartbeat.UNITS_TO_MS = 1000;
     });
 
     it('throw in close handler from server-initiated close is swallowed without handler-error listener', connectionTest((c, cb) => {
@@ -407,6 +408,65 @@ describe('Connection', () => {
         .then(() => send(defs.ConnectionUpdateSecretOk, {}, 0))
         .then(cb, cb);
     }));
+
+    it('throw in error handler from closeWithError becomes uncaught exception', connectionTest((c, cb) => {
+      const expectedErr = new Error('user error handler explodes on closeWithError');
+      process.once('uncaughtException', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      c.once('error', (err) => {
+        assert.match(err.message, /Unexpected frame on channel 0/);
+        throw expectedErr;
+      });
+      c.open(OPEN_OPTS);
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(() => send(defs.ChannelOpenOk, { channelId: Buffer.from('') }, 0))
+        .then(cb, cb);
+    }));
+
+    it('throw in error handler from onSocketError', connectionTest((c, cb) => {
+      const expectedErr = new Error('user error handler explodes on socket error');
+      process.once('uncaughtException', (err) => {
+        assert.strictEqual(err, expectedErr);
+        cb();
+      });
+      c.once('error', (err) => {
+        assert.match(err.message, /Unexpected close/);
+        throw expectedErr;
+      });
+      c.open(OPEN_OPTS, (err) => {
+        assert.ifError(err);
+        c.sendHeartbeat();
+      });
+    }, (send, wait, cb, socket) => {
+      handshake(send, wait)
+        .then(wait())
+        .then(() => socket.end())
+        .then(cb, cb);
+    }));
+
+    it('throw in error handler from heartbeat timeout', connectionTest((c, cb) => {
+      heartbeat.UNITS_TO_MS = 20;
+      const expectedErr = new Error('user error handler explodes on heartbeat timeout');
+      const opts = Object.create(OPEN_OPTS);
+      opts.heartbeat = 1;
+      process.once('uncaughtException', (err) => {
+        assert.strictEqual(err, expectedErr);
+        c.heartbeater.clear();
+        cb();
+      });
+      c.on('error', (err) => {
+        assert.match(err.message, /Heartbeat timeout/);
+        throw expectedErr;
+      });
+      c.open(opts);
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(cb, cb);
+      // conspicuously not sending anything ...
+    }));
   });
 
   describe('Event handler errors - with handler-error listener', () => {
@@ -419,6 +479,7 @@ describe('Connection', () => {
 
     afterEach(() => {
       prevUncaughtExceptionListeners.forEach((h) => process.on('uncaughtException', h));
+      heartbeat.UNITS_TO_MS = 1000;
     });
 
     it('throw in close handler is delivered via handler-error event', connectionTest((c, cb) => {
@@ -509,6 +570,68 @@ describe('Connection', () => {
       handshake(send, wait)
         .then(wait(defs.ConnectionUpdateSecret))
         .then(() => send(defs.ConnectionUpdateSecretOk, {}, 0))
+        .then(cb, cb);
+    }));
+
+    it('throw in error handler from heartbeat timeout is delivered via handler-error event', connectionTest((c, cb) => {
+      heartbeat.UNITS_TO_MS = 20;
+      const expectedErr = new Error('user error handler explodes on heartbeat timeout');
+      const opts = Object.create(OPEN_OPTS);
+      opts.heartbeat = 1;
+      c.on('handler-error', (err, event) => {
+        assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'error');
+        c.heartbeater.clear();
+        cb();
+      });
+      c.on('error', (err) => {
+        assert.match(err.message, /Heartbeat timeout/);
+        throw expectedErr;
+      });
+      c.open(opts);
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(cb, cb);
+      // conspicuously not sending anything ...
+    }));
+
+    it('throw in error handler from closeWithError is delivered via handler-error event', connectionTest((c, cb) => {
+      const expectedErr = new Error('user error handler explodes on closeWithError');
+      c.on('handler-error', (err, event) => {
+        assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'error');
+        cb();
+      });
+      c.once('error', (err) => {
+        assert.match(err.message, /Unexpected frame on channel 0/);
+        throw expectedErr;
+      });
+      c.open(OPEN_OPTS);
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(() => send(defs.ChannelOpenOk, { channelId: Buffer.from('') }, 0))
+        .then(cb, cb);
+    }));
+
+    it('throw in error handler from onSocketError is delivered via handler-error event', connectionTest((c, cb) => {
+      const expectedErr = new Error('user error handler explodes on socket error');
+      c.on('handler-error', (err, event) => {
+        assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'error');
+        cb();
+      });
+      c.once('error', (err) => {
+        assert.match(err.message, /Unexpected close/);
+        throw expectedErr;
+      });
+      c.open(OPEN_OPTS, (err) => {
+        assert.ifError(err);
+        c.sendHeartbeat();
+      });
+    }, (send, wait, cb, socket) => {
+      handshake(send, wait)
+        .then(wait())
+        .then(() => socket.end())
         .then(cb, cb);
     }));
 
