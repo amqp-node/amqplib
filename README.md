@@ -43,9 +43,15 @@ const queue = 'tasks';
 amqplib.connect('amqp://localhost', (err, conn) => {
   if (err) throw err;
 
+  conn.on('error', (err) => { console.error('Connection error:', err); });
+  conn.on('handler-error', (err, event) => { console.error(`Uncaught exception in connection ${event} listener:`, err); });
+
   // Listener
   conn.createChannel((err, ch2) => {
     if (err) throw err;
+
+    ch2.on('error', (err) => { console.error('Channel error:', err); });
+    ch2.on('handler-error', (err, event) => { console.error(`Uncaught exception in channel ${event} listener:`, err); });
 
     ch2.assertQueue(queue);
 
@@ -63,6 +69,8 @@ amqplib.connect('amqp://localhost', (err, conn) => {
   conn.createChannel((err, ch1) => {
     if (err) throw err;
 
+    ch1.on('error', (err) => { console.error('Channel error:', err); });
+    ch1.on('handler-error', (err, event) => { console.error(`Uncaught exception in channel ${event} listener:`, err); });
     ch1.assertQueue(queue);
 
     setInterval(() => {
@@ -80,8 +88,12 @@ const amqplib = require('amqplib');
 (async () => {
   const queue = 'tasks';
   const conn = await amqplib.connect('amqp://localhost');
+  conn.on('error', (err) => { console.error('Connection error:', err); });
+  conn.on('handler-error', (err, event) => { console.error(`Uncaught exception in connection ${event} listener:`, err); });
 
   const ch1 = await conn.createChannel();
+  ch1.on('error', (err) => { console.error('Channel error:', err); });
+  ch1.on('handler-error', (err, event) => { console.error(`Uncaught exception in channel ${event} listener:`, err); });
   await ch1.assertQueue(queue);
 
   // Listener
@@ -96,6 +108,8 @@ const amqplib = require('amqplib');
 
   // Sender
   const ch2 = await conn.createChannel();
+  ch2.on('error', (err) => { console.error('Channel error:', err); });
+  ch2.on('handler-error', (err, event) => { console.error(`Uncaught exception in channel ${event} listener:`, err); });
 
   setInterval(() => {
     ch2.sendToQueue(queue, Buffer.from('something to do'));
@@ -103,6 +117,103 @@ const amqplib = require('amqplib');
 })();
 
 ```
+
+## Opt-in recovery
+
+Automatic recovery is available as an opt-in feature through `connect` options:
+
+```javascript
+const amqplib = require('amqplib');
+
+const connection = await amqplib.connect('amqp://localhost', {
+  recovery: {
+    initialDelay: 200, // ms
+    maxDelay: 5000, // ms
+    factor: 2,
+    jitter: 0.2,
+    maxRetries: Infinity,
+    async setup(model) {
+      // Called after every successful (re)connect.
+      // Recreate topology/consumers here.
+      const ch = await model.createChannel();
+      await ch.assertQueue('tasks', {durable: true});
+    },
+  },
+});
+
+connection.on('connect', () => {
+  console.log('connected');
+});
+
+connection.on('disconnect', (err) => {
+  console.warn('disconnected', err.message);
+});
+```
+
+Callback API supports the same option:
+
+```javascript
+const amqplib = require('amqplib/callback_api');
+
+amqplib.connect(
+  'amqp://localhost',
+  {
+    recovery: {
+      initialDelay: 200,
+      maxDelay: 5000,
+      setup(model, done) {
+        model.createChannel((err, ch) => {
+          if (err) return done(err);
+          ch.assertQueue('tasks', {durable: true}, done);
+        });
+      },
+    },
+  },
+  (err, conn) => {
+    if (err) throw err;
+    conn.on('connect', () => console.log('connected'));
+  },
+);
+```
+
+Without `recovery` options, behavior is unchanged.
+
+## Error handling in event handlers
+
+If a user-supplied event handler throws a synchronous error, the throw will
+propagate into amqplib internals. Depending on where in the call stack it
+escapes, this can silently swallow the error, or close the channel or
+connection.
+
+To avoid this, register a `handler-error` listener on the connection and on
+each channel. If a listener is present, amqplib will catch any throw from a
+user event handler and deliver it there instead of letting it propagate
+internally. The listener receives the thrown error and the name of the event
+whose handler threw.
+
+Note that `handler-error` is not a replacement for the `error` event.
+The `error` event is emitted by amqplib itself when the connection or channel
+encounters a protocol-level error. The `handler-error` event is only emitted
+when *your own* event listener throws.
+
+```js
+const connection = await amqp.connect('amqp://localhost');
+
+connection.on('error', (err) => { /* handle protocol errors */ });
+connection.on('handler-error', (err, event) => {
+  console.error(`Uncaught exception in connection ${event} listener:`, err);
+});
+
+const channel = await connection.createChannel();
+
+channel.on('error', (err) => { /* handle protocol errors */ });
+channel.on('handler-error', (err, event) => {
+  console.error(`Uncaught exception in channel ${event} listener:`, err);
+});
+```
+
+If no `handler-error` listener is registered, behaviour is unchanged from
+previous versions.
 
 ## Running tests
 

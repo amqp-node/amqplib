@@ -1,5 +1,6 @@
 const raw_connect = require('./lib/connect').connect;
 const CallbackModel = require('./lib/callback_model').CallbackModel;
+const recovery = require('./lib/recovery');
 
 // Supports three shapes:
 // connect(url, options, callback)
@@ -15,7 +16,21 @@ function connect(url, options, cb) {
     options = false;
   }
 
-  raw_connect(url, options, (err, c) => {
+  const {connectionOptions, recovery: recoveryOptions} = recovery.splitConnectionOptions(options);
+  if (recovery.recoveryEnabled(recoveryOptions)) {
+    const openModel = () => {
+      return new Promise((resolve, reject) => {
+        raw_connect(url, connectionOptions, (err, c) => {
+          if (err === null) resolve(new CallbackModel(c));
+          else reject(err);
+        });
+      });
+    };
+
+    return recovery.connectWithRecoveryCallback(openModel, recoveryOptions, cb);
+  }
+
+  raw_connect(url, connectionOptions, (err, c) => {
     if (err === null) cb(null, new CallbackModel(c));
     else cb(err);
   });
