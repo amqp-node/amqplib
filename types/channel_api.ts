@@ -179,6 +179,41 @@ function testReExports() {
   const _getOpts: Options.Get = { noAck: true };
 }
 
+function testChannelModelEvents(conn: amqp.ChannelModel) {
+  conn.on('close', () => {});
+  conn.on('close', (err) => { const _e: Error | undefined = err; });
+  conn.on('error', (err) => { const _e: Error = err; });
+  conn.on('blocked', (reason) => { const _r: string = reason; });
+  conn.on('unblocked', () => {});
+  conn.on('update-secret-ok', () => {});
+  conn.on('handler-error', (err, eventName) => {
+    const _e: Error = err;
+    const _n: string = eventName;
+  });
+}
+
+function testChannelEvents(ch: amqp.Channel) {
+  ch.on('close', () => {});
+  ch.on('error', (err) => { const _e: Error = err; });
+  ch.on('drain', () => {});
+  ch.on('ack', (fields) => {
+    const _tag: number = fields.deliveryTag;
+    const _multiple: boolean = fields.multiple;
+  });
+  ch.on('nack', (fields) => {
+    const _tag: number = fields.deliveryTag;
+    const _multiple: boolean = fields.multiple;
+    const _requeue: boolean = fields.requeue;
+  });
+  ch.on('cancel', (fields) => { const _tag: string = fields.consumerTag; });
+  ch.on('delivery', (msg) => { const _content: Buffer = msg.content; });
+  ch.on('return', (msg) => { const _content: Buffer = msg.content; });
+  ch.on('handler-error', (err, eventName) => {
+    const _e: Error = err;
+    const _n: string = eventName;
+  });
+}
+
 async function testRecovery() {
   const recoveryOpts: amqp.RecoveryOptions = {
     initialDelay: 100,

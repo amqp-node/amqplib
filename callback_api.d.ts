@@ -21,10 +21,29 @@ export interface Connection extends events.EventEmitter {
     readonly serverProperties: ServerProperties;
   };
   updateSecret(newSecret: Buffer, reason: string, callback?: (err: Error) => void): void;
+
+  on(event: 'close', listener: (err?: Error) => void): this;
+  on(event: 'error', listener: (err: Error) => void): this;
+  on(event: 'blocked', listener: (reason: string) => void): this;
+  on(event: 'unblocked', listener: () => void): this;
+  on(event: 'update-secret-ok', listener: () => void): this;
+  on(event: 'handler-error', listener: (err: Error, eventName: string) => void): this;
+  on(event: string, listener: (...args: any[]) => void): this;
 }
 
 export interface Channel extends events.EventEmitter {
   readonly connection: Connection;
+
+  on(event: 'close', listener: () => void): this;
+  on(event: 'error', listener: (err: Error) => void): this;
+  on(event: 'drain', listener: () => void): this;
+  on(event: 'ack', listener: (fields: { deliveryTag: number; multiple: boolean }) => void): this;
+  on(event: 'nack', listener: (fields: { deliveryTag: number; multiple: boolean; requeue: boolean }) => void): this;
+  on(event: 'cancel', listener: (fields: { consumerTag: string }) => void): this;
+  on(event: 'delivery', listener: (message: ConsumeMessage) => void): this;
+  on(event: 'return', listener: (message: Message) => void): this;
+  on(event: 'handler-error', listener: (err: Error, eventName: string) => void): this;
+  on(event: string, listener: (...args: any[]) => void): this;
 
   close(callback?: (err: Error) => void): void;
 
