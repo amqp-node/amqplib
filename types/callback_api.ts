@@ -183,3 +183,65 @@ function testIllegalOperationError() {
   const _name: 'IllegalOperationError' = err.name;
   const _stack: string | undefined = err.stackAtStateChange;
 }
+
+function testRecovery() {
+  const recoveryOpts: amqp.RecoveryOptions = {
+    initialDelay: 100,
+    maxDelay: 30000,
+    factor: 2,
+    jitter: 0.2,
+    maxRetries: 10,
+    setup: (model, done) => {
+      model.createChannel((err, _ch) => done(err ?? undefined));
+    },
+  };
+
+  const sockOpts: SocketOptions = { noDelay: true };
+
+  // connect with recovery enabled via boolean
+  const conn1: amqp.RecoveringConnection = amqp.connect('amqp://localhost', {
+    ...sockOpts,
+    recovery: true,
+  }, (err, conn) => {
+    if (err) return;
+    const _conn: amqp.RecoveringConnection = conn;
+  });
+
+  // connect with recovery options
+  const conn2: amqp.RecoveringConnection = amqp.connect('amqp://localhost', {
+    ...sockOpts,
+    recovery: recoveryOpts,
+  }, (err, conn) => {
+    if (err) return;
+    const _conn: amqp.RecoveringConnection = conn;
+  });
+
+  // RecoveringConnection supports same channel operations
+  conn1.createChannel((err, ch) => {
+    if (err) return;
+    const _ch: amqp.Channel = ch;
+  });
+  conn1.createConfirmChannel((err, ch) => {
+    if (err) return;
+    const _ch: amqp.ConfirmChannel = ch;
+  });
+  conn1.updateSecret(Buffer.from('secret'), 'rotation');
+  conn1.close();
+
+  // Recovery-specific events
+  conn2.on('connect', (model) => { const _m: amqp.Connection = model; });
+  conn2.on('disconnect', (err) => { const _e: Error = err; });
+  conn2.on('connect-failed', (err) => { const _e: Error = err; });
+  conn2.on('reconnect-scheduled', (info) => {
+    const _attempt: number = info.attempt;
+    const _delay: number = info.delay;
+    const _err: Error = info.error;
+  });
+  conn2.on('reconnect-failed', (err) => { const _e: Error = err; });
+  conn2.on('blocked', (reason) => { const _r: string = reason; });
+  conn2.on('unblocked', () => {});
+  conn2.on('error', (err) => { const _e: Error = err; });
+  conn2.on('update-secret-ok', () => {});
+
+  void [conn1, conn2];
+}

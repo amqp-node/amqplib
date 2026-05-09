@@ -178,3 +178,54 @@ function testReExports() {
   const _opts: Options.Publish = { persistent: true };
   const _getOpts: Options.Get = { noAck: true };
 }
+
+async function testRecovery() {
+  const recoveryOpts: amqp.RecoveryOptions = {
+    initialDelay: 100,
+    maxDelay: 30000,
+    factor: 2,
+    jitter: 0.2,
+    maxRetries: 10,
+    setup: async (model: amqp.ChannelModel) => {
+      const _ch: amqp.Channel = await model.createChannel();
+    },
+  };
+
+  const sockOpts: SocketOptions = { noDelay: true };
+
+  // connect with recovery enabled via boolean
+  const conn1: amqp.RecoveringChannelModel = await amqp.connect('amqp://localhost', {
+    ...sockOpts,
+    recovery: true,
+  });
+
+  // connect with recovery options
+  const conn2: amqp.RecoveringChannelModel = await amqp.connect('amqp://localhost', {
+    ...sockOpts,
+    recovery: recoveryOpts,
+  });
+
+  // RecoveringChannelModel supports same channel operations
+  const ch: amqp.Channel = await conn1.createChannel();
+  const confirmCh: amqp.ConfirmChannel = await conn1.createConfirmChannel();
+  await conn1.updateSecret(Buffer.from('secret'), 'rotation');
+  void [ch, confirmCh];
+
+  // Recovery-specific events
+  conn2.on('connect', (model) => { const _m: amqp.ChannelModel = model; });
+  conn2.on('disconnect', (err) => { const _e: Error = err; });
+  conn2.on('connect-failed', (err) => { const _e: Error = err; });
+  conn2.on('reconnect-scheduled', (info) => {
+    const _attempt: number = info.attempt;
+    const _delay: number = info.delay;
+    const _err: Error = info.error;
+  });
+  conn2.on('reconnect-failed', (err) => { const _e: Error = err; });
+  conn2.on('blocked', (reason) => { const _r: string = reason; });
+  conn2.on('unblocked', () => {});
+  conn2.on('error', (err) => { const _e: Error = err; });
+  conn2.on('update-secret-ok', () => {});
+
+  await conn1.close();
+  await conn2.close();
+}

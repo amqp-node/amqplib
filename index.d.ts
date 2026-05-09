@@ -115,4 +115,38 @@ export declare const credentials: {
   };
 };
 
+export interface RecoveryOptions {
+  /** Initial reconnect delay in milliseconds. Default: 100 */
+  initialDelay?: number;
+  /** Maximum reconnect delay in milliseconds. Default: 30000 */
+  maxDelay?: number;
+  /** Backoff multiplier applied to delay on each attempt. Default: 2 */
+  factor?: number;
+  /** Jitter factor (0–1) applied to delay to avoid thundering herd. Default: 0.2 */
+  jitter?: number;
+  /** Maximum number of reconnect attempts. Default: Infinity */
+  maxRetries?: number;
+  /** Optional setup function called after each successful connection */
+  setup?: ((model: ChannelModel) => Promise<void>) | ((model: ChannelModel, done: (err?: Error) => void) => void);
+}
+
+export interface RecoveringChannelModel extends events.EventEmitter {
+  close(): Promise<void>;
+  createChannel(options?: ChannelOptions): Promise<Channel>;
+  createConfirmChannel(options?: ChannelOptions): Promise<ConfirmChannel>;
+  updateSecret(newSecret: Buffer, reason: string): Promise<void>;
+
+  on(event: 'connect', listener: (model: ChannelModel) => void): this;
+  on(event: 'disconnect', listener: (err: Error) => void): this;
+  on(event: 'connect-failed', listener: (err: Error) => void): this;
+  on(event: 'reconnect-scheduled', listener: (info: { attempt: number; delay: number; error: Error }) => void): this;
+  on(event: 'reconnect-failed', listener: (err: Error) => void): this;
+  on(event: 'blocked', listener: (reason: string) => void): this;
+  on(event: 'unblocked', listener: () => void): this;
+  on(event: 'error', listener: (err: Error) => void): this;
+  on(event: 'update-secret-ok', listener: () => void): this;
+  on(event: string, listener: (...args: any[]) => void): this;
+}
+
 export declare function connect(url: string | Options.Connect, socketOptions?: SocketOptions): Promise<ChannelModel>;
+export declare function connect(url: string | Options.Connect, socketOptions: SocketOptions & { recovery: RecoveryOptions | true }): Promise<RecoveringChannelModel>;

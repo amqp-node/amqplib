@@ -141,6 +141,41 @@ export declare const credentials: {
   };
 };
 
+export interface RecoveryOptions {
+  /** Initial reconnect delay in milliseconds. Default: 100 */
+  initialDelay?: number;
+  /** Maximum reconnect delay in milliseconds. Default: 30000 */
+  maxDelay?: number;
+  /** Backoff multiplier applied to delay on each attempt. Default: 2 */
+  factor?: number;
+  /** Jitter factor (0–1) applied to delay to avoid thundering herd. Default: 0.2 */
+  jitter?: number;
+  /** Maximum number of reconnect attempts. Default: Infinity */
+  maxRetries?: number;
+  /** Optional setup function called after each successful connection */
+  setup?: ((model: Connection) => Promise<void>) | ((model: Connection, done: (err?: Error) => void) => void);
+}
+
+export interface RecoveringConnection extends events.EventEmitter {
+  close(callback?: (err: Error) => void): void;
+  createChannel(callback: (err: Error, channel: Channel) => void): Channel;
+  createChannel(options: ChannelOptions, callback: (err: Error, channel: Channel) => void): Channel;
+  createConfirmChannel(callback: (err: Error, confirmChannel: ConfirmChannel) => void): ConfirmChannel;
+  createConfirmChannel(options: ChannelOptions, callback: (err: Error, confirmChannel: ConfirmChannel) => void): ConfirmChannel;
+  updateSecret(newSecret: Buffer, reason: string, callback?: (err: Error) => void): void;
+
+  on(event: 'connect', listener: (model: Connection) => void): this;
+  on(event: 'disconnect', listener: (err: Error) => void): this;
+  on(event: 'connect-failed', listener: (err: Error) => void): this;
+  on(event: 'reconnect-scheduled', listener: (info: { attempt: number; delay: number; error: Error }) => void): this;
+  on(event: 'reconnect-failed', listener: (err: Error) => void): this;
+  on(event: 'blocked', listener: (reason: string) => void): this;
+  on(event: 'unblocked', listener: () => void): this;
+  on(event: 'error', listener: (err: Error) => void): this;
+  on(event: 'update-secret-ok', listener: () => void): this;
+  on(event: string, listener: (...args: any[]) => void): this;
+}
+
 export declare function connect(callback: (err: Error, connection: Connection) => void): void;
 export declare function connect(url: string | Options.Connect, callback: (err: Error, connection: Connection) => void): void;
 export declare function connect(
@@ -148,3 +183,8 @@ export declare function connect(
   socketOptions: SocketOptions,
   callback: (err: Error, connection: Connection) => void,
 ): void;
+export declare function connect(
+  url: string | Options.Connect,
+  socketOptions: SocketOptions & { recovery: RecoveryOptions | true },
+  callback: (err: Error, connection: RecoveringConnection) => void,
+): RecoveringConnection;
