@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## v1.0.8
+- Add connection recovery via `connectWithRecoveryPromise` and `connectWithRecoveryCallback` — automatically reconnects on connection loss with configurable backoff delay, jitter, and retry limits (thanks [@ShiriNmi1520](https://github.com/ShiriNmi1520))
+
 ## v1.0.7
 - Fix `update-secret-ok` event not being forwarded by `ChannelModel` and `CallbackModel` (fixes #849)
 - Add `handler-error` event to connections and channels. If a user-supplied event handler (e.g. `connection.on('close', ...)`, `channel.on('error', ...)`, `channel.on('delivery', ...)` etc.) throws a synchronous error, amqplib will emit a `handler-error` event on the same emitter with the thrown error and the name of the event whose handler threw — provided a `handler-error` listener is registered. If no `handler-error` listener is registered, behaviour is unchanged from previous versions. Note: in previous versions, errors thrown in connection `close` event handlers were silently swallowed; errors thrown in channel event handlers (other than `delivery`/`return`) would kill the channel and possibly the connection (fixes #334).
