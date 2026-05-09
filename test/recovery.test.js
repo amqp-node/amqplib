@@ -167,6 +167,38 @@ describe('recovery', () => {
     assert(client);
   });
 
+  it('handler-error from underlying model is forwarded to recovery wrapper', async () => {
+    const models = [];
+    let opened = 0;
+
+    function openModel() {
+      const model = new FakePromiseModel(++opened);
+      models.push(model);
+      return Promise.resolve(model);
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 1,
+      maxDelay: 1,
+      jitter: 0,
+    });
+
+    const expectedErr = new Error('user close handler explodes');
+
+    await new Promise((resolve) => {
+      client.on('handler-error', (err, event) => {
+        assert.strictEqual(err, expectedErr);
+        assert.strictEqual(event, 'close');
+        resolve();
+      });
+
+      // Simulate a handler throwing in a 'close' listener on the underlying model
+      models[0].emit('handler-error', expectedErr, 'close');
+    });
+
+    await client.close();
+  });
+
   it('promise recovery fails after max retries', async () => {
     let attempts = 0;
 
