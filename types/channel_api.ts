@@ -228,13 +228,13 @@ async function testRecovery() {
 
   const sockOpts: SocketOptions = { noDelay: true };
 
-  // connect with recovery enabled via boolean
+  // connect with recovery enabled via boolean (direct object literal)
   const conn1: amqp.RecoveringChannelModel = await amqp.connect('amqp://localhost', {
-    ...sockOpts,
+    noDelay: true,
     recovery: true,
   });
 
-  // connect with recovery options
+  // connect with recovery options (spread from typed variable)
   const conn2: amqp.RecoveringChannelModel = await amqp.connect('amqp://localhost', {
     ...sockOpts,
     recovery: recoveryOpts,

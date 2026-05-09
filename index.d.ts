@@ -45,7 +45,6 @@ export interface Channel extends events.EventEmitter {
   on(event: 'handler-error', listener: (err: Error, eventName: string) => void): this;
   on(event: string, listener: (...args: any[]) => void): this;
 
-
   close(): Promise<void>;
 
   assertQueue(queue?: string, options?: Options.AssertQueue): Promise<Replies.AssertQueue>;
@@ -168,5 +167,5 @@ export interface RecoveringChannelModel extends events.EventEmitter {
   on(event: string, listener: (...args: any[]) => void): this;
 }
 
-export declare function connect(url: string | Options.Connect, socketOptions?: SocketOptions): Promise<ChannelModel>;
 export declare function connect(url: string | Options.Connect, socketOptions: SocketOptions & { recovery: RecoveryOptions | true }): Promise<RecoveringChannelModel>;
+export declare function connect(url: string | Options.Connect, socketOptions?: SocketOptions): Promise<ChannelModel>;
