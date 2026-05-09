@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## v1.1.1
+- Forward `handler-error` events from the underlying connection to the recovery wrapper, so listeners attached to `RecoveringPromiseModel`/`RecoveringCallbackModel` receive handler errors
+
 ## v1.1.0
 - Add connection recovery via `connectWithRecoveryPromise` and `connectWithRecoveryCallback` — automatically reconnects on connection loss with configurable backoff delay, jitter, and retry limits (thanks [@ShiriNmi1520](https://github.com/ShiriNmi1520))
 
