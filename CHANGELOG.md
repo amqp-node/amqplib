@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## Unreleased
+- Add bundled TypeScript type definitions (fixes #843)
+
 ## v1.1.1
 - Forward `handler-error` events from the underlying connection to the recovery wrapper, so listeners attached to `RecoveringPromiseModel`/`RecoveringCallbackModel` receive handler errors
 

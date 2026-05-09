@@ -47,5 +47,8 @@ jobs:
 
       - run: echo 'HELO\n\n\n\n' | nc localhost 5672 | grep AMQP
 
+      # Check TypeScript types
+      - run: npm run typecheck
+
       # Run the tests
       - run: make test
