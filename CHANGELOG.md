@@ -1,6 +1,6 @@
 # Change log for amqplib
 
-## v1.0.8
+## v1.1.0
 - Add connection recovery via `connectWithRecoveryPromise` and `connectWithRecoveryCallback` — automatically reconnects on connection loss with configurable backoff delay, jitter, and retry limits (thanks [@ShiriNmi1520](https://github.com/ShiriNmi1520))
 
 ## v1.0.7
