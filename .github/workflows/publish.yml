@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       rabbitmq:
-        image: rabbitmq:3-alpine
+        image: rabbitmq:4.2-alpine
         ports:
           - 5672:5672
 

@@ -25,6 +25,15 @@ describe('updateSecret', () => {
         .finally(() => c.close())
     );
   });
+
+  it('emits update-secret-ok event', () => {
+    return connect().then((c) =>
+      new Promise((resolve, reject) => {
+        c.on('update-secret-ok', resolve);
+        c.updateSecret(Buffer.from('new secret'), 'no reason').catch(reject);
+      }).finally(() => c.close())
+    );
+  });
 });
 
 describe('assert, check, delete', () => {
@@ -173,6 +182,48 @@ describe('sendMessage', () => {
           assert.deepEqual(Buffer.alloc(0), m.content);
         })
     );
+  });
+});
+
+describe('get', () => {
+  it('returns false when queue is empty', () => {
+    return withChannel((ch) =>
+      ch.assertQueue('test.get-empty', QUEUE_OPTS)
+        .then(() => ch.purgeQueue('test.get-empty'))
+        .then(() => ch.get('test.get-empty', { noAck: true }))
+        .then((m) => assert.strictEqual(false, m))
+    );
+  });
+
+  it('returns a message when queue has messages', () => {
+    const msg = randomString();
+    return withChannel((ch) =>
+      ch.assertQueue('test.get-message', QUEUE_OPTS)
+        .then(() => ch.purgeQueue('test.get-message'))
+        .then(() => {
+          ch.sendToQueue('test.get-message', Buffer.from(msg));
+          return waitForMessages('test.get-message');
+        })
+        .then(() => ch.get('test.get-message', { noAck: true }))
+        .then((m) => {
+          assert(m);
+          assert.equal(msg, m.content.toString());
+        })
+    );
+  });
+
+  it('rejects with a proper error when queue does not exist', () => {
+    return withChannel((ch) => {
+      ch.once('error', ignore);
+      return assert.rejects(() => ch.get('', {}), (err) => {
+        assert(err instanceof Error);
+        assert.match(err.message, /NOT_FOUND/);
+        assert.strictEqual(404, err.code);
+        assert.strictEqual(60, err.classId);
+        assert.strictEqual(70, err.methodId);
+        return true;
+      });
+    });
   });
 });
 
@@ -497,6 +548,17 @@ describe('confirms', () => {
           assert.strictEqual(e.message, 'channel closed');
           return true;
         }));
+    });
+  });
+
+  it('publish on closed channel does not leak callbacks', () => {
+    return withConfirmChannel((ch) => {
+      return ch.close().then(() => {
+        for (let i = 0; i < 10; i++) {
+          try { ch.publish('', '', Buffer.from('x'), {}, () => {}); } catch (_) {}
+        }
+        assert.strictEqual(ch.unconfirmed.length, 0);
+      });
     });
   });
 });

@@ -2,7 +2,7 @@
   "name": "amqplib",
   "homepage": "http://amqp-node.github.io/amqplib/",
   "main": "./channel_api.js",
-  "version": "1.0.2",
+  "version": "1.0.7",
   "description": "An AMQP 0-9-1 (e.g., RabbitMQ) library and client.",
   "repository": {
     "type": "git",
@@ -21,8 +21,10 @@
     "uglify-js": "2.8.x"
   },
   "scripts": {
-    "test": "make test",
-    "test:only": "node --test --test-only",
+    "test": "node --test --test-timeout=1000",
+    "test:only": "node --test --test-only --test-timeout=1000",
+    "rabbitmq-3": "docker run -d --rm --name rabbitmq -p 5672:5672 rabbitmq:3.12-alpine",
+    "rabbitmq-4": "docker run -d --rm --name rabbitmq -p 5672:5672 rabbitmq:4.2-alpine",
     "format": "biome format . --write",
     "lint": "biome lint --max-diagnostics=1000 ."
   },

@@ -1,5 +1,23 @@
 # Change log for amqplib
 
+## v1.0.7
+- Fix `update-secret-ok` event not being forwarded by `ChannelModel` and `CallbackModel` (fixes #849)
+- Add `handler-error` event to connections and channels. If a user-supplied event handler (e.g. `connection.on('close', ...)`, `channel.on('error', ...)`, `channel.on('delivery', ...)` etc.) throws a synchronous error, amqplib will emit a `handler-error` event on the same emitter with the thrown error and the name of the event whose handler threw — provided a `handler-error` listener is registered. If no `handler-error` listener is registered, behaviour is unchanged from previous versions. Note: in previous versions, errors thrown in connection `close` event handlers were silently swallowed; errors thrown in channel event handlers (other than `delivery`/`return`) would kill the channel and possibly the connection (fixes #334).
+
+## v1.0.6
+- Fix channel.get() not invoking callback with error on channel close; previously only an error event was emitted (fixes #832). **Note:** if you use the callback API, ensure your channel.get() callbacks handle errors — they will now be invoked in error cases where previously they were not. If you use the promise API, the returned promise now rejects with a proper Error object (with .code, .classId and .methodId properties) rather than a raw close frame.
+
+## v1.0.5
+- Fix ConfirmChannel callbacks silently dropped on channel close when some publishes had no callback (fixes #191)
+
+## v1.0.4
+- Updated build to use RabbitMQ 4.2
+- Fix memory leak in ConfirmChannel.publish when channel is already closed (fixes #842)
+- Close connection immediately when close() is called while the connection is blocked (fixes #744)
+
+## v1.0.3
+- Fix AssertionError crash when backpressure occurs while draining newStreams in Mux (fixes #841)
+
 ## v1.0.2
 - Replace url-parse with WHATWG URL API
 

@@ -42,6 +42,17 @@ describe('Callback API', () => {
         });
       });
     });
+
+    it('emits update-secret-ok event', (_t, done) => {
+      connect((err, _c) => {
+        assert.ifError(err);
+        c = _c;
+        c.on('update-secret-ok', () => done());
+        c.updateSecret(Buffer.from('new secret'), 'no reason', (err) => {
+          assert.ifError(err);
+        });
+      });
+    });
   });
 
   const channel_test_fn = (method) => {
@@ -305,6 +316,17 @@ describe('Callback API', () => {
         done();
       });
     });
+
+    confirm_channel_test('publish on closed channel does not leak callbacks', (_ch, done) => {
+      ch = _ch;
+      ch.close(() => {
+        for (let i = 0; i < 10; i++) {
+          try { ch.publish('', '', Buffer.from('x'), {}, () => {}); } catch (_) {}
+        }
+        assert.strictEqual(ch.unconfirmed.length, 0);
+        done();
+      });
+    });
   });
 
   describe('Error handling', () => {
@@ -390,39 +412,18 @@ describe('Callback API', () => {
       });
     });
 
-    /*
-    When this test was refactored as part of the move to the node test framework
-    it failed because only the domain error handler was ever invoked and not the
-    channel.get error callback.
-
-    The original test passed because twice.first (refactored to use util.latch) short circuits on error rather
-    than waiting for twice.second to be invoked. I have verified that the pre-refactored
-    amqplib does not invoke the channel.get callback when the queue does not exist.
-    See lib/callback_model.js
-    */
     error_test('Get from non-queue invokes error', (ch, done, dom) => {
       const decrementLatch = latch(2, () => done());
       dom.on('error', (err) => {
         assert.match(err.message, /404 \(NOT-FOUND\)/);
-        decrementLatch(err);
+        decrementLatch();
       });
       ch.get('', {}, (err) => {
         assert.match(err.message, /404 \(NOT-FOUND\)/)
-        decrementLatch(err)
+        decrementLatch()
       });
     });
 
-    /*
-    When this test was refactored as part of the move to the node test framework
-    it failed because only the domain error handler was ever invoked and not the
-    channel.consume error callback. Unlike the above channel.get test,
-    channel.consume does invoke the channel.consume callback with an error, but
-    the original test did not supply one, mistakenly providing a message handler
-    function instead.
-
-    The original test passed because twice.first (refactored to use util.latch) short circuits on error
-    rather than waiting for twice.second to be invoked.
-    */
     error_test('Consume from non-queue invokes error', (ch, done, dom) => {
       const decrementLatch = latch(2, done);
       dom.on('error', (err) => {

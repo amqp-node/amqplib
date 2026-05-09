@@ -2,7 +2,7 @@ RABBITMQ_SRC_VERSION=v3.12.13
 JSON=amqp-rabbitmq-0.9.1.json
 AMQP_JSON=https://raw.githubusercontent.com/rabbitmq/rabbitmq-server/$(RABBITMQ_SRC_VERSION)/deps/rabbitmq_codegen/$(JSON)
 
-NODEJS_VERSIONS='18.1.0' '20.10.0' '22.14.0' '24.7.0'
+NODEJS_VERSIONS='18.20.0' '20.10.0' '22.14.0' '24.7.0'
 
 UGLIFY=./node_modules/.bin/uglifyjs
 
@@ -13,16 +13,16 @@ error:
 	@exit 1
 
 test:
-	node --test
+	node --test --test-reporter=spec
 
 test-all-nodejs:
 	for v in $(NODEJS_VERSIONS); \
 		do echo "-- Node version $$v --"; \
-		nave use $$v node --test; \
+		nave use $$v node --test --test-reporter=spec; \
 		done
 
 coverage:
-	node --test --test-coverage
+	node --test --test-coverage --test-reporter=spec
 
 lib/defs.js: clean bin/generate-defs test
 
