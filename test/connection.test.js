@@ -696,6 +696,77 @@ describe('Connection', () => {
         .then(cb, cb);
       // conspicuously not sending anything ...
     }));
+
+    it('without a heartbeat option, server suggested value is used', connectionTest((c, cb) => {
+      // OPEN_OPTS.heartbeat is null — no preference set by client
+      c.once('error', (err) => {
+        assert.match(err.message, /Heartbeat timeout/);
+        cb();
+      });
+      c.open(OPEN_OPTS, (err) => {
+        assert.ifError(err);
+        assert.strictEqual(c.heartbeat, 1);
+      });
+    }, (send, wait, cb) => {
+      send(defs.ConnectionStart, {
+        versionMajor: 0, versionMinor: 9,
+        serverProperties: {},
+        mechanisms: Buffer.from('PLAIN'),
+        locales: Buffer.from('en_US'),
+      });
+      wait(defs.ConnectionStartOk)()
+        .then(() => send(defs.ConnectionTune, { channelMax: 0, heartbeat: 1, frameMax: 0 }))
+        .then(wait(defs.ConnectionTuneOk))
+        .then(wait(defs.ConnectionOpen))
+        .then(() => send(defs.ConnectionOpenOk, { knownHosts: '' }))
+        .then(cb, cb);
+    }));
+
+    it('heartbeat:0 means no heartbeater is started', connectionTest((c, cb) => {
+      const opts = Object.create(OPEN_OPTS);
+      opts.heartbeat = 0;
+      c.open(opts, (err) => {
+        assert.ifError(err);
+        assert.strictEqual(c.heartbeat, 0);
+        assert.strictEqual(c.heartbeater, null);
+        cb();
+      });
+    }, (send, wait, cb) => {
+      send(defs.ConnectionStart, {
+        versionMajor: 0, versionMinor: 9,
+        serverProperties: {},
+        mechanisms: Buffer.from('PLAIN'),
+        locales: Buffer.from('en_US'),
+      });
+      wait(defs.ConnectionStartOk)()
+        .then(() => send(defs.ConnectionTune, { channelMax: 0, heartbeat: 60, frameMax: 0 }))
+        .then(wait(defs.ConnectionTuneOk))
+        .then(wait(defs.ConnectionOpen))
+        .then(() => send(defs.ConnectionOpenOk, { knownHosts: '' }))
+        .then(cb, cb);
+    }));
+
+    it('heartbeat:0 disables heartbeats even if server suggests one', connectionTest((c, cb) => {
+      const opts = Object.create(OPEN_OPTS);
+      opts.heartbeat = 0;
+      c.open(opts, cb);
+    }, (send, wait, cb) => {
+      send(defs.ConnectionStart, {
+        versionMajor: 0, versionMinor: 9,
+        serverProperties: {},
+        mechanisms: Buffer.from('PLAIN'),
+        locales: Buffer.from('en_US'),
+      });
+      wait(defs.ConnectionStartOk)()
+        .then(() => send(defs.ConnectionTune, { channelMax: 0, heartbeat: 60, frameMax: 0 }))
+        .then(wait(defs.ConnectionTuneOk))
+        .then((tuneOk) => {
+          assert.strictEqual(tuneOk.fields.heartbeat, 0);
+        })
+        .then(wait(defs.ConnectionOpen))
+        .then(() => send(defs.ConnectionOpenOk, { knownHosts: '' }))
+        .then(cb, cb);
+    }));
   });
 
 });
