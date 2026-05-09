@@ -118,6 +118,66 @@ const amqplib = require('amqplib');
 
 ```
 
+## Opt-in recovery
+
+Automatic recovery is available as an opt-in feature through `connect` options:
+
+```javascript
+const amqplib = require('amqplib');
+
+const connection = await amqplib.connect('amqp://localhost', {
+  recovery: {
+    initialDelay: 200, // ms
+    maxDelay: 5000, // ms
+    factor: 2,
+    jitter: 0.2,
+    maxRetries: Infinity,
+    async setup(model) {
+      // Called after every successful (re)connect.
+      // Recreate topology/consumers here.
+      const ch = await model.createChannel();
+      await ch.assertQueue('tasks', {durable: true});
+    },
+  },
+});
+
+connection.on('connect', () => {
+  console.log('connected');
+});
+
+connection.on('disconnect', (err) => {
+  console.warn('disconnected', err.message);
+});
+```
+
+Callback API supports the same option:
+
+```javascript
+const amqplib = require('amqplib/callback_api');
+
+amqplib.connect(
+  'amqp://localhost',
+  {
+    recovery: {
+      initialDelay: 200,
+      maxDelay: 5000,
+      setup(model, done) {
+        model.createChannel((err, ch) => {
+          if (err) return done(err);
+          ch.assertQueue('tasks', {durable: true}, done);
+        });
+      },
+    },
+  },
+  (err, conn) => {
+    if (err) throw err;
+    conn.on('connect', () => console.log('connected'));
+  },
+);
+```
+
+Without `recovery` options, behavior is unchanged.
+
 ## Error handling in event handlers
 
 If a user-supplied event handler throws a synchronous error, the throw will
