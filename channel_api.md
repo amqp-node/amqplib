@@ -578,6 +578,20 @@ alleviated.
 
 Emitted after receiving confirmation from the broker that the connection secret was successfully updated.
 
+`#on('handler-error', function(err, eventName) {...})`
+
+Emitted when a user-supplied event listener on the connection throws a synchronous error. `err` is the thrown error; `eventName` is the name of the event whose handler threw (e.g., `'close'`, `'error'`, `'blocked'`).
+
+If no `handler-error` listener is registered, behaviour is unchanged from previous versions (errors thrown in handlers may be silently swallowed or propagate into amqplib internals).
+
+Note that `handler-error` is not a replacement for the `'error'` event. The `'error'` event is emitted by amqplib when the connection encounters a protocol-level error. The `'handler-error'` event is only emitted when *your own* event listener throws.
+
+```javascript
+connection.on('handler-error', (err, eventName) => {
+  console.error(`Uncaught exception in connection '${eventName}' listener:`, err);
+});
+```
+
 ### {Channel,Callback}Model#createChannel {#model_createChannel}
 
 ##### Promises API
@@ -684,6 +698,17 @@ if it has previously returned `false` from `#publish` or
 `#sendToQueue`, once its write buffer has been emptied (i.e., once it
 is ready for writes again).
 
+`#on('handler-error', function(err, eventName) {...})`
+
+Emitted when a user-supplied event listener on the channel throws a synchronous error. `err` is the thrown error; `eventName` is the name of the event whose handler threw (e.g., `'close'`, `'error'`, `'return'`, `'drain'`, or a consumer delivery event).
+
+If no `handler-error` listener is registered, behaviour is unchanged from previous versions (errors thrown in handlers may kill the channel or connection).
+
+```javascript
+channel.on('handler-error', (err, eventName) => {
+  console.error(`Uncaught exception in channel '${eventName}' listener:`, err);
+});
+```
 
 ### Channel#assertQueue {#channel_assertQueue}
 
