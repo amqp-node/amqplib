@@ -1,6 +1,6 @@
 # Change log for amqplib
 
-## Unreleased
+## v1.2.0
 - Add bundled TypeScript type definitions (fixes #843)
 
 ## v1.1.1
