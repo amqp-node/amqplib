@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## v2.0.1
+- Remove `buffer-more-ints` dependency; use Node.js built-in BigInt Buffer methods (`readBigInt64BE`, `readBigUInt64BE`, `writeBigInt64BE`, `writeBigUInt64BE`) which have been available since Node.js v10.4
+
 ## v2.0.0
 - **BREAKING**: `heartbeat: 0` now disables heartbeats, overriding any value suggested by the server. Previously, `0` was treated as "no preference" and the server's suggested value was used. If you are passing `heartbeat: 0` and want to preserve the old behaviour, omit the option or pass `null` instead (fixes #467)
 
