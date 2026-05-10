@@ -214,7 +214,7 @@ const OPEN_OPTS = {
   // tune-ok
   channelMax: 0,
   frameMax: 0,
-  heartbeat: 0,
+  heartbeat: null,
 
   // open
   virtualHost: '/',
