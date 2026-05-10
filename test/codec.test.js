@@ -1,6 +1,5 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
-const ints = require('buffer-more-ints');
 const { forAll } = require('claire');
 const codec = require('../lib/codec');
 const defs = require('../lib/defs');
@@ -152,7 +151,7 @@ describe('Codec', () => {
       const buf = defs.encodeProperties(properties.id, 0, properties.size, properties.fields);
       // FIXME depends on framing, ugh
       const fs1 = defs.decode(properties.id, buf.subarray(19, buf.length));
-      assert.equal(properties.size, ints.readUInt64BE(buf, 11));
+      assert.equal(properties.size, Number(buf.readBigUInt64BE(11)));
       assertEqualModuloDefaults(properties, fs1);
       return true;
     });
