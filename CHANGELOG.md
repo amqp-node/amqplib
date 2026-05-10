@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## v2.0.0
+- **BREAKING**: `heartbeat: 0` now disables heartbeats, overriding any value suggested by the server. Previously, `0` was treated as "no preference" and the server's suggested value was used. If you are passing `heartbeat: 0` and want to preserve the old behaviour, omit the option or pass `null` instead (fixes #467)
+
 ## v1.2.0
 - Add bundled TypeScript type definitions (fixes #843)
 
