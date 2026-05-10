@@ -365,7 +365,8 @@ URI, e.g., as in `'amqp://localhost?frameMax=0x1000'`. These are:
  * `channelMax`, the maximum number of channels allowed. Default is
    `0`, meaning `2^16 - 1`.<br/><br/>
  * `heartbeat`: the period of the connection heartbeat, in
-   seconds. Defaults to `0`; see [heartbeating](#heartbeating)<br/><br/>
+   seconds. Omit or set to `null` to accept the server's value; set to
+   `0` to disable heartbeats entirely. See [heartbeating](#heartbeating)<br/><br/>
  * `locale`: the desired locale for error messages, I
    suppose. RabbitMQ only ever uses `en_US`; which, happily, is the
    default.<br/><br/>
@@ -383,7 +384,7 @@ The URL can also be supplied as an object of the form:
   password: 'guest',
   locale: 'en_US',
   frameMax: 0,
-  heartbeat: 0,
+  heartbeat: null,
   vhost: '/',
 }
 ```
@@ -437,10 +438,11 @@ client fails to read data from the connection for two successive
 intervals, the connection will emit an error and close. It will also
 send heartbeats to the server (in the absence of other data).
 
-If you supply `0` as the `heartbeat` parameter (or defaults to `0`), the
-server value is used. This means that you can only disable heartbeat if
-the server value is also `0`. See
-[here](https://www.rabbitmq.com/docs/configure) for more details.
+If you omit `heartbeat` or set it to `null`, the server's suggested
+value is used.
+
+If you supply `0`, heartbeats are disabled regardless of the server's
+suggestion.
 
 NOTE: Please consider NOT disabling heartbeats because they exist for a
 [reason](http://www.rabbitmq.com/docs/heartbeats).
