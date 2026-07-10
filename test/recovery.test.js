@@ -199,6 +199,238 @@ describe('recovery', () => {
     await client.close();
   });
 
+  it('uses a custom calculateDelay strategy when provided', async () => {
+    const models = [];
+    let opened = 0;
+    const attemptsSeen = [];
+
+    function openModel() {
+      const model = new FakePromiseModel(++opened);
+      models.push(model);
+      return Promise.resolve(model);
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 1,
+      maxDelay: 1,
+      jitter: 0,
+      maxRetries: 3,
+      calculateDelay(attempt) {
+        attemptsSeen.push(attempt);
+        return attempt * 1000;
+      },
+    });
+
+    await new Promise((resolve) => {
+      client.once('reconnect-scheduled', ({attempt, delay}) => {
+        assert.equal(1, attempt);
+        assert.equal(1000, delay);
+        resolve();
+      });
+
+      models[0].emit('close', new Error('socket closed'));
+    });
+
+    assert.deepEqual([1], attemptsSeen);
+
+    await client.close();
+  });
+
+  it('falls back to the built-in strategy when calculateDelay throws, and reports it via handler-error', async () => {
+    const models = [];
+    let opened = 0;
+
+    function openModel() {
+      const model = new FakePromiseModel(++opened);
+      models.push(model);
+      return Promise.resolve(model);
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 5,
+      maxDelay: 5,
+      jitter: 0,
+      maxRetries: 3,
+      calculateDelay() {
+        throw new Error('calculateDelay is broken');
+      },
+    });
+
+    const handlerError = new Promise((resolve) => {
+      client.once('handler-error', (err, event) => {
+        assert.equal('calculateDelay is broken', err.message);
+        assert.equal('calculateDelay', event);
+        resolve();
+      });
+    });
+
+    const scheduled = new Promise((resolve) => {
+      client.once('reconnect-scheduled', ({delay}) => {
+        // falls back to the built-in strategy (initialDelay=5, jitter=0)
+        assert.equal(5, delay);
+        resolve();
+      });
+    });
+
+    models[0].emit('close', new Error('socket closed'));
+    await Promise.all([handlerError, scheduled]);
+
+    await client.close();
+  });
+
+  it('handles a circular-reference return value from calculateDelay without throwing a JSON error instead', async () => {
+    const models = [];
+    let opened = 0;
+
+    function openModel() {
+      const model = new FakePromiseModel(++opened);
+      models.push(model);
+      return Promise.resolve(model);
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 5,
+      maxDelay: 5,
+      jitter: 0,
+      maxRetries: 3,
+      calculateDelay() {
+        const circular = {};
+        circular.self = circular;
+        return circular;
+      },
+    });
+
+    const handlerError = new Promise((resolve) => {
+      client.once('handler-error', (err, event) => {
+        // Must be our own validation error, not a JSON.stringify TypeError
+        // from trying to serialize the circular value into the message.
+        assert.match(err.message, /calculateDelay must return a finite, non-negative number/);
+        assert.equal('calculateDelay', event);
+        resolve();
+      });
+    });
+
+    const scheduled = new Promise((resolve) => {
+      client.once('reconnect-scheduled', ({delay}) => {
+        assert.equal(5, delay);
+        resolve();
+      });
+    });
+
+    models[0].emit('close', new Error('socket closed'));
+    await Promise.all([handlerError, scheduled]);
+
+    await client.close();
+  });
+
+  it('falls back to the built-in strategy when calculateDelay returns an invalid value', async () => {
+    const models = [];
+    let opened = 0;
+
+    function openModel() {
+      const model = new FakePromiseModel(++opened);
+      models.push(model);
+      return Promise.resolve(model);
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 5,
+      maxDelay: 5,
+      jitter: 0,
+      maxRetries: 3,
+      calculateDelay() {
+        return -1;
+      },
+    });
+
+    await new Promise((resolve) => {
+      client.once('reconnect-scheduled', ({delay}) => {
+        assert.equal(5, delay);
+        resolve();
+      });
+
+      models[0].emit('close', new Error('socket closed'));
+    });
+
+    await client.close();
+  });
+
+  it('does not coerce non-number calculateDelay return values', async () => {
+    const models = [];
+    let opened = 0;
+
+    function openModel() {
+      const model = new FakePromiseModel(++opened);
+      models.push(model);
+      return Promise.resolve(model);
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 5,
+      maxDelay: 5,
+      jitter: 0,
+      maxRetries: 3,
+      calculateDelay() {
+        return '1000'; // a string, not a number - must not be accepted as-is
+      },
+    });
+
+    const handlerError = new Promise((resolve) => {
+      client.once('handler-error', (err, event) => {
+        assert.match(err.message, /calculateDelay must return a finite, non-negative number/);
+        assert.equal('calculateDelay', event);
+        resolve();
+      });
+    });
+
+    const scheduled = new Promise((resolve) => {
+      client.once('reconnect-scheduled', ({delay}) => {
+        // falls back to the built-in strategy (initialDelay=5, jitter=0),
+        // not `1000` (which is what Number('1000') would have produced).
+        assert.equal(5, delay);
+        resolve();
+      });
+    });
+
+    models[0].emit('close', new Error('socket closed'));
+    await Promise.all([handlerError, scheduled]);
+
+    await client.close();
+  });
+
+  it('does not throw when calculateDelay is broken and no handler-error listener is registered', async () => {
+    const models = [];
+    let opened = 0;
+
+    function openModel() {
+      const model = new FakePromiseModel(++opened);
+      models.push(model);
+      return Promise.resolve(model);
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 1,
+      maxDelay: 1,
+      jitter: 0,
+      maxRetries: 3,
+      calculateDelay() {
+        throw new Error('calculateDelay is broken');
+      },
+    });
+
+    // No handler-error listener registered - reconnection must still proceed.
+    await new Promise((resolve) => {
+      client.once('connect', () => {
+        assert.equal(2, opened);
+        resolve();
+      });
+
+      models[0].emit('close', new Error('socket closed'));
+    });
+
+    await client.close();
+  });
+
   it('promise recovery fails after max retries', async () => {
     let attempts = 0;
 

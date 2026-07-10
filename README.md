@@ -178,6 +178,33 @@ amqplib.connect(
 
 Without `recovery` options, behavior is unchanged.
 
+### Custom delay strategy
+
+By default, reconnect delays follow an exponential backoff with jitter,
+controlled by `initialDelay`, `maxDelay`, `factor` and `jitter`. To use a
+different strategy entirely (full jitter, decorrelated jitter, a fixed step
+schedule, etc.), provide a `calculateDelay` function instead:
+
+```javascript
+const connection = await amqplib.connect('amqp://localhost', {
+  recovery: {
+    maxRetries: Infinity,
+    // Called with the reconnect attempt number, starting at 1.
+    // Must return the delay in milliseconds.
+    calculateDelay(attempt) {
+      return Math.min(30000, 100 * 2 ** (attempt - 1));
+    },
+  },
+});
+```
+
+When `calculateDelay` is absent, the built-in strategy is used. If it throws,
+or returns something other than a finite, non-negative number, amqplib falls
+back to the built-in strategy for that attempt rather than failing to
+reconnect - the problem is surfaced through a `handler-error` event (see
+below); if no listener is registered for it, this is a no-op and reconnection
+still proceeds using the built-in strategy.
+
 ## Error handling in event handlers
 
 If a user-supplied event handler throws a synchronous error, the throw will
