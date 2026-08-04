@@ -199,6 +199,44 @@ describe('recovery', () => {
     await client.close();
   });
 
+  it('built-in delay never exceeds maxDelay even at full jitter', async () => {
+    const models = [];
+    let opened = 0;
+
+    function openModel() {
+      const model = new FakePromiseModel(++opened);
+      models.push(model);
+      return Promise.resolve(model);
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 5,
+      maxDelay: 5,
+      factor: 1,
+      jitter: 1,
+      maxRetries: Infinity,
+    });
+
+    const originalRandom = Math.random;
+    let delay;
+
+    try {
+      // Force the maximum positive jitter. Without the final clamp,
+      // base + offset would be 10, exceeding maxDelay.
+      Math.random = () => 1;
+
+      delay = await new Promise((resolve) => {
+        client.once('reconnect-scheduled', (info) => resolve(info.delay));
+        models[models.length - 1].emit('close', new Error('socket closed'));
+      });
+    } finally {
+      Math.random = originalRandom;
+      await client.close();
+    }
+
+    assert.equal(delay, 5);
+  });
+
   it('uses a custom calculateDelay strategy when provided', async () => {
     const models = [];
     let opened = 0;
