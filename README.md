@@ -198,6 +198,10 @@ const connection = await amqplib.connect('amqp://localhost', {
 });
 ```
 
+`maxDelay` only bounds the built-in strategy. Once you provide `calculateDelay`,
+amqplib does not cap its return value - you're responsible for enforcing your
+own maximum, as the example above does with `Math.min`.
+
 When `calculateDelay` is absent, the built-in strategy is used. If it throws,
 or returns something other than a finite, non-negative number, the error
 propagates synchronously rather than being caught - a broken `calculateDelay`
