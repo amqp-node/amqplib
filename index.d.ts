@@ -150,10 +150,9 @@ export interface RecoveryOptions {
   /**
    * Optional custom delay strategy. Called with the reconnect attempt number
    * (starting at 1) and must return the delay in milliseconds. Falls back to
-   * the built-in exponential-backoff-with-jitter strategy when absent, or if
-   * the function throws or returns something other than a finite,
-   * non-negative number (surfaced via a `handler-error` event; a no-op if no
-   * listener is registered for it).
+   * the built-in exponential-backoff-with-jitter strategy when absent. If it
+   * throws, or returns something other than a finite, non-negative number,
+   * the error propagates synchronously rather than being caught.
    */
   calculateDelay?: (attempt: number) => number;
 }
