@@ -221,8 +221,9 @@ describe('recovery', () => {
     let delay;
 
     try {
-      // Force the maximum positive jitter. Without the final clamp,
-      // base + offset would be 10, exceeding maxDelay.
+      // Force the maximum positive jitter. The base is capped at
+      // maxDelay / (1 + jitter) = 2.5, so base + offset tops out at
+      // exactly maxDelay (5) instead of overshooting it.
       Math.random = () => 1;
 
       delay = await new Promise((resolve) => {
@@ -235,6 +236,49 @@ describe('recovery', () => {
     }
 
     assert.equal(delay, 5);
+  });
+
+  it('does not collapse onto maxDelay for every positive jitter draw once the base saturates', async () => {
+    const models = [];
+    let opened = 0;
+
+    function openModel() {
+      const model = new FakePromiseModel(++opened);
+      models.push(model);
+      return Promise.resolve(model);
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 100,
+      maxDelay: 100,
+      factor: 1,
+      jitter: 0.2,
+      maxRetries: Infinity,
+    });
+
+    const originalRandom = Math.random;
+    let delay;
+
+    try {
+      // Math.random() just above the midpoint gives a small positive
+      // offset. Capping base+offset at maxDelay (the old behavior) would
+      // collapse this to exactly 100 instead of the slightly lower value
+      // this offset actually produces.
+      Math.random = () => 0.6;
+
+      delay = await new Promise((resolve) => {
+        client.once('reconnect-scheduled', (info) => resolve(info.delay));
+        models[models.length - 1].emit('close', new Error('socket closed'));
+      });
+    } finally {
+      Math.random = originalRandom;
+      await client.close();
+    }
+
+    // base = 100 / 1.2 = 83.33, jitterPart = 16.67,
+    // offset = 0.6 * 16.67 * 2 - 16.67 = 3.33, result = round(83.33 + 3.33) = 87
+    assert.equal(delay, 87);
+    assert.notEqual(delay, 100);
   });
 
   it('uses a custom calculateDelay strategy when provided', async () => {
