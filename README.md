@@ -199,11 +199,9 @@ const connection = await amqplib.connect('amqp://localhost', {
 ```
 
 When `calculateDelay` is absent, the built-in strategy is used. If it throws,
-or returns something other than a finite, non-negative number, amqplib falls
-back to the built-in strategy for that attempt rather than failing to
-reconnect - the problem is surfaced through a `handler-error` event (see
-below); if no listener is registered for it, this is a no-op and reconnection
-still proceeds using the built-in strategy.
+or returns something other than a finite, non-negative number, the error
+propagates synchronously rather than being caught - a broken `calculateDelay`
+is a bug in caller-supplied code, not something amqplib should paper over.
 
 ## Error handling in event handlers
 

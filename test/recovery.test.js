@@ -274,7 +274,7 @@ describe('recovery', () => {
     await client.close();
   });
 
-  it('falls back to the built-in strategy when calculateDelay throws, and reports it via handler-error', async () => {
+  it('propagates the error synchronously when calculateDelay throws', async () => {
     const models = [];
     let opened = 0;
 
@@ -294,29 +294,15 @@ describe('recovery', () => {
       },
     });
 
-    const handlerError = new Promise((resolve) => {
-      client.once('handler-error', (err, event) => {
-        assert.equal('calculateDelay is broken', err.message);
-        assert.equal('calculateDelay', event);
-        resolve();
-      });
-    });
-
-    const scheduled = new Promise((resolve) => {
-      client.once('reconnect-scheduled', ({delay}) => {
-        // falls back to the built-in strategy (initialDelay=5, jitter=0)
-        assert.equal(5, delay);
-        resolve();
-      });
-    });
-
-    models[0].emit('close', new Error('socket closed'));
-    await Promise.all([handlerError, scheduled]);
+    assert.throws(
+      () => models[0].emit('close', new Error('socket closed')),
+      /calculateDelay is broken/,
+    );
 
     await client.close();
   });
 
-  it('handles a circular-reference return value from calculateDelay without throwing a JSON error instead', async () => {
+  it('throws a validation error instead of a JSON error for a circular-reference return value', async () => {
     const models = [];
     let opened = 0;
 
@@ -338,30 +324,17 @@ describe('recovery', () => {
       },
     });
 
-    const handlerError = new Promise((resolve) => {
-      client.once('handler-error', (err, event) => {
-        // Must be our own validation error, not a JSON.stringify TypeError
-        // from trying to serialize the circular value into the message.
-        assert.match(err.message, /calculateDelay must return a finite, non-negative number/);
-        assert.equal('calculateDelay', event);
-        resolve();
-      });
-    });
-
-    const scheduled = new Promise((resolve) => {
-      client.once('reconnect-scheduled', ({delay}) => {
-        assert.equal(5, delay);
-        resolve();
-      });
-    });
-
-    models[0].emit('close', new Error('socket closed'));
-    await Promise.all([handlerError, scheduled]);
+    // Must be our own validation error, not a JSON.stringify TypeError from
+    // trying to serialize the circular value into the message.
+    assert.throws(
+      () => models[0].emit('close', new Error('socket closed')),
+      /calculateDelay must return a finite, non-negative number/,
+    );
 
     await client.close();
   });
 
-  it('falls back to the built-in strategy when calculateDelay returns an invalid value', async () => {
+  it('throws when calculateDelay returns an invalid value', async () => {
     const models = [];
     let opened = 0;
 
@@ -381,14 +354,10 @@ describe('recovery', () => {
       },
     });
 
-    await new Promise((resolve) => {
-      client.once('reconnect-scheduled', ({delay}) => {
-        assert.equal(5, delay);
-        resolve();
-      });
-
-      models[0].emit('close', new Error('socket closed'));
-    });
+    assert.throws(
+      () => models[0].emit('close', new Error('socket closed')),
+      /calculateDelay must return a finite, non-negative number/,
+    );
 
     await client.close();
   });
@@ -413,58 +382,10 @@ describe('recovery', () => {
       },
     });
 
-    const handlerError = new Promise((resolve) => {
-      client.once('handler-error', (err, event) => {
-        assert.match(err.message, /calculateDelay must return a finite, non-negative number/);
-        assert.equal('calculateDelay', event);
-        resolve();
-      });
-    });
-
-    const scheduled = new Promise((resolve) => {
-      client.once('reconnect-scheduled', ({delay}) => {
-        // falls back to the built-in strategy (initialDelay=5, jitter=0),
-        // not `1000` (which is what Number('1000') would have produced).
-        assert.equal(5, delay);
-        resolve();
-      });
-    });
-
-    models[0].emit('close', new Error('socket closed'));
-    await Promise.all([handlerError, scheduled]);
-
-    await client.close();
-  });
-
-  it('does not throw when calculateDelay is broken and no handler-error listener is registered', async () => {
-    const models = [];
-    let opened = 0;
-
-    function openModel() {
-      const model = new FakePromiseModel(++opened);
-      models.push(model);
-      return Promise.resolve(model);
-    }
-
-    const client = await recovery.connectWithRecoveryPromise(openModel, {
-      initialDelay: 1,
-      maxDelay: 1,
-      jitter: 0,
-      maxRetries: 3,
-      calculateDelay() {
-        throw new Error('calculateDelay is broken');
-      },
-    });
-
-    // No handler-error listener registered - reconnection must still proceed.
-    await new Promise((resolve) => {
-      client.once('connect', () => {
-        assert.equal(2, opened);
-        resolve();
-      });
-
-      models[0].emit('close', new Error('socket closed'));
-    });
+    assert.throws(
+      () => models[0].emit('close', new Error('socket closed')),
+      /calculateDelay must return a finite, non-negative number/,
+    );
 
     await client.close();
   });
