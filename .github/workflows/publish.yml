@@ -1,8 +1,25 @@
+# Runs when a GitHub release is published (draft releases do not trigger it).
+#
+# Tests the tagged commit on every supported Node.js version, then stages the
+# package on npm with `npm stage publish` using OIDC trusted publishing, so no
+# npm token is stored in this repository. Nothing goes live until a maintainer
+# reviews the staged version and approves it with 2FA:
+#
+#   npm stage list amqplib
+#   npm stage approve <stage-id>
+#
+# Prerequisites on npmjs.com: the package's trusted publisher must be set to
+# this repository and this workflow file (publish.yml), with allowed actions
+# restricted to `npm stage publish`.
+
 name: Publish
 
 on:
   release:
-    types: [created]
+    types: [published]
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -19,17 +36,18 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
 
       - run: npm ci
 
-      - run: |
+      - name: Wait for RabbitMQ
+        run: |
           n=0
           while :
           do
@@ -43,17 +61,53 @@ jobs:
 
       - run: make test
 
-  publish:
+  stage:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for OIDC trusted publishing
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: 24.x
           cache: "npm"
           registry-url: https://registry.npmjs.org/
+
+      # npm stage publish needs npm 11.15.0 or later
+      - run: npm install -g npm@^11.15.0
+
       - run: npm ci
-      - run: npm publish --dry-run
+
+      - name: Check release tag matches package.json version
+        id: version
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [[ "$RELEASE_TAG" != "v${version}" ]]; then
+            echo "Release tag ${RELEASE_TAG} does not match package.json version v${version}" >&2
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      # Pre-release versions (e.g. 2.2.0-rc.0) are staged under the `next`
+      # dist-tag; everything else under `latest`. The tag is fixed at staging
+      # time and cannot be changed on approval.
+      - name: Choose dist-tag
+        id: dist-tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if [[ "$VERSION" == *-* ]]; then
+            echo "tag=next" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Stage publish
+        env:
+          DIST_TAG: ${{ steps.dist-tag.outputs.tag }}
+        run: npm stage publish --tag "$DIST_TAG" --provenance
