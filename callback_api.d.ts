@@ -174,6 +174,12 @@ export interface RecoveryOptions {
   /** Optional setup function called after each successful connection */
   setup?: ((model: Connection) => Promise<void>) | ((model: Connection, done: (err?: Error) => void) => void);
   /**
+   * When false, the `connect()` callback is invoked immediately with the
+   * recovering connection without waiting for the first successful connection.
+   * Use `waitForConnect()` to be notified of the first connection. Default: true
+   */
+  waitForConnect?: boolean;
+  /**
    * Optional custom delay strategy. Called with the reconnect attempt number
    * (starting at 1) and must return the delay in milliseconds. Falls back to
    * the built-in exponential-backoff-with-jitter strategy when absent. If it
@@ -184,6 +190,8 @@ export interface RecoveryOptions {
 }
 
 export interface RecoveringConnection extends events.EventEmitter {
+  /** Invokes the callback once the first connection has been established */
+  waitForConnect(callback: (err: Error, connection: RecoveringConnection) => void): void;
   close(callback?: (err: Error) => void): void;
   createChannel(callback: (err: Error, channel: Channel) => void): Channel;
   createChannel(options: ChannelOptions, callback: (err: Error, channel: Channel) => void): Channel;
@@ -213,5 +221,5 @@ export declare function connect(
 export declare function connect(
   url: string | Options.Connect,
   socketOptions: SocketOptions & { recovery: RecoveryOptions | true },
-  callback: (err: Error, connection: RecoveringConnection) => void,
+  callback?: (err: Error, connection: RecoveringConnection) => void,
 ): RecoveringConnection;
