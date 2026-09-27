@@ -173,9 +173,17 @@ export interface RecoveryOptions {
   maxRetries?: number;
   /** Optional setup function called after each successful connection */
   setup?: ((model: Connection) => Promise<void>) | ((model: Connection, done: (err?: Error) => void) => void);
+  /**
+   * When false, the `connect()` callback is invoked immediately with the
+   * recovering connection without waiting for the first successful connection.
+   * Use `waitForConnect()` to be notified of the first connection. Default: true
+   */
+  waitForConnect?: boolean;
 }
 
 export interface RecoveringConnection extends events.EventEmitter {
+  /** Invokes the callback once the first connection has been established */
+  waitForConnect(callback: (err: Error, connection: RecoveringConnection) => void): void;
   close(callback?: (err: Error) => void): void;
   createChannel(callback: (err: Error, channel: Channel) => void): Channel;
   createChannel(options: ChannelOptions, callback: (err: Error, channel: Channel) => void): Channel;
@@ -205,5 +213,5 @@ export declare function connect(
 export declare function connect(
   url: string | Options.Connect,
   socketOptions: SocketOptions & { recovery: RecoveryOptions | true },
-  callback: (err: Error, connection: RecoveringConnection) => void,
+  callback?: (err: Error, connection: RecoveringConnection) => void,
 ): RecoveringConnection;

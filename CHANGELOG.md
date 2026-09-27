@@ -1,5 +1,9 @@
 # Change log for amqplib
 
+## v2.1.0
+- Add `waitForConnect` recovery option. When `false`, `connect` returns the recovering connection immediately instead of waiting for the first successful connection, so listeners for `connect`, `connect-failed` and `reconnect-scheduled` can be attached before the initial attempt, and `close()` can cancel it. Expose `waitForConnect()` on recovering connections to await the first connection (fixes #858)
+- Fix `setup` being run when `close()` is called while the initial connection attempt is in flight
+
 ## v2.0.1
 - Remove `buffer-more-ints` dependency; use Node.js built-in BigInt Buffer methods (`readBigInt64BE`, `readBigUInt64BE`, `writeBigInt64BE`, `writeBigUInt64BE`) which have been available since Node.js v10.4
 
