@@ -159,7 +159,8 @@ export interface RecoveryOptions {
    * (starting at 1) and must return the delay in milliseconds. Falls back to
    * the built-in exponential-backoff-with-jitter strategy when absent. If it
    * throws, or returns something other than a finite, non-negative number,
-   * the error propagates synchronously rather than being caught.
+   * recovery gives up as if `maxRetries` were exhausted: the initial connection
+   * fails with the error and `reconnect-failed` is emitted.
    */
   calculateDelay?: (attempt: number) => number;
 }

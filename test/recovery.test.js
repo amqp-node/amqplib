@@ -1,5 +1,3 @@
-
-
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
 const EventEmitter = require('node:events');
@@ -16,11 +14,11 @@ class FakePromiseModel extends EventEmitter {
   }
 
   createChannel(options) {
-    return Promise.resolve({kind: 'channel', id: this.id, options});
+    return Promise.resolve({ kind: 'channel', id: this.id, options });
   }
 
   createConfirmChannel(options) {
-    return Promise.resolve({kind: 'confirm', id: this.id, options});
+    return Promise.resolve({ kind: 'confirm', id: this.id, options });
   }
 
   updateSecret(_newSecret, _reason) {
@@ -43,7 +41,7 @@ class FakeCallbackModel extends EventEmitter {
       cb = options;
       options = undefined;
     }
-    cb && cb(null, {kind: 'channel', id: this.id, options});
+    cb && cb(null, { kind: 'channel', id: this.id, options });
   }
 
   createConfirmChannel(options, cb) {
@@ -51,7 +49,7 @@ class FakeCallbackModel extends EventEmitter {
       cb = options;
       options = undefined;
     }
-    cb && cb(null, {kind: 'confirm', id: this.id, options});
+    cb && cb(null, { kind: 'confirm', id: this.id, options });
   }
 
   updateSecret(_newSecret, _reason, cb) {
@@ -304,7 +302,7 @@ describe('recovery', () => {
     });
 
     await new Promise((resolve) => {
-      client.once('reconnect-scheduled', ({attempt, delay}) => {
+      client.once('reconnect-scheduled', ({ attempt, delay }) => {
         assert.equal(1, attempt);
         assert.equal(1000, delay);
         resolve();
@@ -318,7 +316,7 @@ describe('recovery', () => {
     await client.close();
   });
 
-  it('propagates the error synchronously when calculateDelay throws', async () => {
+  it('gives up recovery with reconnect-failed when calculateDelay throws', async () => {
     const models = [];
     let opened = 0;
 
@@ -338,15 +336,16 @@ describe('recovery', () => {
       },
     });
 
-    assert.throws(
-      () => models[0].emit('close', new Error('socket closed')),
-      /calculateDelay is broken/,
-    );
+    const err = await new Promise((resolve) => {
+      client.once('reconnect-failed', resolve);
+      models[0].emit('close', new Error('socket closed'));
+    });
+    assert.match(err.message, /calculateDelay is broken/);
 
     await client.close();
   });
 
-  it('throws a validation error instead of a JSON error for a circular-reference return value', async () => {
+  it('reports a validation error instead of a JSON error for a circular-reference return value', async () => {
     const models = [];
     let opened = 0;
 
@@ -370,15 +369,16 @@ describe('recovery', () => {
 
     // Must be our own validation error, not a JSON.stringify TypeError from
     // trying to serialize the circular value into the message.
-    assert.throws(
-      () => models[0].emit('close', new Error('socket closed')),
-      /calculateDelay must return a finite, non-negative number/,
-    );
+    const err = await new Promise((resolve) => {
+      client.once('reconnect-failed', resolve);
+      models[0].emit('close', new Error('socket closed'));
+    });
+    assert.match(err.message, /calculateDelay must return a finite, non-negative number/);
 
     await client.close();
   });
 
-  it('throws when calculateDelay returns an invalid value', async () => {
+  it('gives up recovery when calculateDelay returns an invalid value', async () => {
     const models = [];
     let opened = 0;
 
@@ -398,10 +398,11 @@ describe('recovery', () => {
       },
     });
 
-    assert.throws(
-      () => models[0].emit('close', new Error('socket closed')),
-      /calculateDelay must return a finite, non-negative number/,
-    );
+    const err = await new Promise((resolve) => {
+      client.once('reconnect-failed', resolve);
+      models[0].emit('close', new Error('socket closed'));
+    });
+    assert.match(err.message, /calculateDelay must return a finite, non-negative number/);
 
     await client.close();
   });
@@ -426,12 +427,41 @@ describe('recovery', () => {
       },
     });
 
-    assert.throws(
-      () => models[0].emit('close', new Error('socket closed')),
-      /calculateDelay must return a finite, non-negative number/,
-    );
+    const err = await new Promise((resolve) => {
+      client.once('reconnect-failed', resolve);
+      models[0].emit('close', new Error('socket closed'));
+    });
+    assert.match(err.message, /calculateDelay must return a finite, non-negative number/);
 
     await client.close();
+  });
+
+  it('rejects the initial connection when calculateDelay throws after a failed connect', async (t) => {
+    const rejections = [];
+    const onRejection = (err) => rejections.push(err);
+    process.on('unhandledRejection', onRejection);
+    t.after(() => process.removeListener('unhandledRejection', onRejection));
+
+    let attempts = 0;
+
+    function openModel() {
+      attempts++;
+      return Promise.reject(new Error('connect failed'));
+    }
+
+    await assert.rejects(
+      recovery.connectWithRecoveryPromise(openModel, {
+        maxRetries: Infinity,
+        calculateDelay() {
+          throw new Error('calculateDelay is broken');
+        },
+      }),
+      /calculateDelay is broken/,
+    );
+
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(1, attempts);
+    assert.deepEqual([], rejections);
   });
 
   it('promise recovery fails after max retries', async () => {
@@ -475,7 +505,7 @@ describe('recovery', () => {
         return Promise.resolve(new FakePromiseModel(++opened));
       }
 
-      const client = await recovery.connectWithRecoveryPromise(openModel, {waitForConnect: false});
+      const client = await recovery.connectWithRecoveryPromise(openModel, { waitForConnect: false });
 
       assert.equal(0, opened);
 
@@ -523,7 +553,7 @@ describe('recovery', () => {
         return Promise.resolve(new FakePromiseModel(1));
       }
 
-      const client = await recovery.connectWithRecoveryPromise(openModel, {waitForConnect: false});
+      const client = await recovery.connectWithRecoveryPromise(openModel, { waitForConnect: false });
       const connected = await client.waitForConnect();
 
       assert.strictEqual(client, connected);
@@ -568,8 +598,8 @@ describe('recovery', () => {
 
       await client.close();
 
-      await assert.rejects(pendingChannel, {message: 'Connection closed'});
-      await assert.rejects(client.waitForConnect(), {message: 'Connection closed'});
+      await assert.rejects(pendingChannel, { message: 'Connection closed' });
+      await assert.rejects(client.waitForConnect(), { message: 'Connection closed' });
 
       releaseOpen();
       await new Promise((resolve) => setImmediate(resolve));
@@ -601,7 +631,7 @@ describe('recovery', () => {
       assert.equal('connect failed', err.message);
       assert.equal(2, attempts);
 
-      await assert.rejects(client.waitForConnect(), {message: 'connect failed'});
+      await assert.rejects(client.waitForConnect(), { message: 'connect failed' });
       await new Promise((resolve) => setImmediate(resolve));
       assert.deepEqual([], rejections);
 
@@ -616,7 +646,7 @@ describe('recovery', () => {
       }
 
       const failures = [];
-      const client = recovery.connectWithRecoveryCallback(openModel, {waitForConnect: false}, (err, c) => {
+      const client = recovery.connectWithRecoveryCallback(openModel, { waitForConnect: false }, (err, c) => {
         if (err) return done(err);
         assert.strictEqual(client, c);
         assert.equal(0, opened);

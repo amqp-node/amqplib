@@ -235,9 +235,12 @@ amqplib does not cap its return value - you're responsible for enforcing your
 own maximum, as the example above does with `Math.min`.
 
 When `calculateDelay` is absent, the built-in strategy is used. If it throws,
-or returns something other than a finite, non-negative number, the error
-propagates synchronously rather than being caught - a broken `calculateDelay`
-is a bug in caller-supplied code, not something amqplib should paper over.
+or returns something other than a finite, non-negative number, amqplib does
+not fall back to the built-in strategy. Instead recovery gives up as if
+`maxRetries` had been exhausted: the initial `connect` rejects (or the
+callback receives the error), pending channel operations reject, and
+`reconnect-failed` is emitted with the error. A broken `calculateDelay` is a
+bug in caller-supplied code, so it is surfaced rather than papered over.
 
 ## Error handling in event handlers
 
