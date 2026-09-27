@@ -147,9 +147,18 @@ export interface RecoveryOptions {
   maxRetries?: number;
   /** Optional setup function called after each successful connection */
   setup?: ((model: ChannelModel) => Promise<void>) | ((model: ChannelModel, done: (err?: Error) => void) => void);
+  /**
+   * When false, `connect()` resolves immediately with the recovering connection
+   * without waiting for the first successful connection, so listeners can be
+   * attached before the initial attempt. Use `waitForConnect()` to await the
+   * first connection. Default: true
+   */
+  waitForConnect?: boolean;
 }
 
 export interface RecoveringChannelModel extends events.EventEmitter {
+  /** Resolves once the first connection has been established */
+  waitForConnect(): Promise<this>;
   close(): Promise<void>;
   createChannel(options?: ChannelOptions): Promise<Channel>;
   createConfirmChannel(options?: ChannelOptions): Promise<ConfirmChannel>;

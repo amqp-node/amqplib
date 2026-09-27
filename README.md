@@ -178,6 +178,38 @@ amqplib.connect(
 
 Without `recovery` options, behavior is unchanged.
 
+### Attaching listeners before the first connection
+
+By default `connect` waits for the first successful connection before
+resolving (or invoking the callback), so events emitted during the initial
+attempt such as `connect-failed` and `reconnect-scheduled` cannot be observed.
+Set `waitForConnect: false` to get the connection handle immediately. You can
+then attach listeners, call `waitForConnect()` to await the first connection,
+or call `close()` to cancel the initial attempt. Channel operations wait for a
+connection internally, so `createChannel()` can be called straight away.
+
+```javascript
+const connection = await amqplib.connect('amqp://localhost', {
+  recovery: { waitForConnect: false },
+});
+
+connection.on('connect-failed', (err) => {
+  console.warn('connection attempt failed', err.message);
+});
+
+connection.on('reconnect-scheduled', ({ attempt, delay }) => {
+  console.log(`retrying (attempt ${attempt}) in ${delay}ms`);
+});
+
+await connection.waitForConnect();
+```
+
+The callback API returns the connection handle synchronously, so listeners can
+always be attached before the first attempt. With `waitForConnect: false` the
+callback is invoked immediately with the handle instead of after the first
+connection, and `waitForConnect(callback)` can be used to be notified once
+connected.
+
 ## Error handling in event handlers
 
 If a user-supplied event handler throws a synchronous error, the throw will
