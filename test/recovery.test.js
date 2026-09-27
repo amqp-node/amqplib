@@ -341,6 +341,7 @@ describe('recovery', () => {
       models[0].emit('close', new Error('socket closed'));
     });
     assert.match(err.message, /calculateDelay is broken/);
+    await assert.rejects(client.createChannel(), /calculateDelay is broken/);
 
     await client.close();
   });
@@ -462,6 +463,35 @@ describe('recovery', () => {
     await new Promise((resolve) => setImmediate(resolve));
     assert.equal(1, attempts);
     assert.deepEqual([], rejections);
+  });
+
+  it('channel operations reject with the failure once recovery has given up', async () => {
+    let attempts = 0;
+
+    function openModel() {
+      attempts++;
+      return Promise.reject(new Error('connect failed'));
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 1,
+      maxDelay: 1,
+      jitter: 0,
+      maxRetries: 1,
+      waitForConnect: false,
+    });
+
+    const err = await new Promise((resolve) => client.once('reconnect-failed', resolve));
+    assert.equal('connect failed', err.message);
+    assert.equal(2, attempts);
+
+    await assert.rejects(client.createChannel(), { message: 'connect failed' });
+    await assert.rejects(client.createConfirmChannel(), { message: 'connect failed' });
+    await assert.rejects(client.updateSecret(Buffer.from('x'), 'rotate'), { message: 'connect failed' });
+
+    // Nothing further is attempted and close() is a no-op.
+    await client.close();
+    assert.equal(2, attempts);
   });
 
   it('promise recovery fails after max retries', async () => {
