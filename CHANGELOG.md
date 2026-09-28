@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## Unreleased
+- Replace `.npmignore` with a `files` allowlist in `package.json` so the published package no longer includes tests, tooling config, dotfiles or the defs generator. Install size drops from 577 kB to 358 kB (fixes #859, thanks [@rubiesonthesky](https://github.com/rubiesonthesky))
+
 ## v2.2.0
 - Add `calculateDelay` recovery option for supplying a custom reconnect delay strategy, e.g. full jitter, decorrelated jitter or a fixed schedule. When set, `maxDelay` is not applied to its return value; when it throws or returns an invalid value, recovery gives up as if `maxRetries` were exhausted (fixes #855, thanks [@GiHoon1123](https://github.com/GiHoon1123))
 - The built-in reconnect delay no longer exceeds `maxDelay`. Previously the cap was applied before jitter, so delays could overshoot it by up to the jitter fraction. The exponential base is now capped at `maxDelay / (1 + jitter)` so the full jitter range fits under the cap; with default settings the steady-state delay is now spread over 20-30s rather than 24-36s
