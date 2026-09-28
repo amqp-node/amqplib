@@ -4,6 +4,7 @@
 - Add `calculateDelay` recovery option for supplying a custom reconnect delay strategy, e.g. full jitter, decorrelated jitter or a fixed schedule. When set, `maxDelay` is not applied to its return value; when it throws or returns an invalid value, recovery gives up as if `maxRetries` were exhausted (fixes #855, thanks [@GiHoon1123](https://github.com/GiHoon1123))
 - The built-in reconnect delay no longer exceeds `maxDelay`. Previously the cap was applied before jitter, so delays could overshoot it by up to the jitter fraction. The exponential base is now capped at `maxDelay / (1 + jitter)` so the full jitter range fits under the cap; with default settings the steady-state delay is now spread over 20-30s rather than 24-36s
 - Channel operations attempted after recovery has given up (`reconnect-failed`) now reject with the failure instead of waiting forever
+- Add `initialMaxRetries` recovery option to bound retries before the first successful connection separately from `maxRetries`, so startup can fail fast while steady-state recovery retries indefinitely (fixes #856)
 
 ## v2.1.0
 - Add `waitForConnect` recovery option. When `false`, `connect` returns the recovering connection immediately instead of waiting for the first successful connection, so listeners for `connect`, `connect-failed` and `reconnect-scheduled` can be attached before the initial attempt, and `close()` can cancel it. Expose `waitForConnect()` on recovering connections to await the first connection (fixes #858)

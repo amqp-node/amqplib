@@ -143,8 +143,15 @@ export interface RecoveryOptions {
   factor?: number;
   /** Jitter factor (0–1) applied to delay to avoid thundering herd. Default: 0.2 */
   jitter?: number;
-  /** Maximum number of reconnect attempts. Default: Infinity */
+  /** Maximum number of reconnect attempts. Also bounds the initial connection unless `initialMaxRetries` is set. Default: Infinity */
   maxRetries?: number;
+  /**
+   * Maximum number of retries before the first successful connection. Once
+   * connected, `maxRetries` applies instead. Lets startup fail fast against an
+   * unreachable broker while steady-state recovery keeps retrying.
+   * Default: the value of `maxRetries`
+   */
+  initialMaxRetries?: number;
   /** Optional setup function called after each successful connection */
   setup?: ((model: ChannelModel) => Promise<void>) | ((model: ChannelModel, done: (err?: Error) => void) => void);
   /**

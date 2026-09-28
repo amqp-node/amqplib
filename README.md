@@ -242,6 +242,28 @@ callback receives the error), pending channel operations reject, and
 `reconnect-failed` is emitted with the error. A broken `calculateDelay` is a
 bug in caller-supplied code, so it is surfaced rather than papered over.
 
+### Separate retry budget for the initial connection
+
+By default `maxRetries` bounds every phase of recovery, including the attempts
+made before the first connection succeeds. To give the very first connection
+its own budget, set `initialMaxRetries`; once connected, `maxRetries` applies.
+A common production posture is to fail fast at startup, so a misconfigured or
+unreachable broker fails the deployment, while never giving up on a service
+that has already connected:
+
+```javascript
+const connection = await amqplib.connect('amqp://localhost', {
+  recovery: {
+    initialMaxRetries: 5, // give up (and reject connect) after 5 failed retries at startup
+    maxRetries: Infinity, // but keep reconnecting forever once connected
+  },
+});
+```
+
+When the initial budget is exhausted `connect` rejects (or the callback receives
+the error) and `reconnect-failed` is emitted. `initialMaxRetries` defaults to
+`maxRetries`, so behaviour is unchanged unless it is set.
+
 ## Error handling in event handlers
 
 If a user-supplied event handler throws a synchronous error, the throw will
