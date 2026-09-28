@@ -1,9 +1,0 @@
-*~
-scratch
-# do not ignore lib/defs.js, we need that
-# node_modules is ignored anyway
-.travis.yml
-etc/
-coverage/
-tsconfig.types.json
-types/
