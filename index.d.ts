@@ -154,6 +154,15 @@ export interface RecoveryOptions {
    * first connection. Default: true
    */
   waitForConnect?: boolean;
+  /**
+   * Optional custom delay strategy. Called with the reconnect attempt number
+   * (starting at 1) and must return the delay in milliseconds. Falls back to
+   * the built-in exponential-backoff-with-jitter strategy when absent. If it
+   * throws, or returns something other than a finite, non-negative number,
+   * recovery gives up as if `maxRetries` were exhausted: the initial connection
+   * fails with the error and `reconnect-failed` is emitted.
+   */
+  calculateDelay?: (attempt: number) => number;
 }
 
 export interface RecoveringChannelModel extends events.EventEmitter {
