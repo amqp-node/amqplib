@@ -178,6 +178,92 @@ amqplib.connect(
 
 Without `recovery` options, behavior is unchanged.
 
+### Attaching listeners before the first connection
+
+By default `connect` waits for the first successful connection before
+resolving (or invoking the callback), so events emitted during the initial
+attempt such as `connect-failed` and `reconnect-scheduled` cannot be observed.
+Set `waitForConnect: false` to get the connection handle immediately. You can
+then attach listeners, call `waitForConnect()` to await the first connection,
+or call `close()` to cancel the initial attempt. Channel operations wait for a
+connection internally, so `createChannel()` can be called straight away.
+
+```javascript
+const connection = await amqplib.connect('amqp://localhost', {
+  recovery: { waitForConnect: false },
+});
+
+connection.on('connect-failed', (err) => {
+  console.warn('connection attempt failed', err.message);
+});
+
+connection.on('reconnect-scheduled', ({ attempt, delay }) => {
+  console.log(`retrying (attempt ${attempt}) in ${delay}ms`);
+});
+
+await connection.waitForConnect();
+```
+
+The callback API returns the connection handle synchronously, so listeners can
+always be attached before the first attempt. With `waitForConnect: false` the
+callback is invoked immediately with the handle instead of after the first
+connection, and `waitForConnect(callback)` can be used to be notified once
+connected.
+
+### Custom delay strategy
+
+By default, reconnect delays follow an exponential backoff with jitter,
+controlled by `initialDelay`, `maxDelay`, `factor` and `jitter`. To use a
+different strategy entirely (full jitter, decorrelated jitter, a fixed step
+schedule, etc.), provide a `calculateDelay` function instead:
+
+```javascript
+const connection = await amqplib.connect('amqp://localhost', {
+  recovery: {
+    maxRetries: Infinity,
+    // Called with the reconnect attempt number, starting at 1.
+    // Must return the delay in milliseconds.
+    calculateDelay(attempt) {
+      return Math.min(30000, 100 * 2 ** (attempt - 1));
+    },
+  },
+});
+```
+
+`maxDelay` only bounds the built-in strategy. Once you provide `calculateDelay`,
+amqplib does not cap its return value - you're responsible for enforcing your
+own maximum, as the example above does with `Math.min`.
+
+When `calculateDelay` is absent, the built-in strategy is used. If it throws,
+or returns something other than a finite, non-negative number, amqplib does
+not fall back to the built-in strategy. Instead recovery gives up as if
+`maxRetries` had been exhausted: the initial `connect` rejects (or the
+callback receives the error), pending channel operations reject, and
+`reconnect-failed` is emitted with the error. A broken `calculateDelay` is a
+bug in caller-supplied code, so it is surfaced rather than papered over.
+
+### Separate retry budget for the initial connection
+
+By default `maxRetries` bounds every phase of recovery, including the attempts
+made before the first connection succeeds. To give the very first connection
+its own budget, set `initialMaxRetries`; once connected, `maxRetries` applies.
+A common production posture is to fail fast at startup, so a misconfigured or
+unreachable broker fails the deployment, while never giving up on a service
+that has already connected:
+
+```javascript
+const connection = await amqplib.connect('amqp://localhost', {
+  recovery: {
+    initialMaxRetries: 5, // give up (and reject connect) after 5 failed retries at startup
+    maxRetries: Infinity, // but keep reconnecting forever once connected
+  },
+});
+```
+
+When the initial budget is exhausted `connect` rejects (or the callback receives
+the error) and `reconnect-failed` is emitted. `initialMaxRetries` defaults to
+`maxRetries`, so behaviour is unchanged unless it is set.
+
 ## Error handling in event handlers
 
 If a user-supplied event handler throws a synchronous error, the throw will

@@ -143,13 +143,38 @@ export interface RecoveryOptions {
   factor?: number;
   /** Jitter factor (0–1) applied to delay to avoid thundering herd. Default: 0.2 */
   jitter?: number;
-  /** Maximum number of reconnect attempts. Default: Infinity */
+  /** Maximum number of reconnect attempts. Also bounds the initial connection unless `initialMaxRetries` is set. Default: Infinity */
   maxRetries?: number;
+  /**
+   * Maximum number of retries before the first successful connection. Once
+   * connected, `maxRetries` applies instead. Lets startup fail fast against an
+   * unreachable broker while steady-state recovery keeps retrying.
+   * Default: the value of `maxRetries`
+   */
+  initialMaxRetries?: number;
   /** Optional setup function called after each successful connection */
   setup?: ((model: ChannelModel) => Promise<void>) | ((model: ChannelModel, done: (err?: Error) => void) => void);
+  /**
+   * When false, `connect()` resolves immediately with the recovering connection
+   * without waiting for the first successful connection, so listeners can be
+   * attached before the initial attempt. Use `waitForConnect()` to await the
+   * first connection. Default: true
+   */
+  waitForConnect?: boolean;
+  /**
+   * Optional custom delay strategy. Called with the reconnect attempt number
+   * (starting at 1) and must return the delay in milliseconds. Falls back to
+   * the built-in exponential-backoff-with-jitter strategy when absent. If it
+   * throws, or returns something other than a finite, non-negative number,
+   * recovery gives up as if `maxRetries` were exhausted: the initial connection
+   * fails with the error and `reconnect-failed` is emitted.
+   */
+  calculateDelay?: (attempt: number) => number;
 }
 
 export interface RecoveringChannelModel extends events.EventEmitter {
+  /** Resolves once the first connection has been established */
+  waitForConnect(): Promise<this>;
   close(): Promise<void>;
   createChannel(options?: ChannelOptions): Promise<Channel>;
   createConfirmChannel(options?: ChannelOptions): Promise<ConfirmChannel>;

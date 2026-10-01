@@ -1,5 +1,3 @@
-
-
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
 const EventEmitter = require('node:events');
@@ -16,11 +14,11 @@ class FakePromiseModel extends EventEmitter {
   }
 
   createChannel(options) {
-    return Promise.resolve({kind: 'channel', id: this.id, options});
+    return Promise.resolve({ kind: 'channel', id: this.id, options });
   }
 
   createConfirmChannel(options) {
-    return Promise.resolve({kind: 'confirm', id: this.id, options});
+    return Promise.resolve({ kind: 'confirm', id: this.id, options });
   }
 
   updateSecret(_newSecret, _reason) {
@@ -43,7 +41,7 @@ class FakeCallbackModel extends EventEmitter {
       cb = options;
       options = undefined;
     }
-    cb && cb(null, {kind: 'channel', id: this.id, options});
+    cb && cb(null, { kind: 'channel', id: this.id, options });
   }
 
   createConfirmChannel(options, cb) {
@@ -51,7 +49,7 @@ class FakeCallbackModel extends EventEmitter {
       cb = options;
       options = undefined;
     }
-    cb && cb(null, {kind: 'confirm', id: this.id, options});
+    cb && cb(null, { kind: 'confirm', id: this.id, options });
   }
 
   updateSecret(_newSecret, _reason, cb) {
@@ -199,6 +197,303 @@ describe('recovery', () => {
     await client.close();
   });
 
+  it('built-in delay never exceeds maxDelay even at full jitter', async () => {
+    const models = [];
+    let opened = 0;
+
+    function openModel() {
+      const model = new FakePromiseModel(++opened);
+      models.push(model);
+      return Promise.resolve(model);
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 5,
+      maxDelay: 5,
+      factor: 1,
+      jitter: 1,
+      maxRetries: Infinity,
+    });
+
+    const originalRandom = Math.random;
+    let delay;
+
+    try {
+      // Force the maximum positive jitter. The base is capped at
+      // maxDelay / (1 + jitter) = 2.5, so base + offset tops out at
+      // exactly maxDelay (5) instead of overshooting it.
+      Math.random = () => 1;
+
+      delay = await new Promise((resolve) => {
+        client.once('reconnect-scheduled', (info) => resolve(info.delay));
+        models[models.length - 1].emit('close', new Error('socket closed'));
+      });
+    } finally {
+      Math.random = originalRandom;
+      await client.close();
+    }
+
+    assert.equal(delay, 5);
+  });
+
+  it('does not collapse onto maxDelay for every positive jitter draw once the base saturates', async () => {
+    const models = [];
+    let opened = 0;
+
+    function openModel() {
+      const model = new FakePromiseModel(++opened);
+      models.push(model);
+      return Promise.resolve(model);
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 100,
+      maxDelay: 100,
+      factor: 1,
+      jitter: 0.2,
+      maxRetries: Infinity,
+    });
+
+    const originalRandom = Math.random;
+    let delay;
+
+    try {
+      // Math.random() just above the midpoint gives a small positive
+      // offset. Capping base+offset at maxDelay (the old behavior) would
+      // collapse this to exactly 100 instead of the slightly lower value
+      // this offset actually produces.
+      Math.random = () => 0.6;
+
+      delay = await new Promise((resolve) => {
+        client.once('reconnect-scheduled', (info) => resolve(info.delay));
+        models[models.length - 1].emit('close', new Error('socket closed'));
+      });
+    } finally {
+      Math.random = originalRandom;
+      await client.close();
+    }
+
+    // base = 100 / 1.2 = 83.33, jitterPart = 16.67,
+    // offset = 0.6 * 16.67 * 2 - 16.67 = 3.33, result = round(83.33 + 3.33) = 87
+    assert.equal(delay, 87);
+    assert.notEqual(delay, 100);
+  });
+
+  it('uses a custom calculateDelay strategy when provided', async () => {
+    const models = [];
+    let opened = 0;
+    const attemptsSeen = [];
+
+    function openModel() {
+      const model = new FakePromiseModel(++opened);
+      models.push(model);
+      return Promise.resolve(model);
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 1,
+      maxDelay: 1,
+      jitter: 0,
+      maxRetries: 3,
+      calculateDelay(attempt) {
+        attemptsSeen.push(attempt);
+        return attempt * 1000;
+      },
+    });
+
+    await new Promise((resolve) => {
+      client.once('reconnect-scheduled', ({ attempt, delay }) => {
+        assert.equal(1, attempt);
+        assert.equal(1000, delay);
+        resolve();
+      });
+
+      models[0].emit('close', new Error('socket closed'));
+    });
+
+    assert.deepEqual([1], attemptsSeen);
+
+    await client.close();
+  });
+
+  it('gives up recovery with reconnect-failed when calculateDelay throws', async () => {
+    const models = [];
+    let opened = 0;
+
+    function openModel() {
+      const model = new FakePromiseModel(++opened);
+      models.push(model);
+      return Promise.resolve(model);
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 5,
+      maxDelay: 5,
+      jitter: 0,
+      maxRetries: 3,
+      calculateDelay() {
+        throw new Error('calculateDelay is broken');
+      },
+    });
+
+    const err = await new Promise((resolve) => {
+      client.once('reconnect-failed', resolve);
+      models[0].emit('close', new Error('socket closed'));
+    });
+    assert.match(err.message, /calculateDelay is broken/);
+    await assert.rejects(client.createChannel(), /calculateDelay is broken/);
+
+    await client.close();
+  });
+
+  it('reports a validation error instead of a JSON error for a circular-reference return value', async () => {
+    const models = [];
+    let opened = 0;
+
+    function openModel() {
+      const model = new FakePromiseModel(++opened);
+      models.push(model);
+      return Promise.resolve(model);
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 5,
+      maxDelay: 5,
+      jitter: 0,
+      maxRetries: 3,
+      calculateDelay() {
+        const circular = {};
+        circular.self = circular;
+        return circular;
+      },
+    });
+
+    // Must be our own validation error, not a JSON.stringify TypeError from
+    // trying to serialize the circular value into the message.
+    const err = await new Promise((resolve) => {
+      client.once('reconnect-failed', resolve);
+      models[0].emit('close', new Error('socket closed'));
+    });
+    assert.match(err.message, /calculateDelay must return a finite, non-negative number/);
+
+    await client.close();
+  });
+
+  it('gives up recovery when calculateDelay returns an invalid value', async () => {
+    const models = [];
+    let opened = 0;
+
+    function openModel() {
+      const model = new FakePromiseModel(++opened);
+      models.push(model);
+      return Promise.resolve(model);
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 5,
+      maxDelay: 5,
+      jitter: 0,
+      maxRetries: 3,
+      calculateDelay() {
+        return -1;
+      },
+    });
+
+    const err = await new Promise((resolve) => {
+      client.once('reconnect-failed', resolve);
+      models[0].emit('close', new Error('socket closed'));
+    });
+    assert.match(err.message, /calculateDelay must return a finite, non-negative number/);
+
+    await client.close();
+  });
+
+  it('does not coerce non-number calculateDelay return values', async () => {
+    const models = [];
+    let opened = 0;
+
+    function openModel() {
+      const model = new FakePromiseModel(++opened);
+      models.push(model);
+      return Promise.resolve(model);
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 5,
+      maxDelay: 5,
+      jitter: 0,
+      maxRetries: 3,
+      calculateDelay() {
+        return '1000'; // a string, not a number - must not be accepted as-is
+      },
+    });
+
+    const err = await new Promise((resolve) => {
+      client.once('reconnect-failed', resolve);
+      models[0].emit('close', new Error('socket closed'));
+    });
+    assert.match(err.message, /calculateDelay must return a finite, non-negative number/);
+
+    await client.close();
+  });
+
+  it('rejects the initial connection when calculateDelay throws after a failed connect', async (t) => {
+    const rejections = [];
+    const onRejection = (err) => rejections.push(err);
+    process.on('unhandledRejection', onRejection);
+    t.after(() => process.removeListener('unhandledRejection', onRejection));
+
+    let attempts = 0;
+
+    function openModel() {
+      attempts++;
+      return Promise.reject(new Error('connect failed'));
+    }
+
+    await assert.rejects(
+      recovery.connectWithRecoveryPromise(openModel, {
+        maxRetries: Infinity,
+        calculateDelay() {
+          throw new Error('calculateDelay is broken');
+        },
+      }),
+      /calculateDelay is broken/,
+    );
+
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(1, attempts);
+    assert.deepEqual([], rejections);
+  });
+
+  it('channel operations reject with the failure once recovery has given up', async () => {
+    let attempts = 0;
+
+    function openModel() {
+      attempts++;
+      return Promise.reject(new Error('connect failed'));
+    }
+
+    const client = await recovery.connectWithRecoveryPromise(openModel, {
+      initialDelay: 1,
+      maxDelay: 1,
+      jitter: 0,
+      maxRetries: 1,
+      waitForConnect: false,
+    });
+
+    const err = await new Promise((resolve) => client.once('reconnect-failed', resolve));
+    assert.equal('connect failed', err.message);
+    assert.equal(2, attempts);
+
+    await assert.rejects(client.createChannel(), { message: 'connect failed' });
+    await assert.rejects(client.createConfirmChannel(), { message: 'connect failed' });
+    await assert.rejects(client.updateSecret(Buffer.from('x'), 'rotate'), { message: 'connect failed' });
+
+    // Nothing further is attempted and close() is a no-op.
+    await client.close();
+    assert.equal(2, attempts);
+  });
+
   it('promise recovery fails after max retries', async () => {
     let attempts = 0;
 
@@ -222,5 +517,283 @@ describe('recovery', () => {
 
     assert(failed);
     assert.equal(2, attempts);
+  });
+
+  describe('initialMaxRetries', () => {
+    it('bounds the initial connection separately from maxRetries', async () => {
+      let attempts = 0;
+
+      function openModel() {
+        attempts++;
+        return Promise.reject(new Error('connect failed'));
+      }
+
+      await assert.rejects(
+        recovery.connectWithRecoveryPromise(openModel, {
+          initialDelay: 1,
+          maxDelay: 1,
+          jitter: 0,
+          initialMaxRetries: 2,
+          maxRetries: Infinity,
+        }),
+        { message: 'connect failed' },
+      );
+
+      assert.equal(3, attempts);
+    });
+
+    it('stops applying once a connection has been established', async () => {
+      const models = [];
+      let attempts = 0;
+
+      function openModel() {
+        attempts++;
+        // Succeed at first, fail twice after the disconnect, then succeed again.
+        if (attempts === 2 || attempts === 3) return Promise.reject(new Error('connect failed'));
+        const model = new FakePromiseModel(attempts);
+        models.push(model);
+        return Promise.resolve(model);
+      }
+
+      const client = await recovery.connectWithRecoveryPromise(openModel, {
+        initialDelay: 1,
+        maxDelay: 1,
+        jitter: 0,
+        initialMaxRetries: 0,
+        maxRetries: 3,
+      });
+
+      const failures = [];
+      client.on('reconnect-failed', (err) => failures.push(err));
+
+      const reconnected = new Promise((resolve) => client.once('connect', resolve));
+      models[0].emit('close', new Error('socket closed'));
+      await reconnected;
+
+      assert.equal(4, attempts);
+      assert.deepEqual([], failures);
+
+      await client.close();
+    });
+
+    it('accepts Infinity explicitly even when maxRetries is finite', async () => {
+      let attempts = 0;
+
+      function openModel() {
+        attempts++;
+        if (attempts < 4) return Promise.reject(new Error('connect failed'));
+        return Promise.resolve(new FakePromiseModel(attempts));
+      }
+
+      const client = await recovery.connectWithRecoveryPromise(openModel, {
+        initialDelay: 1,
+        maxDelay: 1,
+        jitter: 0,
+        initialMaxRetries: Infinity,
+        maxRetries: 1,
+      });
+
+      assert.equal(4, attempts);
+      await client.close();
+    });
+
+    it('rejects the callback connect once the initial budget is exhausted', (_t, done) => {
+      let attempts = 0;
+
+      function openModel() {
+        attempts++;
+        return Promise.reject(new Error('connect failed'));
+      }
+
+      recovery.connectWithRecoveryCallback(
+        openModel,
+        { initialDelay: 1, maxDelay: 1, jitter: 0, initialMaxRetries: 1, maxRetries: Infinity },
+        (err) => {
+          try {
+            assert.equal('connect failed', err.message);
+            assert.equal(2, attempts);
+            done();
+          } catch (e) {
+            done(e);
+          }
+        },
+      );
+    });
+  });
+
+  describe('waitForConnect: false', () => {
+    function watchUnhandledRejections(t) {
+      const rejections = [];
+      const onRejection = (err) => rejections.push(err);
+      process.on('unhandledRejection', onRejection);
+      t.after(() => process.removeListener('unhandledRejection', onRejection));
+      return rejections;
+    }
+
+    it('promise connect resolves before the first connection and later emits connect', async () => {
+      let opened = 0;
+
+      function openModel() {
+        return Promise.resolve(new FakePromiseModel(++opened));
+      }
+
+      const client = await recovery.connectWithRecoveryPromise(openModel, { waitForConnect: false });
+
+      assert.equal(0, opened);
+
+      const model = await new Promise((resolve) => client.once('connect', resolve));
+      assert.equal(1, model.id);
+      assert.equal(1, opened);
+
+      await client.close();
+    });
+
+    it('listeners attached after connect observe a failed first attempt', async () => {
+      let attempts = 0;
+
+      function openModel() {
+        attempts++;
+        return attempts === 1 ? Promise.reject(new Error('broker unavailable')) : Promise.resolve(new FakePromiseModel(attempts));
+      }
+
+      const client = await recovery.connectWithRecoveryPromise(openModel, {
+        initialDelay: 1,
+        maxDelay: 1,
+        jitter: 0,
+        waitForConnect: false,
+      });
+
+      const failures = [];
+      const scheduled = [];
+      client.on('connect-failed', (err) => failures.push(err));
+      client.on('reconnect-scheduled', (info) => scheduled.push(info));
+
+      await client.waitForConnect();
+
+      assert.equal(1, failures.length);
+      assert.equal('broker unavailable', failures[0].message);
+      assert.equal(1, scheduled.length);
+      assert.equal(1, scheduled[0].attempt);
+      assert.strictEqual(failures[0], scheduled[0].error);
+      assert.equal(2, attempts);
+
+      await client.close();
+    });
+
+    it('waitForConnect resolves with the recovering model once connected', async () => {
+      function openModel() {
+        return Promise.resolve(new FakePromiseModel(1));
+      }
+
+      const client = await recovery.connectWithRecoveryPromise(openModel, { waitForConnect: false });
+      const connected = await client.waitForConnect();
+
+      assert.strictEqual(client, connected);
+      const ch = await client.createChannel();
+      assert.equal(1, ch.id);
+
+      await client.close();
+    });
+
+    it('close before the first connection cancels it without an unhandled rejection', async (t) => {
+      const rejections = watchUnhandledRejections(t);
+      let setupCalls = 0;
+      let closeCalls = 0;
+      let releaseOpen;
+
+      function openModel() {
+        return new Promise((resolve) => {
+          const model = new FakePromiseModel(1);
+          model.close = () => {
+            closeCalls++;
+            return Promise.resolve();
+          };
+          releaseOpen = () => resolve(model);
+        });
+      }
+
+      const client = await recovery.connectWithRecoveryPromise(openModel, {
+        waitForConnect: false,
+        setup() {
+          setupCalls++;
+        },
+      });
+
+      let connected = false;
+      client.on('connect', () => {
+        connected = true;
+      });
+
+      const pendingChannel = client.createChannel();
+      await new Promise((resolve) => setImmediate(resolve));
+      assert(releaseOpen, 'open should be in flight');
+
+      await client.close();
+
+      await assert.rejects(pendingChannel, { message: 'Connection closed' });
+      await assert.rejects(client.waitForConnect(), { message: 'Connection closed' });
+
+      releaseOpen();
+      await new Promise((resolve) => setImmediate(resolve));
+
+      assert.equal(0, setupCalls);
+      assert.equal(1, closeCalls);
+      assert.equal(false, connected);
+      assert.deepEqual([], rejections);
+    });
+
+    it('exhausting retries emits reconnect-failed without an unhandled rejection', async (t) => {
+      const rejections = watchUnhandledRejections(t);
+      let attempts = 0;
+
+      function openModel() {
+        attempts++;
+        return Promise.reject(new Error('connect failed'));
+      }
+
+      const client = await recovery.connectWithRecoveryPromise(openModel, {
+        initialDelay: 1,
+        maxDelay: 1,
+        jitter: 0,
+        maxRetries: 1,
+        waitForConnect: false,
+      });
+
+      const err = await new Promise((resolve) => client.once('reconnect-failed', resolve));
+      assert.equal('connect failed', err.message);
+      assert.equal(2, attempts);
+
+      await assert.rejects(client.waitForConnect(), { message: 'connect failed' });
+      await new Promise((resolve) => setImmediate(resolve));
+      assert.deepEqual([], rejections);
+
+      await client.close();
+    });
+
+    it('callback connect invokes the callback before the first connection', (_t, done) => {
+      let opened = 0;
+
+      function openModel() {
+        return Promise.resolve(new FakeCallbackModel(++opened));
+      }
+
+      const failures = [];
+      const client = recovery.connectWithRecoveryCallback(openModel, { waitForConnect: false }, (err, c) => {
+        if (err) return done(err);
+        assert.strictEqual(client, c);
+        assert.equal(0, opened);
+
+        c.on('connect-failed', (failure) => failures.push(failure));
+        c.waitForConnect((waitErr, connected) => {
+          if (waitErr) return done(waitErr);
+          assert.strictEqual(client, connected);
+          assert.equal(1, opened);
+          assert.deepEqual([], failures);
+          c.close(done);
+        });
+      });
+
+      assert(client);
+    });
   });
 });
