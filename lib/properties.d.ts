@@ -19,6 +19,9 @@ export namespace Replies {
   interface Consume {
     consumerTag: string;
   }
+  interface Cancel {
+    consumerTag: string;
+  }
 }
 
 export namespace Options {

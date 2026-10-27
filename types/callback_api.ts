@@ -131,7 +131,8 @@ function testChannel(ch: amqp.Channel) {
 
   ch.cancel('tag');
   ch.cancel('tag', (err, ok) => {
-    void [err, ok];
+    if (err) return;
+    const _tag: string = ok.consumerTag;
   });
 
   // get

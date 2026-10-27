@@ -77,7 +77,7 @@ export interface Channel extends events.EventEmitter {
     options?: Options.Consume,
   ): Promise<Replies.Consume>;
 
-  cancel(consumerTag: string): Promise<Replies.Empty>;
+  cancel(consumerTag: string): Promise<Replies.Cancel>;
   get(queue: string, options?: Options.Get): Promise<GetMessage | false>;
 
   ack(message: Message, allUpTo?: boolean): void;

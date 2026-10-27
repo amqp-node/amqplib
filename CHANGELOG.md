@@ -1,7 +1,8 @@
 # Change log for amqplib
 
 ## Unreleased
-- Return the server acknowledgement from promise-based `channel.cancel`, matching the callback API.
+- Return the server acknowledgement from promise-based `channel.cancel`, matching the callback API (thanks [@edsonsims](https://github.com/edsonsims)).
+- Type `cancel` replies as `Replies.Cancel` (`{ consumerTag }`) in both the promise and callback API declarations, which previously claimed `Replies.Empty`.
 
 ## v2.2.0
 - Add `calculateDelay` recovery option for supplying a custom reconnect delay strategy, e.g. full jitter, decorrelated jitter or a fixed schedule. When set, `maxDelay` is not applied to its return value; when it throws or returns an invalid value, recovery gives up as if `maxRetries` were exhausted (fixes #855, thanks [@GiHoon1123](https://github.com/GiHoon1123))
