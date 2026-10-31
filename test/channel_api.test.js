@@ -168,6 +168,24 @@ describe('sendMessage', () => {
     );
   });
 
+  it('send (and get) content many frames long to queue', () => {
+    // several times the default frame max, so it arrives as body frames the socket splits
+    const content = require('node:crypto').randomBytes(2 * 1024 * 1024);
+    return withChannel((ch) =>
+      ch.assertQueue('test.send-to-q', QUEUE_OPTS)
+        .then(() => ch.purgeQueue('test.send-to-q'))
+        .then(() => {
+          ch.sendToQueue('test.send-to-q', content);
+          return waitForMessages('test.send-to-q');
+        })
+        .then(() => ch.get('test.send-to-q', { noAck: true }))
+        .then((m) => {
+          assert(m);
+          assert.ok(content.equals(m.content));
+        })
+    );
+  });
+
   it('send (and get) zero content to queue', () => {
     return withChannel((ch) =>
       ch.assertQueue('test.send-to-q', QUEUE_OPTS)
