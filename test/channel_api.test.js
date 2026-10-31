@@ -382,7 +382,8 @@ describe('binding, consuming', () => {
         }))
         // first message arrived via consumer
         .then(() => ch.cancel(ctag))
-        .then(() => {
+        .then((ok) => {
+          assert.deepStrictEqual(ok, { consumerTag: ctag });
           ch.sendToQueue('test.consumer-cancel', Buffer.from('bar'));
           return waitForMessages('test.consumer-cancel');
         })
