@@ -1,6 +1,6 @@
 # Change log for amqplib
 
-## Unreleased
+## v2.2.1
 - Return the server acknowledgement from promise-based `channel.cancel`, matching the callback API (thanks [@edsonsims](https://github.com/edsonsims)).
 - Type `cancel` replies as `Replies.Cancel` (`{ consumerTag }`) in both the promise and callback API declarations, which previously claimed `Replies.Empty`.
 - Fix callback-based `waitForConfirms` never calling back when invoked after the confirm channel closed with unconfirmed messages; it now yields a `channel closed` error, matching the promise API (thanks [@youdie006](https://github.com/youdie006)).
