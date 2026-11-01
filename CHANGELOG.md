@@ -6,6 +6,7 @@
 - Fix callback-based `waitForConfirms` never calling back when invoked after the confirm channel closed with unconfirmed messages; it now yields a `channel closed` error, matching the promise API (thanks [@youdie006](https://github.com/youdie006)).
 - `waitForConfirms` (both APIs) now always fails with `channel closed` after the channel closes with unconfirmed messages. Previously it reported success if every outstanding message had its own callback, or on any call after the first.
 - The callback API's `waitForConfirms` callback is now required in the TypeScript declarations, matching the docs. Calling it without one threw at runtime.
+- Replace `.npmignore` with a `files` allowlist in `package.json` so the published package no longer includes tests, tooling config, dotfiles or the defs generator. Install size drops from 577 kB to 358 kB (fixes #859, thanks [@rubiesonthesky](https://github.com/rubiesonthesky))
 
 ## v2.2.0
 - Add `calculateDelay` recovery option for supplying a custom reconnect delay strategy, e.g. full jitter, decorrelated jitter or a fixed schedule. When set, `maxDelay` is not applied to its return value; when it throws or returns an invalid value, recovery gives up as if `maxRetries` were exhausted (fixes #855, thanks [@GiHoon1123](https://github.com/GiHoon1123))

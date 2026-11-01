@@ -46,5 +46,15 @@
     "RabbitMQ"
   ],
   "author": "Michael Bridgen <mikeb@squaremobius.net>",
-  "license": "MIT"
+  "license": "MIT",
+  "files": [
+    "lib",
+    "examples",
+    "channel_api.js",
+    "callback_api.js",
+    "index.d.ts",
+    "callback_api.d.ts",
+    "CHANGELOG.md",
+    "LICENSE-MIT"
+  ]
 }
