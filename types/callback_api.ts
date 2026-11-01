@@ -166,7 +166,6 @@ function testConfirmChannel(ch: amqp.ConfirmChannel) {
   ch.sendToQueue('q', Buffer.from('hello'), {}, (err, _ok) => {
     if (err) console.error(err);
   });
-  ch.waitForConfirms();
   ch.waitForConfirms((err) => { void err; });
 }
 

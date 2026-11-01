@@ -3,6 +3,7 @@ const assert = require('node:assert');
 const promisify = require('node:util').promisify;
 const Channel = require('../lib/channel').Channel;
 const CallbackConfirmChannel = require('../lib/callback_model').ConfirmChannel;
+const PromiseConfirmChannel = require('../lib/channel_model').ConfirmChannel;
 const Connection = require('../lib/connection').Connection;
 const util = require('./lib/util');
 const latch = util.latch;
@@ -655,6 +656,98 @@ describe('Channel', () => {
         }))
         .then(() => cb(), cb);
     }));
+
+    const confirmApis = [
+      {
+        name: 'promise API',
+        create: (c) => new PromiseConfirmChannel(c),
+        open: (ch) => ch.open(),
+        waitForConfirms: (ch) => ch.waitForConfirms(),
+      },
+      {
+        name: 'callback API',
+        create: (c) => new CallbackConfirmChannel(c),
+        open: (ch) => promisify(ch.open.bind(ch))(),
+        waitForConfirms: (ch) =>
+          new Promise((resolve, reject) => {
+            ch.waitForConfirms((err) => (err ? reject(err) : resolve()));
+          }),
+      },
+    ];
+
+    // The server optionally acks the first publish, then closes the channel
+    function serverClosesAfterPublish({ ack }) {
+      return (send, wait, cb) => {
+        channel_handshake(send, wait)
+          .then((ch) => waitForPublish(wait).then(() => {
+            if (ack) send(defs.BasicAck, { deliveryTag: 1, multiple: false }, ch);
+            send(defs.ChannelClose, {
+              replyText: 'NOT_FOUND - no exchange',
+              replyCode: defs.constants.NOT_FOUND,
+              classId: 60,
+              methodId: 40,
+            }, ch);
+            return wait(defs.ChannelCloseOk)();
+          }))
+          .then(() => cb(), cb);
+      };
+    }
+
+    function assertChannelClosed(err) {
+      assert.strictEqual(err?.message, 'channel closed');
+      return true;
+    }
+
+    for (const api of confirmApis) {
+      it(`${api.name} waitForConfirms fails after close when messages had their own callbacks`, baseChannelTest((c, cb) => {
+        const ch = api.create(c);
+        let messageErr;
+        ch.on('error', () => {});
+        ch.on('close', () => {
+          assert.rejects(api.waitForConfirms(ch), assertChannelClosed)
+            .then(() => assertChannelClosed(messageErr))
+            .then(() => cb(), cb);
+        });
+        api.open(ch).then(() => {
+          ch.publish('', '', Buffer.from('foo'), {}, (err) => {
+            messageErr = err;
+          });
+        }, cb);
+      }, serverClosesAfterPublish({ ack: false })));
+
+      it(`${api.name} waitForConfirms keeps failing on every call after close`, baseChannelTest((c, cb) => {
+        const ch = api.create(c);
+        ch.on('error', () => {});
+        ch.on('close', () => {
+          assert.rejects(api.waitForConfirms(ch), assertChannelClosed)
+            .then(() => assert.rejects(api.waitForConfirms(ch), assertChannelClosed))
+            .then(() => cb(), cb);
+        });
+        api.open(ch).then(() => {
+          ch.publish('', '', Buffer.from('foo'), {});
+        }, cb);
+      }, serverClosesAfterPublish({ ack: false })));
+
+      it(`${api.name} waitForConfirms fails when the channel closes while waiting`, baseChannelTest((c, cb) => {
+        const ch = api.create(c);
+        ch.on('error', () => {});
+        api.open(ch).then(() => {
+          ch.publish('', '', Buffer.from('foo'), {});
+          return assert.rejects(api.waitForConfirms(ch), assertChannelClosed);
+        }).then(() => cb(), cb);
+      }, serverClosesAfterPublish({ ack: false })));
+
+      it(`${api.name} waitForConfirms succeeds after close when everything was confirmed`, baseChannelTest((c, cb) => {
+        const ch = api.create(c);
+        ch.on('error', () => {});
+        ch.on('close', () => {
+          api.waitForConfirms(ch).then(() => cb(), cb);
+        });
+        api.open(ch).then(() => {
+          ch.publish('', '', Buffer.from('foo'), {});
+        }, cb);
+      }, serverClosesAfterPublish({ ack: true })));
+    }
   });
 
   describe('Event handler errors - without handler-error listener', () => {

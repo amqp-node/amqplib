@@ -132,7 +132,7 @@ export interface ConfirmChannel extends Channel {
     callback?: (err: Error, ok: Replies.Empty) => void,
   ): boolean;
 
-  waitForConfirms(callback?: (err?: Error) => void): void;
+  waitForConfirms(callback: (err?: Error) => void): void;
 }
 
 export declare class IllegalOperationError extends Error {
