@@ -103,7 +103,7 @@ export interface Channel extends events.EventEmitter {
     callback?: (err: Error, ok: Replies.Consume) => void,
   ): void;
 
-  cancel(consumerTag: string, callback?: (err: Error, ok: Replies.Empty) => void): void;
+  cancel(consumerTag: string, callback?: (err: Error, ok: Replies.Cancel) => void): void;
   get(queue: string, options?: Options.Get, callback?: (err: Error, ok: GetMessage | false) => void): void;
 
   ack(message: Message, allUpTo?: boolean): void;
@@ -132,7 +132,7 @@ export interface ConfirmChannel extends Channel {
     callback?: (err: Error, ok: Replies.Empty) => void,
   ): boolean;
 
-  waitForConfirms(callback?: (err?: Error) => void): void;
+  waitForConfirms(callback: (err?: Error) => void): void;
 }
 
 export declare class IllegalOperationError extends Error {

@@ -131,7 +131,8 @@ function testChannel(ch: amqp.Channel) {
 
   ch.cancel('tag');
   ch.cancel('tag', (err, ok) => {
-    void [err, ok];
+    if (err) return;
+    const _tag: string = ok.consumerTag;
   });
 
   // get
@@ -165,7 +166,6 @@ function testConfirmChannel(ch: amqp.ConfirmChannel) {
   ch.sendToQueue('q', Buffer.from('hello'), {}, (err, _ok) => {
     if (err) console.error(err);
   });
-  ch.waitForConfirms();
   ch.waitForConfirms((err) => { void err; });
 }
 
