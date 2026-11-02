@@ -116,7 +116,8 @@ async function testChannel(ch: amqp.Channel) {
   });
   void consumeReply;
 
-  await ch.cancel('consumer-tag');
+  const cancelReply: amqp.Replies.Cancel = await ch.cancel('consumer-tag');
+  const _cancelledTag: string = cancelReply.consumerTag;
 
   // get
   const msg = await ch.get('q', { noAck: false });

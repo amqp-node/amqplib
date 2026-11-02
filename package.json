@@ -2,7 +2,7 @@
   "name": "amqplib",
   "homepage": "http://amqp-node.github.io/amqplib/",
   "main": "./channel_api.js",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "types": "./index.d.ts",
   "exports": {
     ".": {
@@ -46,5 +46,15 @@
     "RabbitMQ"
   ],
   "author": "Michael Bridgen <mikeb@squaremobius.net>",
-  "license": "MIT"
+  "license": "MIT",
+  "files": [
+    "lib",
+    "examples",
+    "channel_api.js",
+    "callback_api.js",
+    "index.d.ts",
+    "callback_api.d.ts",
+    "CHANGELOG.md",
+    "LICENSE-MIT"
+  ]
 }
