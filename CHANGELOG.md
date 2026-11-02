@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## Unreleased
+- Take each frame out of the bytes it arrived in, rather than concatenating every read from the socket onto what was left over. A body frame that spans reads is not copied until the message is assembled, which removes most of the copying, the page faults and the CPU of receiving a large message
+
 ## v2.2.1
 - Return the server acknowledgement from promise-based `channel.cancel`, matching the callback API (thanks [@edsonsims](https://github.com/edsonsims)).
 - Type `cancel` replies as `Replies.Cancel` (`{ consumerTag }`) in both the promise and callback API declarations, which previously claimed `Replies.Empty`.
