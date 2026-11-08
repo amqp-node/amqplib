@@ -3,6 +3,8 @@ const assert = require('node:assert');
 const connection = require('../lib/connection');
 const Frames = connection.Connection;
 const HEARTBEAT = require('../lib/frame').HEARTBEAT;
+const parseFrame = require('../lib/frame').parseFrame;
+const makeBodyFrame = require('../lib/frame').makeBodyFrame;
 const Stream = require('node:stream');
 const PassThrough = Stream.PassThrough;
 const { choice, forAll, repeat, label, sequence, transform, sized } = require('claire');
@@ -52,7 +54,6 @@ describe('Frame', () => {
       it(name, (_t, done) => {
         const input = inputs();
         const frames = new Frames(input);
-        frames.frameMax = 5; //for the max frame test
         input.write(Buffer.from(bytes));
         frames.step((err, _frame) => {
           if (err != null) done();
@@ -87,6 +88,43 @@ describe('Frame', () => {
       0, // garbage ID
       defs.constants.FRAME_END,
     ]);
+  });
+
+  describe('Frame size limit', () => {
+    const HUGE_HEADER = Buffer.from([defs.constants.FRAME_METHOD, 0, 0, 0xff, 0xff, 0xff, 0xf0]);
+
+    it('refuses a frame larger than the limit from the header alone', () => {
+      assert.throws(() => parseFrame(HUGE_HEADER, 4096), /Frame size 4294967280 exceeds maxFrameSize 4096/);
+    });
+
+    it('waits for the rest of a frame within the limit', () => {
+      const header = Buffer.from([defs.constants.FRAME_METHOD, 0, 0, 0, 0, 0, 10]);
+      assert.strictEqual(parseFrame(header, 4096), false);
+    });
+
+    it('treats a limit of 0 as no limit', () => {
+      assert.strictEqual(parseFrame(HUGE_HEADER, 0), false);
+    });
+
+    it('applies no limit when none is given', () => {
+      assert.strictEqual(parseFrame(HUGE_HEADER), false);
+    });
+
+    it('accepts a size exactly equal to the limit', () => {
+      const header = Buffer.from([defs.constants.FRAME_METHOD, 0, 0, 0, 0, 0x10, 0x00]);
+      assert.strictEqual(parseFrame(header, 4096), false);
+    });
+
+    it('accepts a frame larger than frameMax but within maxFrameSize', () => {
+      const input = inputs();
+      const frames = new Frames(input);
+      frames.frameMax = 4096;
+      const big = makeBodyFrame(1, Buffer.alloc(100 * 1024, 0x41));
+      input.write(big);
+      const f = frames.recvFrame();
+      assert.ok(f, 'frame should be accepted');
+      assert.strictEqual(f.content.length, 100 * 1024);
+    });
   });
 
   const Trace = label('frame trace', repeat(choice.apply(choice, amqp.methods)));

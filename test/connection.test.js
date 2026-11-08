@@ -2,6 +2,7 @@ const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const defs = require('../lib/defs');
 const Connection = require('../lib/connection').Connection;
+const DEFAULT_MAX_FRAME_SIZE = require('../lib/connection').DEFAULT_MAX_FRAME_SIZE;
 const HEARTBEAT = require('../lib/frame').HEARTBEAT;
 const HB_BUF = require('../lib/frame').HEARTBEAT_BUF;
 const OPEN_OPTS = require('./lib/data').OPEN_OPTS;
@@ -70,6 +71,99 @@ describe('Connection', () => {
         .then(cb, cb);
     }));
 
+    it('maxFrameSize defaults up to the negotiated frameMax', connectionTest((c, cb) => {
+      const opts = Object.create(OPEN_OPTS);
+      opts.frameMax = 100 * 1024 * 1024;
+      c.open(opts, (err) => {
+        assert.ifError(err);
+        assert.strictEqual(c.maxFrameSize, 100 * 1024 * 1024);
+        cb();
+      });
+    }, (send, wait, cb) => {
+      send(defs.ConnectionStart, {
+        versionMajor: 0,
+        versionMinor: 9,
+        serverProperties: {},
+        mechanisms: Buffer.from('PLAIN'),
+        locales: Buffer.from('en_US'),
+      });
+      wait(defs.ConnectionStartOk)()
+        .then(() => send(defs.ConnectionTune, { channelMax: 0, heartbeat: 0, frameMax: 100 * 1024 * 1024 }))
+        .then(wait(defs.ConnectionTuneOk))
+        .then(wait(defs.ConnectionOpen))
+        .then(() => send(defs.ConnectionOpenOk, { knownHosts: '' }))
+        .then(cb, cb);
+    }));
+
+    it('an explicit maxFrameSize is not raised to frameMax', connectionTest((c, cb) => {
+      const opts = Object.create(OPEN_OPTS);
+      opts.frameMax = 100 * 1024 * 1024;
+      opts.maxFrameSize = 10 * 1024 * 1024;
+      c.open(opts, (err) => {
+        assert.ifError(err);
+        assert.strictEqual(c.maxFrameSize, 10 * 1024 * 1024);
+        cb();
+      });
+    }, (send, wait, cb) => {
+      send(defs.ConnectionStart, {
+        versionMajor: 0,
+        versionMinor: 9,
+        serverProperties: {},
+        mechanisms: Buffer.from('PLAIN'),
+        locales: Buffer.from('en_US'),
+      });
+      wait(defs.ConnectionStartOk)()
+        .then(() => send(defs.ConnectionTune, { channelMax: 0, heartbeat: 0, frameMax: 100 * 1024 * 1024 }))
+        .then(wait(defs.ConnectionTuneOk))
+        .then(wait(defs.ConnectionOpen))
+        .then(() => send(defs.ConnectionOpenOk, { knownHosts: '' }))
+        .then(cb, cb);
+    }));
+
+    it('maxFrameSize stays at the default when frameMax is unlimited', connectionTest((c, cb) => {
+      c.open(OPEN_OPTS, (err) => {
+        assert.ifError(err);
+        assert.strictEqual(c.maxFrameSize, DEFAULT_MAX_FRAME_SIZE);
+        cb();
+      });
+    }, (send, wait, cb) => {
+      handshake(send, wait).then(cb, cb);
+    }));
+
+    it('frameMax below the protocol minimum', connectionTest((c, cb) => {
+      c.open(OPEN_OPTS, (err) => {
+        assert.ok(err);
+        assert.match(err.message, /Server frameMax 8 is below the protocol minimum 4096/);
+        cb();
+      });
+    }, (send, wait, cb) => {
+      send(defs.ConnectionStart, {
+        versionMajor: 0,
+        versionMinor: 9,
+        serverProperties: {},
+        mechanisms: Buffer.from('PLAIN'),
+        locales: Buffer.from('en_US'),
+      });
+      wait(defs.ConnectionStartOk)()
+        .then(() => send(defs.ConnectionTune, { channelMax: 0, heartbeat: 0, frameMax: 8 }))
+        .then(cb, cb);
+    }));
+
+    it('frame larger than maxFrameSize during the handshake', connectionTest((c, cb) => {
+      c.open(OPEN_OPTS, (err) => {
+        assert.ok(err);
+        assert.match(err.message, new RegExp(`Frame size 4294967280 exceeds maxFrameSize ${DEFAULT_MAX_FRAME_SIZE}`));
+        cb();
+      });
+    }, (_send, _wait, cb, socket) => {
+      const head = Buffer.alloc(7);
+      head[0] = defs.constants.FRAME_METHOD;
+      head.writeUInt16BE(0, 1);
+      head.writeUInt32BE(0xfffffff0, 3);
+      socket.write(head);
+      cb();
+    }));
+
     it('wrong first frame', connectionTest((c, cb) => {
       c.open(OPEN_OPTS, (err) => {
         assert.ok(err);
@@ -102,6 +196,16 @@ describe('Connection', () => {
     }));
   });
 
+  describe('Content framing', () => {
+    it('refuses to send content when frameMax leaves no room for a body', () => {
+      const pair = socketPair();
+      const c = new Connection(pair.client);
+      c.freshChannel(null);
+      c.frameMax = 8;
+      assert.throws(() => c.sendContent(1, Buffer.alloc(16)), /frameMax 8 leaves no room for a body frame/);
+    });
+  });
+
   describe('Connection running', () => {
     it('wrong frame on channel 0', connectionTest((c, cb) => {
       c.once('error', (err) => {
@@ -117,6 +221,38 @@ describe('Connection', () => {
         .then(() => send(defs.ChannelOpenOk, { channelId: Buffer.from('') }, 0))
         .then(wait(defs.ConnectionClose))
         .then((_close) => send(defs.ConnectionCloseOk, {}, 0))
+        .then(cb, cb);
+    }));
+
+    it('frame larger than maxFrameSize', connectionTest((c, cb) => {
+      c.once('error', (err) => {
+        assert.match(err.message, /Frame size 4294967280 exceeds maxFrameSize 8192/);
+        cb();
+      });
+      const opts = Object.create(OPEN_OPTS);
+      opts.maxFrameSize = 8192;
+      c.open(opts, (err) => err && cb(err));
+    }, (send, wait, cb, socket) => {
+      send(defs.ConnectionStart, {
+        versionMajor: 0,
+        versionMinor: 9,
+        serverProperties: {},
+        mechanisms: Buffer.from('PLAIN'),
+        locales: Buffer.from('en_US'),
+      });
+      wait(defs.ConnectionStartOk)()
+        .then(() => send(defs.ConnectionTune, { channelMax: 0, heartbeat: 0, frameMax: 8192 }))
+        .then(wait(defs.ConnectionTuneOk))
+        .then(wait(defs.ConnectionOpen))
+        .then(() => send(defs.ConnectionOpenOk, { knownHosts: '' }))
+        .then(() => new Promise((resolve) => setImmediate(resolve)))
+        .then(() => {
+          const head = Buffer.alloc(7);
+          head[0] = defs.constants.FRAME_METHOD;
+          head.writeUInt16BE(1, 1);
+          head.writeUInt32BE(0xfffffff0, 3);
+          socket.write(head);
+        })
         .then(cb, cb);
     }));
 

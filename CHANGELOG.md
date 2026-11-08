@@ -1,5 +1,9 @@
 # Change log for amqplib
 
+## v2.3.0
+- Reject a `connection.tune` whose `frameMax` is below the protocol minimum of 4096 (the spec allows 0 or at least frame-min-size). Previously such a value was accepted, and the first publish whose encoded frames total 2048 bytes or more entered a loop in `sendContent` that never advanced, exhausting memory. `sendContent` now also throws if `frameMax` leaves no room for a body frame (GHSA-37f9-7m79-6866, reported by Rizwan Bedekar ([@r-bedekar](https://github.com/r-bedekar)); fix based in part on their patch and tests)
+- Add a `maxFrameSize` connection option, also settable as a URL query parameter, bounding the payload size of frames accepted from the server. The default is 64 MiB, or the negotiated `frameMax` if that is larger, so raising `frameMax` needs no second option; `0` disables the limit. Incoming frame sizes were previously unchecked, so a frame header declaring up to 4 GiB made the client buffer, and repeatedly re-copy, that much data before looking at it. An oversized frame is now refused from its header alone and closes the connection with `Frame size N exceeds maxFrameSize M`. The limit is deliberately separate from the negotiated `frameMax`, since some brokers send larger frames without splitting them (see #784). **Upgrade note:** a broker that delivers an unsplit frame larger than the limit will now have that connection closed; pass `maxFrameSize: 0`, or a higher value, to restore the previous behaviour (GHSA-37f9-7m79-6866)
+
 ## v2.2.1
 - Return the server acknowledgement from promise-based `channel.cancel`, matching the callback API (thanks [@edsonsims](https://github.com/edsonsims)).
 - Type `cancel` replies as `Replies.Cancel` (`{ consumerTag }`) in both the promise and callback API declarations, which previously claimed `Replies.Empty`.
