@@ -2,6 +2,7 @@ const { describe, it, afterEach } = require('node:test');
 const assert = require('node:assert');
 const net = require('node:net');
 const connect = require('../lib/connect').connect;
+const DEFAULT_MAX_FRAME_SIZE = require('../lib/connection').DEFAULT_MAX_FRAME_SIZE;
 const defs = require('../lib/defs');
 const { plain, amqplain } = require('../lib/credentials')
 const { latch, runServer } = require('./lib/util');
@@ -61,6 +62,78 @@ describe('Connect', () => {
     it('wrongly typed heartbeat option', (_t, done) => {
       connect('amqp://localhost?heartbeat=NOT_A_NUMBER', {}, (err) => {
         assert.match(err.message, /Field 'heartbeat' is the wrong type/);
+        done();
+      });
+    });
+
+    it('using custom maxFrameSize option', (_t, done) => {
+      connect({ maxFrameSize: 1048576 }, {}, (err, _connection) => {
+        assert.ifError(err);
+        connection = _connection;
+        assert.strictEqual(connection.maxFrameSize, 1048576);
+        done();
+      });
+    });
+
+    it('using maxFrameSize from the URL', (_t, done) => {
+      connect('amqp://localhost?maxFrameSize=1048576', {}, (err, _connection) => {
+        assert.ifError(err);
+        connection = _connection;
+        assert.strictEqual(connection.maxFrameSize, 1048576);
+        done();
+      });
+    });
+
+    it('maxFrameSize with a leading-0x typo is rejected, not silently unlimited', (_t, done) => {
+      connect('amqp://localhost?maxFrameSize=0x4000000', {}, (err, _connection) => {
+        connection = _connection;
+        assert.ok(err);
+        assert.match(err.message, /maxFrameSize must be 0 \(no limit\) or an integer of at least 4096/);
+        done();
+      });
+    });
+
+    it('a non-integer maxFrameSize is rejected', (_t, done) => {
+      connect('amqp://localhost?maxFrameSize=4096.5', {}, (err, _connection) => {
+        connection = _connection;
+        assert.ok(err);
+        assert.match(err.message, /maxFrameSize must be 0 \(no limit\) or an integer of at least 4096/);
+        done();
+      });
+    });
+
+    it('maxFrameSize of null uses the default', (_t, done) => {
+      connect({ maxFrameSize: null }, {}, (err, _connection) => {
+        assert.ifError(err);
+        connection = _connection;
+        assert.strictEqual(connection.maxFrameSize, DEFAULT_MAX_FRAME_SIZE);
+        done();
+      });
+    });
+
+    it('maxFrameSize of 0 means no limit', (_t, done) => {
+      connect({ maxFrameSize: 0 }, {}, (err, _connection) => {
+        assert.ifError(err);
+        connection = _connection;
+        assert.strictEqual(connection.maxFrameSize, 0);
+        done();
+      });
+    });
+
+    it('wrongly typed maxFrameSize option', (_t, done) => {
+      connect('amqp://localhost?maxFrameSize=NOT_A_NUMBER', {}, (err, _connection) => {
+        connection = _connection;
+        assert.ok(err);
+        assert.match(err.message, /maxFrameSize must be 0 \(no limit\) or an integer of at least 4096/);
+        done();
+      });
+    });
+
+    it('maxFrameSize below the protocol minimum', (_t, done) => {
+      connect({ maxFrameSize: 100 }, {}, (err, _connection) => {
+        connection = _connection;
+        assert.ok(err);
+        assert.match(err.message, /maxFrameSize must be 0 \(no limit\) or an integer of at least 4096; got 100/);
         done();
       });
     });

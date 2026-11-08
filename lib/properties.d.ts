@@ -33,6 +33,7 @@ export namespace Options {
     password?: string;
     locale?: string;
     frameMax?: number;
+    maxFrameSize?: number;
     heartbeat?: number;
     vhost?: string;
     channelMax?: number;
