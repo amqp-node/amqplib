@@ -168,4 +168,56 @@ describe('Codec', () => {
       it(`${Properties.toString()} roundtrip`, roundtripProperties(Properties).asTest());
     });
   });
+
+  describe('Table overflow', () => {
+    const size = 32;
+    const overflows = /exceeds the 32 byte encoding buffer/;
+    const filledExcept = (bytes) => ({ a: 'x'.repeat(size - 4 - 7 - bytes) });
+
+    it('throws when a string value runs past the end of the buffer', () => {
+      const buffer = Buffer.alloc(size);
+      assert.throws(() => codec.encodeTable(buffer, { s: 'x'.repeat(40) }, 0), { name: 'RangeError', message: overflows });
+    });
+
+    it('throws when a Buffer value runs past the end of the buffer', () => {
+      const buffer = Buffer.alloc(size);
+      assert.throws(() => codec.encodeTable(buffer, { b: Buffer.alloc(40) }, 0), { name: 'RangeError', message: overflows });
+    });
+
+    it('throws when a key runs past the end of the buffer', () => {
+      const buffer = Buffer.alloc(size);
+      const table = { ...filledExcept(2), bbbb: 1 };
+      assert.throws(() => codec.encodeTable(buffer, table, 0), { name: 'RangeError', message: overflows });
+    });
+
+    it("throws when a null value's type tag lands at the end of the buffer", () => {
+      const buffer = Buffer.alloc(size);
+      const table = { ...filledExcept(2), b: null };
+      assert.throws(() => codec.encodeTable(buffer, table, 0), { name: 'RangeError', message: overflows });
+    });
+
+    it('throws the same error when a fixed-width value lands past the end of the buffer', () => {
+      const buffer = Buffer.alloc(size);
+      const table = { ...filledExcept(3), b: 1 };
+      assert.throws(() => codec.encodeTable(buffer, table, 0), { name: 'RangeError', message: overflows });
+    });
+
+    it('throws when a string value nested in an array runs past the end of the buffer', () => {
+      const buffer = Buffer.alloc(size);
+      assert.throws(() => codec.encodeTable(buffer, { a: ['x'.repeat(40)] }, 0), { name: 'RangeError', message: overflows });
+    });
+
+    it('throws when a string value nested in a table runs past the end of the buffer', () => {
+      const buffer = Buffer.alloc(size);
+      assert.throws(() => codec.encodeTable(buffer, { t: { s: 'x'.repeat(40) } }, 0), { name: 'RangeError', message: overflows });
+    });
+
+    it('throws from a generated encoder when headers exceed the scratch buffer', () => {
+      const headers = { h: 'x'.repeat(70000) };
+      assert.throws(() => defs.encodeProperties(defs.BasicProperties, 1, 0, { headers }), {
+        name: 'RangeError',
+        message: /exceeds the 65536 byte encoding buffer/,
+      });
+    });
+  });
 });
