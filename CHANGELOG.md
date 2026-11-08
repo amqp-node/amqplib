@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## Unreleased
+- Throw a clear `RangeError` from `publish` when an encoded headers or `arguments` table exceeds the 64 KiB encoding buffer. Previously the outcome depended on where the boundary fell: a string or Buffer value crossing the end of the buffer was silently truncated, producing a frame whose table length prefix did not match its contents, which RabbitMQ rejected by closing the connection with a 541 `INTERNAL_ERROR` after `publish` had returned; at other positions a bare `offset is out of range` error escaped from `publish` instead (fixes #867)
+
 ## v2.2.1
 - Return the server acknowledgement from promise-based `channel.cancel`, matching the callback API (thanks [@edsonsims](https://github.com/edsonsims)).
 - Type `cancel` replies as `Replies.Cancel` (`{ consumerTag }`) in both the promise and callback API declarations, which previously claimed `Replies.Empty`.
