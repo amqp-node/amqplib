@@ -362,6 +362,19 @@ URI, e.g., as in `'amqp://localhost?frameMax=0x1000'`. These are:
    which is an unsigned 32 bit integer, it's perforce `2^32 - 1`); I
    default it to 0x1000, i.e. 4kb, which is the allowed minimum, will
    fit many purposes, and not chug through Node.JS's buffer pooling.<br/><br/>
+ * `maxFrameSize`, the largest frame, in bytes, the client will accept
+   from the server. This is a safety limit, checked against each
+   incoming frame's header before its body is buffered, and it is
+   deliberately _not_ the same thing as `frameMax`: it is not
+   negotiated with the server, and it exists to bound the memory a
+   misbehaving or malicious broker can make the client allocate (see
+   [GHSA-37f9-7m79-6866](https://github.com/amqp-node/amqplib/security/advisories/GHSA-37f9-7m79-6866)).
+   Default is 64MiB; `0` disables the limit. If you leave it at the
+   default and negotiate a `frameMax` larger than 64MiB, it is raised
+   to match the negotiated `frameMax`. Some brokers send body frames
+   larger than the negotiated `frameMax` without splitting them; if you
+   connect to such a broker and need frames above 64MiB, raise
+   `maxFrameSize` or set it to `0`. Available since 2.3.0.<br/><br/>
  * `channelMax`, the maximum number of channels allowed. Default is
    `0`, meaning `2^16 - 1`.<br/><br/>
  * `heartbeat`: the period of the connection heartbeat, in
@@ -384,6 +397,7 @@ The URL can also be supplied as an object of the form:
   password: 'guest',
   locale: 'en_US',
   frameMax: 0,
+  maxFrameSize: 67108864,
   heartbeat: null,
   vhost: '/',
 }
