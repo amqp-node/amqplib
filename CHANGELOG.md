@@ -1,6 +1,6 @@
 # Change log for amqplib
 
-## Unreleased
+## v2.3.1
 - Throw a clear `RangeError` from `publish` when an encoded headers or `arguments` table exceeds the 64 KiB encoding buffer. Previously the outcome depended on where the boundary fell: a string or Buffer value crossing the end of the buffer was silently truncated, producing a frame whose table length prefix did not match its contents, which RabbitMQ rejected by closing the connection with a 541 `INTERNAL_ERROR` after `publish` had returned; at other positions a bare `offset is out of range` error escaped from `publish` instead (fixes #867)
 
 ## v2.3.0
