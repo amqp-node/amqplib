@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## Unreleased
+- Fix connection recovery when the connection is lost while the `setup` function is running. The new connection was only watched once setup had finished, so a socket error during setup crashed the process with an unhandled `error` event, and a close during setup left recovery holding the dead connection, never reconnecting, with every later `createChannel` failing. Such an attempt now counts as a failed connect: `connect-failed` is emitted and a reconnect is scheduled.
+
 ## v2.3.1
 - Throw a clear `RangeError` from `publish` when an encoded headers or `arguments` table exceeds the 64 KiB encoding buffer. Previously the outcome depended on where the boundary fell: a string or Buffer value crossing the end of the buffer was silently truncated, producing a frame whose table length prefix did not match its contents, which RabbitMQ rejected by closing the connection with a 541 `INTERNAL_ERROR` after `publish` had returned; at other positions a bare `offset is out of range` error escaped from `publish` instead (fixes #867)
 
