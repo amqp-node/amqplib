@@ -494,6 +494,57 @@ describe('recovery', () => {
     assert.equal(2, attempts);
   });
 
+  describe('connection lost while setup runs', () => {
+    // The broker drops the first connection in the middle of setup, from a
+    // socket event rather than from inside setup itself.
+    function openDroppingModel(models) {
+      return () => {
+        const model = new FakePromiseModel(models.length + 1);
+        models.push(model);
+        return Promise.resolve(model);
+      };
+    }
+
+    function setupThatOutlivesTheDrop(models, emitError) {
+      return async (model) => {
+        if (model === models[0]) {
+          setTimeout(() => {
+            const err = new Error('Unexpected close');
+            if (emitError) model.emit('error', err);
+            model.emit('close', err);
+          }, 1);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      };
+    }
+
+    for (const emitError of [false, true]) {
+      it(`reconnects instead of keeping the dead connection${emitError ? ' (with an error event)' : ''}`, async () => {
+        const models = [];
+        const failures = [];
+
+        const client = await recovery.connectWithRecoveryPromise(openDroppingModel(models), {
+          initialDelay: 1,
+          maxDelay: 1,
+          jitter: 0,
+          maxRetries: 3,
+          waitForConnect: false,
+          setup: setupThatOutlivesTheDrop(models, emitError),
+        });
+        client.on('connect-failed', (err) => failures.push(err.message));
+
+        await client.waitForConnect();
+
+        assert.equal(2, models.length);
+        assert.deepEqual(['Unexpected close'], failures);
+        const channel = await client.createChannel();
+        assert.equal(2, channel.id);
+
+        await client.close();
+      });
+    }
+  });
+
   it('promise recovery fails after max retries', async () => {
     let attempts = 0;
 
