@@ -93,6 +93,77 @@ describe('Codec', () => {
     });
   });
 
+  describe('Numbers that are not 64-bit integers', () => {
+    function reencoded(n) {
+      const buffer = Buffer.alloc(32);
+      const size = codec.encodeTable(buffer, { n }, 0);
+      assert.strictEqual(String.fromCharCode(buffer[6]), 'd');
+      return codec.decodeFields(buffer.subarray(4, size)).n;
+    }
+
+    it('encodes a fraction of at least 2^50 as a double', () => {
+      assert.strictEqual(reencoded(2 ** 50 + 0.5), 2 ** 50 + 0.5);
+    });
+
+    it('encodes a number below the range as a double', () => {
+      assert.strictEqual(reencoded(-1e30), -1e30);
+    });
+
+    it('encodes negative infinity as a double', () => {
+      assert.strictEqual(reencoded(-Infinity), -Infinity);
+    });
+
+    it('encodes NaN as a double', () => {
+      assert.ok(Number.isNaN(reencoded(NaN)));
+    });
+  });
+
+  describe('Integers at the top of the 64-bit range', () => {
+    const largestUInt64 = Buffer.from('ffffffffffffffff', 'hex');
+    const largestInt64 = Buffer.from('7fffffffffffffff', 'hex');
+
+    function encodedValue(value) {
+      const buffer = Buffer.alloc(32);
+      const size = codec.encodeTable(buffer, { n: value }, 0);
+      return buffer.subarray(7, size);
+    }
+
+    it('encodes a received timestamp of 2^64 - 1 back to the same bytes', () => {
+      const received = Buffer.concat([Buffer.from([1, 0x6e, 0x54]), largestUInt64]);
+      const fields = codec.decodeFields(received);
+      assert.ok(encodedValue(fields.n).equals(largestUInt64));
+    });
+
+    it('encodes an explicit timestamp of 2^64 as the largest timestamp', () => {
+      assert.ok(encodedValue({ '!': 'timestamp', value: 2 ** 64 }).equals(largestUInt64));
+    });
+
+    it('encodes an explicit long of 2^63 as the largest long', () => {
+      assert.ok(encodedValue({ '!': 'long', value: 2 ** 63 }).equals(largestInt64));
+    });
+
+    it('throws for an explicit timestamp above 2^64', () => {
+      assert.throws(() => encodedValue({ '!': 'timestamp', value: 2 ** 64 + 4096 }), { name: 'RangeError' });
+    });
+
+    it('throws for an explicit long above 2^63', () => {
+      assert.throws(() => encodedValue({ '!': 'long', value: 2 ** 63 + 2048 }), { name: 'RangeError' });
+    });
+
+    it('encodes a received message timestamp of 2^64 - 1 back to the same bytes', () => {
+      const frame = defs.encodeProperties(defs.BasicProperties, 1, 0, { timestamp: 1 });
+      const frameEnd = frame.length - 1;
+      largestUInt64.copy(frame, frameEnd - 8);
+      const received = defs.decode(defs.BasicProperties, frame.subarray(19, frameEnd));
+      assert.ok(defs.encodeProperties(defs.BasicProperties, 1, 0, received).equals(frame));
+    });
+
+    it('encodes a delivery tag of 2^64 as the largest delivery tag', () => {
+      const frame = defs.encodeMethod(defs.BasicAck, 1, { deliveryTag: 2 ** 64, multiple: false });
+      assert.ok(frame.subarray(11, 19).equals(largestUInt64));
+    });
+  });
+
   // Whole frames
   function roundtrip_table(t) {
     const buf = Buffer.alloc(4096);
