@@ -118,6 +118,39 @@ describe('Codec', () => {
     });
   });
 
+  describe('Integers at the top of the 64-bit range', () => {
+    const largestUInt64 = Buffer.from('ffffffffffffffff', 'hex');
+    const largestInt64 = Buffer.from('7fffffffffffffff', 'hex');
+
+    function encodedValue(value) {
+      const buffer = Buffer.alloc(32);
+      const size = codec.encodeTable(buffer, { n: value }, 0);
+      return buffer.subarray(7, size);
+    }
+
+    it('encodes a received timestamp of 2^64 - 1 back to the same bytes', () => {
+      const received = Buffer.concat([Buffer.from([1, 0x6e, 0x54]), largestUInt64]);
+      const fields = codec.decodeFields(received);
+      assert.ok(encodedValue(fields.n).equals(largestUInt64));
+    });
+
+    it('encodes an explicit timestamp of 2^64 as the largest timestamp', () => {
+      assert.ok(encodedValue({ '!': 'timestamp', value: 2 ** 64 }).equals(largestUInt64));
+    });
+
+    it('encodes an explicit long of 2^63 as the largest long', () => {
+      assert.ok(encodedValue({ '!': 'long', value: 2 ** 63 }).equals(largestInt64));
+    });
+
+    it('throws for an explicit timestamp above 2^64', () => {
+      assert.throws(() => encodedValue({ '!': 'timestamp', value: 2 ** 64 + 4096 }), { name: 'RangeError' });
+    });
+
+    it('throws for an explicit long above 2^63', () => {
+      assert.throws(() => encodedValue({ '!': 'long', value: 2 ** 63 + 2048 }), { name: 'RangeError' });
+    });
+  });
+
   // Whole frames
   function roundtrip_table(t) {
     const buf = Buffer.alloc(4096);

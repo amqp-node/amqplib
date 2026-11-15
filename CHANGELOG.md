@@ -2,6 +2,7 @@
 
 ## Unreleased
 - Encode numbers below -2^63, `NaN`, `-Infinity` and fractions of 2^50 or more as doubles in headers and `arguments` tables. Previously `publish` threw a `RangeError` for these, including when the table had been received from the broker and was being published again. Numbers that could be encoded before are encoded as before
+- Encode an explicit `timestamp` of 2^64, or an explicit `long` of 2^63, in a headers or `arguments` table as the largest value of that type, as versions before 2.0.1 did. The largest timestamp is decoded as 2^64, because 2^64 - 1 cannot be represented as a number, so since 2.0.1 a received table containing it could not be published again. Larger numbers still throw a `RangeError`
 
 ## v2.3.2
 - Encode and decode nested field tables and arrays without recursion. Previously a table nested a few thousand levels deep, which RabbitMQ accepts and delivers, overflowed the call stack while a consumer decoded the message headers. The connection closed with `Maximum call stack size exceeded`, the message was requeued, and each reconnecting consumer failed the same way. There is no depth limit, and everything that encoded or decoded before produces the same result (GHSA-gfjv-mq5g-xjfw, reported by Dickson Wu ([@DicksonWu654](https://github.com/DicksonWu654)))
