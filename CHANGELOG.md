@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## Unreleased
+- Encode numbers below -2^63, `NaN`, `-Infinity` and fractions of 2^50 or more as doubles in headers and `arguments` tables. Previously `publish` threw a `RangeError` for these, including when the table had been received from the broker and was being published again. Numbers that could be encoded before are encoded as before
+
 ## v2.3.2
 - Encode and decode nested field tables and arrays without recursion. Previously a table nested a few thousand levels deep, which RabbitMQ accepts and delivers, overflowed the call stack while a consumer decoded the message headers. The connection closed with `Maximum call stack size exceeded`, the message was requeued, and each reconnecting consumer failed the same way. There is no depth limit, and everything that encoded or decoded before produces the same result (GHSA-gfjv-mq5g-xjfw, reported by Dickson Wu ([@DicksonWu654](https://github.com/DicksonWu654)))
 - Decode a field table key named `__proto__` as an ordinary property. Previously it replaced the decoded table's prototype: a table value was inherited from, a null value removed the prototype, and any other value was dropped. With a byte array value followed by a numeric key, decoding threw a `TypeError` and closed the connection in the same way. **Upgrade note:** headers received with a `__proto__` key now have it as an own property (GHSA-gfjv-mq5g-xjfw)

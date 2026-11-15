@@ -93,6 +93,31 @@ describe('Codec', () => {
     });
   });
 
+  describe('Numbers that are not 64-bit integers', () => {
+    function reencoded(n) {
+      const buffer = Buffer.alloc(32);
+      const size = codec.encodeTable(buffer, { n }, 0);
+      assert.strictEqual(String.fromCharCode(buffer[6]), 'd');
+      return codec.decodeFields(buffer.subarray(4, size)).n;
+    }
+
+    it('encodes a fraction of at least 2^50 as a double', () => {
+      assert.strictEqual(reencoded(2 ** 50 + 0.5), 2 ** 50 + 0.5);
+    });
+
+    it('encodes a number below the range as a double', () => {
+      assert.strictEqual(reencoded(-1e30), -1e30);
+    });
+
+    it('encodes negative infinity as a double', () => {
+      assert.strictEqual(reencoded(-Infinity), -Infinity);
+    });
+
+    it('encodes NaN as a double', () => {
+      assert.ok(Number.isNaN(reencoded(NaN)));
+    });
+  });
+
   // Whole frames
   function roundtrip_table(t) {
     const buf = Buffer.alloc(4096);
