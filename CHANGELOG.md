@@ -1,5 +1,9 @@
 # Change log for amqplib
 
+## v2.3.2
+- Encode and decode nested field tables and arrays without recursion. Previously a table nested a few thousand levels deep, which RabbitMQ accepts and delivers, overflowed the call stack while a consumer decoded the message headers. The connection closed with `Maximum call stack size exceeded`, the message was requeued, and each reconnecting consumer failed the same way. There is no depth limit, and everything that encoded or decoded before produces the same result (GHSA-gfjv-mq5g-xjfw, reported by Dickson Wu ([@DicksonWu654](https://github.com/DicksonWu654)))
+- Decode a field table key named `__proto__` as an ordinary property. Previously it replaced the decoded table's prototype: a table value was inherited from, a null value removed the prototype, and any other value was dropped. With a byte array value followed by a numeric key, decoding threw a `TypeError` and closed the connection in the same way. **Upgrade note:** headers received with a `__proto__` key now have it as an own property (GHSA-gfjv-mq5g-xjfw)
+
 ## v2.3.1
 - Throw a clear `RangeError` from `publish` when an encoded headers or `arguments` table exceeds the 64 KiB encoding buffer. Previously the outcome depended on where the boundary fell: a string or Buffer value crossing the end of the buffer was silently truncated, producing a frame whose table length prefix did not match its contents, which RabbitMQ rejected by closing the connection with a 541 `INTERNAL_ERROR` after `publish` had returned; at other positions a bare `offset is out of range` error escaped from `publish` instead (fixes #867)
 
