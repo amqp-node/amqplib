@@ -249,6 +249,41 @@ describe('Codec', () => {
       return value;
     }
 
+    function nestedTable(isArray) {
+      let value = true;
+      for (let level = 0; level < depth; level++) {
+        value = isArray(level) ? [value] : { x: value };
+      }
+      return { k: value };
+    }
+
+    function encode(table) {
+      const buffer = Buffer.alloc(131072);
+      const size = codec.encodeTable(buffer, table, 0);
+      return buffer.subarray(4, size);
+    }
+
+    it('encodes tables nested 10,000 deep', () => {
+      assert.ok(encode(nestedTable(tables)).equals(encodeNested(tables)));
+    });
+
+    it('encodes arrays nested 10,000 deep', () => {
+      assert.ok(encode(nestedTable(arrays)).equals(encodeNested(arrays)));
+    });
+
+    it('encodes alternating tables and arrays nested 10,000 deep', () => {
+      assert.ok(encode(nestedTable(alternating)).equals(encodeNested(alternating)));
+    });
+
+    it('throws when a table that contains itself fills the buffer', () => {
+      const table = { a: 1 };
+      table.self = table;
+      assert.throws(() => codec.encodeTable(Buffer.alloc(1024), table, 0), {
+        name: 'RangeError',
+        message: /exceeds the 1024 byte encoding buffer/,
+      });
+    });
+
     it('decodes tables nested 10,000 deep', () => {
       const fields = codec.decodeFields(encodeNested(tables));
       assert.strictEqual(innermost(fields, tables), true);
