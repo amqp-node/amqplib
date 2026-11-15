@@ -220,4 +220,55 @@ describe('Codec', () => {
       });
     });
   });
+
+  describe('Deeply nested fields', () => {
+    const depth = 10000;
+    const tables = () => false;
+    const arrays = () => true;
+    const alternating = (level) => level % 2 === 1;
+
+    function encodeNested(isArray) {
+      const leaf = Buffer.from([0x74, 1]);
+      const parts = [leaf];
+      let size = leaf.length;
+      for (let level = 0; level < depth; level++) {
+        const header = isArray(level) ? Buffer.from([0x41, 0, 0, 0, 0]) : Buffer.from([0x46, 0, 0, 0, 0, 1, 0x78]);
+        header.writeUInt32BE(size + header.length - 5, 1);
+        size += header.length;
+        parts.push(header);
+      }
+      parts.push(Buffer.from([1, 0x6b]));
+      return Buffer.concat(parts.reverse());
+    }
+
+    function innermost(fields, isArray) {
+      let value = fields.k;
+      for (let level = depth - 1; level >= 0; level--) {
+        value = isArray(level) ? value[0] : value.x;
+      }
+      return value;
+    }
+
+    it('decodes tables nested 10,000 deep', () => {
+      const fields = codec.decodeFields(encodeNested(tables));
+      assert.strictEqual(innermost(fields, tables), true);
+    });
+
+    it('decodes arrays nested 10,000 deep', () => {
+      const fields = codec.decodeFields(encodeNested(arrays));
+      assert.strictEqual(innermost(fields, arrays), true);
+    });
+
+    it('decodes alternating tables and arrays nested 10,000 deep', () => {
+      const fields = codec.decodeFields(encodeNested(alternating));
+      assert.strictEqual(innermost(fields, alternating), true);
+    });
+
+    it('decodes values that follow a nested table or array', () => {
+      const table = { a: [{ b: [1, { c: 2 }, []], d: 'x' }, 3], e: { f: {}, g: [[], [4]] }, h: 5 };
+      const buffer = Buffer.alloc(256);
+      const size = codec.encodeTable(buffer, table, 0);
+      assert.deepStrictEqual(codec.decodeFields(buffer.subarray(4, size)), table);
+    });
+  });
 });
