@@ -1,6 +1,6 @@
 # Change log for amqplib
 
-## Unreleased
+## v2.3.3
 - Encode numbers below -2^63, `NaN`, `-Infinity` and fractions of 2^50 or more as doubles in headers and `arguments` tables. Previously `publish` threw a `RangeError` for these, including when the table had been received from the broker and was being published again. Numbers that could be encoded before are encoded as before
 - Encode an explicit `timestamp` of 2^64, or an explicit `long` of 2^63, in a headers or `arguments` table as the largest value of that type, as versions before 2.0.1 did. The largest timestamp is decoded as 2^64, because 2^64 - 1 cannot be represented as a number, so since 2.0.1 a received table containing it could not be published again. Larger numbers still throw a `RangeError`
 - Encode a message `timestamp` property of 2^64, or any other unsigned 64-bit method field of 2^64, as the largest value in the same way, so a message received with a timestamp of 2^64 - 1 can be published again (also a regression in 2.0.1)
