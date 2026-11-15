@@ -115,6 +115,7 @@ nl();
 println('var codec = require("./codec");');
 println('var encodeTable = codec.encodeTable;');
 println('var decodeFields = codec.decodeFields;');
+println('var toUInt64 = codec.toUInt64;');
 nl();
 
 println('var SCRATCH = Buffer.alloc(65536);');
@@ -411,7 +412,7 @@ function encoderFn(method) {
       case 'longlong':
       case 'timestamp':
         checkAssignArg(a);
-        println('buffer.writeBigUInt64BE(BigInt(val), offset); offset += 8;');
+        println('buffer.writeBigUInt64BE(toUInt64(val), offset); offset += 8;');
         break;
       case 'bit':
         checkAssignArg(a);
@@ -641,7 +642,7 @@ function encodePropsFn(props) {
           break;
         case 'longlong':
         case 'timestamp':
-          println('buffer.writeBigUInt64BE(BigInt(val), offset);');
+          println('buffer.writeBigUInt64BE(toUInt64(val), offset);');
           println('offset += 8;');
           break;
         case 'shortstr': {

@@ -149,6 +149,19 @@ describe('Codec', () => {
     it('throws for an explicit long above 2^63', () => {
       assert.throws(() => encodedValue({ '!': 'long', value: 2 ** 63 + 2048 }), { name: 'RangeError' });
     });
+
+    it('encodes a received message timestamp of 2^64 - 1 back to the same bytes', () => {
+      const frame = defs.encodeProperties(defs.BasicProperties, 1, 0, { timestamp: 1 });
+      const frameEnd = frame.length - 1;
+      largestUInt64.copy(frame, frameEnd - 8);
+      const received = defs.decode(defs.BasicProperties, frame.subarray(19, frameEnd));
+      assert.ok(defs.encodeProperties(defs.BasicProperties, 1, 0, received).equals(frame));
+    });
+
+    it('encodes a delivery tag of 2^64 as the largest delivery tag', () => {
+      const frame = defs.encodeMethod(defs.BasicAck, 1, { deliveryTag: 2 ** 64, multiple: false });
+      assert.ok(frame.subarray(11, 19).equals(largestUInt64));
+    });
   });
 
   // Whole frames
