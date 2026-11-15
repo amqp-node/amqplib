@@ -220,4 +220,136 @@ describe('Codec', () => {
       });
     });
   });
+
+  describe('Deeply nested fields', () => {
+    const depth = 10000;
+    const tables = () => false;
+    const arrays = () => true;
+    const alternating = (level) => level % 2 === 1;
+
+    function encodeNested(isArray) {
+      const leaf = Buffer.from([0x74, 1]);
+      const parts = [leaf];
+      let size = leaf.length;
+      for (let level = 0; level < depth; level++) {
+        const header = isArray(level) ? Buffer.from([0x41, 0, 0, 0, 0]) : Buffer.from([0x46, 0, 0, 0, 0, 1, 0x78]);
+        header.writeUInt32BE(size + header.length - 5, 1);
+        size += header.length;
+        parts.push(header);
+      }
+      parts.push(Buffer.from([1, 0x6b]));
+      return Buffer.concat(parts.reverse());
+    }
+
+    function innermost(fields, isArray) {
+      let value = fields.k;
+      for (let level = depth - 1; level >= 0; level--) {
+        value = isArray(level) ? value[0] : value.x;
+      }
+      return value;
+    }
+
+    function nestedTable(isArray) {
+      let value = true;
+      for (let level = 0; level < depth; level++) {
+        value = isArray(level) ? [value] : { x: value };
+      }
+      return { k: value };
+    }
+
+    function encode(table) {
+      const buffer = Buffer.alloc(131072);
+      const size = codec.encodeTable(buffer, table, 0);
+      return buffer.subarray(4, size);
+    }
+
+    it('encodes tables nested 10,000 deep', () => {
+      assert.ok(encode(nestedTable(tables)).equals(encodeNested(tables)));
+    });
+
+    it('encodes arrays nested 10,000 deep', () => {
+      assert.ok(encode(nestedTable(arrays)).equals(encodeNested(arrays)));
+    });
+
+    it('encodes alternating tables and arrays nested 10,000 deep', () => {
+      assert.ok(encode(nestedTable(alternating)).equals(encodeNested(alternating)));
+    });
+
+    it('throws when a table that contains itself fills the buffer', () => {
+      const table = { a: 1 };
+      table.self = table;
+      assert.throws(() => codec.encodeTable(Buffer.alloc(1024), table, 0), {
+        name: 'RangeError',
+        message: /exceeds the 1024 byte encoding buffer/,
+      });
+    });
+
+    it('decodes tables nested 10,000 deep', () => {
+      const fields = codec.decodeFields(encodeNested(tables));
+      assert.strictEqual(innermost(fields, tables), true);
+    });
+
+    it('decodes arrays nested 10,000 deep', () => {
+      const fields = codec.decodeFields(encodeNested(arrays));
+      assert.strictEqual(innermost(fields, arrays), true);
+    });
+
+    it('decodes alternating tables and arrays nested 10,000 deep', () => {
+      const fields = codec.decodeFields(encodeNested(alternating));
+      assert.strictEqual(innermost(fields, alternating), true);
+    });
+
+    it('decodes values that follow a nested table or array', () => {
+      const table = { a: [{ b: [1, { c: 2 }, []], d: 'x' }, 3], e: { f: {}, g: [[], [4]] }, h: 5 };
+      const buffer = Buffer.alloc(256);
+      const size = codec.encodeTable(buffer, table, 0);
+      assert.deepStrictEqual(codec.decodeFields(buffer.subarray(4, size)), table);
+    });
+  });
+
+  describe('Keys named __proto__', () => {
+    const key = (name) => Buffer.concat([Buffer.from([Buffer.byteLength(name)]), Buffer.from(name)]);
+    const sized = (tag, body) => {
+      const header = Buffer.alloc(5);
+      header.write(tag);
+      header.writeUInt32BE(body.length, 1);
+      return Buffer.concat([header, body]);
+    };
+    const byte = Buffer.from([0x62, 1]);
+
+    it('decodes a string value as an own property', () => {
+      const fields = codec.decodeFields(Buffer.concat([key('__proto__'), sized('S', Buffer.from('hi'))]));
+      assert.deepStrictEqual(Object.keys(fields), ['__proto__']);
+      assert.strictEqual(Object.getOwnPropertyDescriptor(fields, '__proto__').value, 'hi');
+    });
+
+    it('does not replace the prototype with a table value', () => {
+      const fields = codec.decodeFields(Buffer.concat([key('__proto__'), sized('F', Buffer.concat([key('admin'), byte]))]));
+      assert.strictEqual(Object.getPrototypeOf(fields), Object.prototype);
+      assert.strictEqual(fields.admin, undefined);
+      assert.deepStrictEqual(Object.getOwnPropertyDescriptor(fields, '__proto__').value, { admin: 1 });
+    });
+
+    it('does not remove the prototype with a null value', () => {
+      const fields = codec.decodeFields(Buffer.concat([key('__proto__'), Buffer.from('V')]));
+      assert.strictEqual(Object.getPrototypeOf(fields), Object.prototype);
+      assert.strictEqual(Object.getOwnPropertyDescriptor(fields, '__proto__').value, null);
+    });
+
+    it('decodes a nested table with a byte array value followed by a numeric key', () => {
+      const unprintable = sized('F', Buffer.concat([key('toString'), byte, key('valueOf'), byte]));
+      const nested = sized('F', Buffer.concat([key('__proto__'), sized('x', Buffer.alloc(0)), key('0'), unprintable]));
+      const fields = codec.decodeFields(Buffer.concat([key('h'), nested]));
+      assert.strictEqual(Object.getPrototypeOf(fields.h), Object.prototype);
+      assert.deepStrictEqual(Object.keys(fields.h), ['0', '__proto__']);
+      assert.deepStrictEqual(fields.h[0], { toString: 1, valueOf: 1 });
+    });
+
+    it('encodes a decoded table back to the same bytes', () => {
+      const encoded = Buffer.concat([key('__proto__'), sized('F', Buffer.concat([key('admin'), byte])), key('a'), byte]);
+      const buffer = Buffer.alloc(64);
+      const size = codec.encodeTable(buffer, codec.decodeFields(encoded), 0);
+      assert.ok(buffer.subarray(4, size).equals(encoded));
+    });
+  });
 });
