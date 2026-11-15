@@ -306,4 +306,50 @@ describe('Codec', () => {
       assert.deepStrictEqual(codec.decodeFields(buffer.subarray(4, size)), table);
     });
   });
+
+  describe('Keys named __proto__', () => {
+    const key = (name) => Buffer.concat([Buffer.from([Buffer.byteLength(name)]), Buffer.from(name)]);
+    const sized = (tag, body) => {
+      const header = Buffer.alloc(5);
+      header.write(tag);
+      header.writeUInt32BE(body.length, 1);
+      return Buffer.concat([header, body]);
+    };
+    const byte = Buffer.from([0x62, 1]);
+
+    it('decodes a string value as an own property', () => {
+      const fields = codec.decodeFields(Buffer.concat([key('__proto__'), sized('S', Buffer.from('hi'))]));
+      assert.deepStrictEqual(Object.keys(fields), ['__proto__']);
+      assert.strictEqual(Object.getOwnPropertyDescriptor(fields, '__proto__').value, 'hi');
+    });
+
+    it('does not replace the prototype with a table value', () => {
+      const fields = codec.decodeFields(Buffer.concat([key('__proto__'), sized('F', Buffer.concat([key('admin'), byte]))]));
+      assert.strictEqual(Object.getPrototypeOf(fields), Object.prototype);
+      assert.strictEqual(fields.admin, undefined);
+      assert.deepStrictEqual(Object.getOwnPropertyDescriptor(fields, '__proto__').value, { admin: 1 });
+    });
+
+    it('does not remove the prototype with a null value', () => {
+      const fields = codec.decodeFields(Buffer.concat([key('__proto__'), Buffer.from('V')]));
+      assert.strictEqual(Object.getPrototypeOf(fields), Object.prototype);
+      assert.strictEqual(Object.getOwnPropertyDescriptor(fields, '__proto__').value, null);
+    });
+
+    it('decodes a nested table with a byte array value followed by a numeric key', () => {
+      const unprintable = sized('F', Buffer.concat([key('toString'), byte, key('valueOf'), byte]));
+      const nested = sized('F', Buffer.concat([key('__proto__'), sized('x', Buffer.alloc(0)), key('0'), unprintable]));
+      const fields = codec.decodeFields(Buffer.concat([key('h'), nested]));
+      assert.strictEqual(Object.getPrototypeOf(fields.h), Object.prototype);
+      assert.deepStrictEqual(Object.keys(fields.h), ['0', '__proto__']);
+      assert.deepStrictEqual(fields.h[0], { toString: 1, valueOf: 1 });
+    });
+
+    it('encodes a decoded table back to the same bytes', () => {
+      const encoded = Buffer.concat([key('__proto__'), sized('F', Buffer.concat([key('admin'), byte])), key('a'), byte]);
+      const buffer = Buffer.alloc(64);
+      const size = codec.encodeTable(buffer, codec.decodeFields(encoded), 0);
+      assert.ok(buffer.subarray(4, size).equals(encoded));
+    });
+  });
 });
