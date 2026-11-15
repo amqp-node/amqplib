@@ -1,5 +1,9 @@
 # Change log for amqplib
 
+## Unreleased
+- Decode a table that contains a key named `!`, and is the value of a header, argument or array element, as `{ '!': 'table', value: <the table> }`. Previously it was decoded as the bare table, which the encoder reads as an explicit type such as `{ '!': 'timestamp', value: 1 }`. Publishing headers that had been received with such a table therefore threw `Unknown type to encode`, or sent a different value without an error when the key held a valid type name. A received table can now also be told apart from a received timestamp or decimal. **Upgrade note:** a consumer that reads a table containing a `!` key must now read it from `value`. Tables without a `!` key, and a `!` key at the top level of the headers, are decoded as before
+- Add `table` as an explicit type. `{ '!': 'table', value: { ... } }` is encoded as a table whose keys are taken literally, so it can contain a key named `!`
+
 ## v2.3.3
 - Encode numbers below -2^63, `NaN`, `-Infinity` and fractions of 2^50 or more as doubles in headers and `arguments` tables. Previously `publish` threw a `RangeError` for these, including when the table had been received from the broker and was being published again. Numbers that could be encoded before are encoded as before
 - Encode an explicit `timestamp` of 2^64, or an explicit `long` of 2^63, in a headers or `arguments` table as the largest value of that type, as versions before 2.0.1 did. The largest timestamp is decoded as 2^64, because 2^64 - 1 cannot be represented as a number, so since 2.0.1 a received table containing it could not be published again. Larger numbers still throw a `RangeError`

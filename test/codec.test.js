@@ -423,4 +423,93 @@ describe('Codec', () => {
       assert.ok(buffer.subarray(4, size).equals(encoded));
     });
   });
+
+  describe('Tables with a key named !', () => {
+    const key = (name) => Buffer.concat([Buffer.from([Buffer.byteLength(name)]), Buffer.from(name)]);
+    const sized = (tag, body) => {
+      const header = Buffer.alloc(5);
+      header.write(tag);
+      header.writeUInt32BE(body.length, 1);
+      return Buffer.concat([header, body]);
+    };
+    const string = (text) => sized('S', Buffer.from(text));
+    const byte = (n) => Buffer.from([0x62, n]);
+    const table = (...entries) => sized('F', Buffer.concat(entries));
+    const array = (...elements) => sized('A', Buffer.concat(elements));
+    const timestamp = (hex) => Buffer.concat([Buffer.from('T'), Buffer.from(hex, 'hex')]);
+
+    const unknownType = table(key('!'), string('bogus'), key('value'), byte(10));
+    const knownType = table(key('!'), string('long'), key('value'), byte(5), key('note'), string('x'));
+
+    function encode(fields) {
+      const buffer = Buffer.alloc(256);
+      const size = codec.encodeTable(buffer, fields, 0);
+      return buffer.subarray(4, size);
+    }
+
+    it('decodes a nested table as an explicit table', () => {
+      const fields = codec.decodeFields(Buffer.concat([key('x'), unknownType]));
+      assert.deepStrictEqual(fields, { x: { '!': 'table', value: { '!': 'bogus', value: 10 } } });
+    });
+
+    it('decodes a table in an array as an explicit table', () => {
+      const fields = codec.decodeFields(Buffer.concat([key('x'), array(byte(1), unknownType)]));
+      assert.deepStrictEqual(fields, { x: [1, { '!': 'table', value: { '!': 'bogus', value: 10 } }] });
+    });
+
+    it('decodes a table inside an explicit table as an explicit table', () => {
+      const fields = codec.decodeFields(Buffer.concat([key('x'), table(key('!'), unknownType)]));
+      const inner = { '!': 'table', value: { '!': 'bogus', value: 10 } };
+      assert.deepStrictEqual(fields, { x: { '!': 'table', value: { '!': inner } } });
+    });
+
+    it('decodes a nested table without the key as a plain table', () => {
+      const fields = codec.decodeFields(Buffer.concat([key('x'), table(key('value'), byte(10))]));
+      assert.deepStrictEqual(fields, { x: { value: 10 } });
+    });
+
+    it('decodes the key at the top level as an ordinary key', () => {
+      const fields = codec.decodeFields(Buffer.concat([key('!'), string('bogus'), key('value'), byte(10)]));
+      assert.deepStrictEqual(fields, { '!': 'bogus', value: 10 });
+    });
+
+    it('decodes a timestamp and a table that looks like one differently', () => {
+      const lookalike = table(key('!'), string('timestamp'), key('value'), byte(5));
+      const fields = codec.decodeFields(Buffer.concat([key('real'), timestamp('0000000000000005'), key('lookalike'), lookalike]));
+      assert.deepStrictEqual(fields.real, { '!': 'timestamp', value: 5 });
+      assert.deepStrictEqual(fields.lookalike, { '!': 'table', value: { '!': 'timestamp', value: 5 } });
+    });
+
+    it('encodes an explicit table as a table', () => {
+      const encoded = encode({ x: { '!': 'table', value: { '!': 'bogus', value: 10 } } });
+      assert.ok(encoded.equals(Buffer.concat([key('x'), unknownType])));
+    });
+
+    it('encodes an explicit object as a table', () => {
+      const encoded = encode({ x: { '!': 'object', value: { '!': 'bogus', value: 10 } } });
+      assert.ok(encoded.equals(Buffer.concat([key('x'), unknownType])));
+    });
+
+    it('throws when the value of an explicit table is not a table', () => {
+      for (const value of [[1], null, 'text', 5, Buffer.alloc(1), undefined]) {
+        assert.throws(() => encode({ x: { '!': 'table', value } }), { name: 'TypeError', message: "The value of an explicit table must be a table" });
+      }
+    });
+
+    it('encodes a decoded table with an unknown type name back to the same bytes', () => {
+      const received = Buffer.concat([key('x'), unknownType]);
+      assert.ok(encode(codec.decodeFields(received)).equals(received));
+    });
+
+    it('encodes a decoded table with a known type name back to the same bytes', () => {
+      const received = Buffer.concat([key('x'), knownType]);
+      assert.ok(encode(codec.decodeFields(received)).equals(received));
+    });
+
+    it('encodes a copy of a decoded table back to the same bytes', () => {
+      const received = Buffer.concat([key('x'), array(unknownType, table(key('y'), knownType))]);
+      const copy = JSON.parse(JSON.stringify(codec.decodeFields(received)));
+      assert.ok(encode(copy).equals(received));
+    });
+  });
 });
