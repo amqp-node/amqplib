@@ -2,7 +2,7 @@
   "name": "amqplib",
   "homepage": "http://amqp-node.github.io/amqplib/",
   "main": "./channel_api.js",
-  "version": "2.3.3",
+  "version": "2.4.0",
   "types": "./index.d.ts",
   "exports": {
     ".": {
