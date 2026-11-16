@@ -1,6 +1,6 @@
 # Change log for amqplib
 
-## Unreleased
+## v2.4.0
 - Decode a table that contains a key named `!`, and is the value of a header, argument or array element, as `{ '!': 'table', value: <the table> }`. Previously it was decoded as the bare table, which the encoder reads as an explicit type such as `{ '!': 'timestamp', value: 1 }`. Publishing headers that had been received with such a table therefore threw `Unknown type to encode`, or sent a different value without an error when the key held a valid type name. A received table can now also be told apart from a received timestamp or decimal. **Upgrade note:** a consumer that reads a table containing a `!` key must now read it from `value`. Tables without a `!` key, and a `!` key at the top level of the headers, are decoded as before
 - Add `table` as an explicit type. `{ '!': 'table', value: { ... } }` is encoded as a table whose keys are taken literally, so it can contain a key named `!`
 
