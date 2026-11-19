@@ -590,6 +590,14 @@ extension][rabbitmq-connection-blocked] for details.
 Emitted at some time after `'blocked'`, once the resource shortage has
 alleviated.
 
+`'unblocked'` is not emitted if the connection closes while it is
+blocked. If you pause publishing when you receive `'blocked'`, listen
+for `'close'` as well as `'unblocked'`, and treat either as the end
+of the blocked state. With [connection recovery][recovery] enabled,
+listen for `'disconnect'` instead of `'close'`. The connection that
+replaces a lost one starts out unblocked, and the server will block it
+again if the shortage persists.
+
 `#on('update-secret-ok', function() {...})`
 
 Emitted after receiving confirmation from the broker that the connection secret was successfully updated.
@@ -1508,6 +1516,7 @@ there are messages in the queue.
 [nodejs-writable]: https://nodejs.org/api/stream.html#stream_class_stream_writable
 [rabbitmq-consumer-priority]: http://www.rabbitmq.com/docs/consumer-priority
 [rabbitmq-connection-blocked]: http://www.rabbitmq.com/docs/connection-blocked
+[recovery]: https://github.com/amqp-node/amqplib#opt-in-recovery
 [rabbitmq-prefetch]: http://www.rabbitmq.com/docs/consumer-prefetch
 [wikipedia-nagling]: http://en.wikipedia.org/wiki/Nagle%27s_algorithm
 [rabbitmq-priority-queue]: http://www.rabbitmq.com/docs/priority
