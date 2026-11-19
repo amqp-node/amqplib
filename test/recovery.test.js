@@ -1,4 +1,4 @@
-const { describe, it } = require('node:test');
+const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const EventEmitter = require('node:events');
 const recovery = require('../lib/recovery');
@@ -1031,5 +1031,287 @@ describe('recovery', () => {
 
       assert(client);
     });
+  });
+
+  describe('listeners that throw', () => {
+    const listenerBug = new Error('listener bug');
+
+    function nextTurnOfTheEventLoop() {
+      return new Promise((resolve) => setImmediate(resolve));
+    }
+
+    function once(emitter, event) {
+      return new Promise((resolve) => emitter.once(event, (...args) => resolve(args)));
+    }
+
+    async function startRecovery(openModel, options) {
+      const client = await recovery.connectWithRecoveryPromise(
+        openModel,
+        Object.assign({ initialDelay: 1, maxDelay: 1, jitter: 0, waitForConnect: false }, options),
+      );
+      const handlerErrors = [];
+      client.on('handler-error', (err, event) => handlerErrors.push({ err, event }));
+      return { client, handlerErrors };
+    }
+
+    function openingFakeModels(models) {
+      return () => {
+        const model = new FakePromiseModel(models.length + 1);
+        models.push(model);
+        return Promise.resolve(model);
+      };
+    }
+
+    function failingFirstOpen(models) {
+      let attempts = 0;
+      return () => {
+        if (++attempts === 1) return Promise.reject(new Error('ECONNREFUSED'));
+        return openingFakeModels(models)();
+      };
+    }
+
+    it('keeps the connection when a connect listener throws', async () => {
+      const models = [];
+      const { client, handlerErrors } = await startRecovery(openingFakeModels(models));
+      const events = [];
+      for (const event of ['connect-failed', 'disconnect', 'reconnect-scheduled']) {
+        client.on(event, () => events.push(event));
+      }
+      client.on('connect', () => {
+        throw listenerBug;
+      });
+
+      await client.waitForConnect();
+      await nextTurnOfTheEventLoop();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      assert.equal(1, models.length);
+      assert.deepEqual([], events);
+      assert.deepEqual([{ err: listenerBug, event: 'connect' }], handlerErrors);
+      const channel = await client.createChannel();
+      assert.equal(1, channel.id);
+      await client.close();
+    });
+
+    it('still reconnects when a connect-failed listener throws', async () => {
+      const models = [];
+      const { client, handlerErrors } = await startRecovery(failingFirstOpen(models));
+      client.on('connect-failed', () => {
+        throw listenerBug;
+      });
+
+      await client.waitForConnect();
+      await nextTurnOfTheEventLoop();
+
+      assert.equal(1, models.length);
+      assert.deepEqual([{ err: listenerBug, event: 'connect-failed' }], handlerErrors);
+      await client.close();
+    });
+
+    for (const event of ['disconnect', 'reconnect-scheduled']) {
+      it(`still reconnects when a ${event} listener throws`, async () => {
+        const models = [];
+        const { client, handlerErrors } = await startRecovery(openingFakeModels(models));
+        await client.waitForConnect();
+        client.on(event, () => {
+          throw listenerBug;
+        });
+        const reconnected = once(client, 'connect');
+
+        models[0].emit('close', new Error('socket closed'));
+        await reconnected;
+        await nextTurnOfTheEventLoop();
+
+        assert.equal(2, models.length);
+        assert.deepEqual([{ err: listenerBug, event }], handlerErrors);
+        await client.close();
+      });
+    }
+
+    it('reports a throwing reconnect-failed listener after rejecting pending operations', async () => {
+      const { client, handlerErrors } = await startRecovery(() => Promise.reject(new Error('ECONNREFUSED')), {
+        maxRetries: 0,
+      });
+      client.on('reconnect-failed', () => {
+        throw listenerBug;
+      });
+
+      await assert.rejects(client.waitForConnect(), /ECONNREFUSED/);
+      await nextTurnOfTheEventLoop();
+
+      assert.deepEqual([{ err: listenerBug, event: 'reconnect-failed' }], handlerErrors);
+    });
+
+    it('reports a connection error that nothing listens for to the handler-error listener', async () => {
+      const models = [];
+      const { client, handlerErrors } = await startRecovery(openingFakeModels(models));
+      await client.waitForConnect();
+      const socketError = new Error('socket error');
+
+      models[0].emit('error', socketError);
+      await nextTurnOfTheEventLoop();
+
+      assert.deepEqual([{ err: socketError, event: 'error' }], handlerErrors);
+      await client.close();
+    });
+
+    describe('without a handler-error listener', () => {
+      let previousUncaughtExceptionListeners;
+
+      beforeEach(() => {
+        previousUncaughtExceptionListeners = process.rawListeners('uncaughtException').slice();
+        process.removeAllListeners('uncaughtException');
+      });
+
+      afterEach(() => {
+        process.removeAllListeners('uncaughtException');
+        previousUncaughtExceptionListeners.forEach((listener) => process.on('uncaughtException', listener));
+      });
+
+      it('raises the throw as an uncaught exception and still reconnects', async () => {
+        const models = [];
+        const client = await recovery.connectWithRecoveryPromise(openingFakeModels(models), {
+          initialDelay: 1,
+          maxDelay: 1,
+          jitter: 0,
+        });
+        const uncaught = once(process, 'uncaughtException');
+        client.on('disconnect', () => {
+          throw listenerBug;
+        });
+        const reconnected = once(client, 'connect');
+
+        models[0].emit('close', new Error('socket closed'));
+
+        assert.strictEqual(listenerBug, (await uncaught)[0]);
+        await reconnected;
+        assert.equal(2, models.length);
+        await client.close();
+      });
+
+      it('raises a connection error that nothing listens for as an uncaught exception', async () => {
+        const models = [];
+        const client = await recovery.connectWithRecoveryPromise(openingFakeModels(models), {});
+        const uncaught = once(process, 'uncaughtException');
+        const socketError = new Error('socket error');
+
+        models[0].emit('error', socketError);
+
+        assert.strictEqual(socketError, (await uncaught)[0]);
+        await client.close();
+      });
+
+      it('raises a model handler-error as an uncaught exception', async () => {
+        const models = [];
+        const client = await recovery.connectWithRecoveryPromise(openingFakeModels(models), {});
+        const uncaught = once(process, 'uncaughtException');
+
+        models[0].emit('handler-error', listenerBug, 'blocked');
+
+        assert.strictEqual(listenerBug, (await uncaught)[0]);
+        await client.close();
+      });
+    });
+  });
+
+  describe('close while a connection attempt is in flight', () => {
+    function deferred() {
+      const controls = {};
+      controls.promise = new Promise((resolve, reject) => {
+        controls.resolve = resolve;
+        controls.reject = reject;
+      });
+      return controls;
+    }
+
+    class FakeModelClosingOnDemand extends FakePromiseModel {
+      constructor(id) {
+        super(id);
+        this.closeRequested = false;
+        this.closing = deferred();
+      }
+
+      close() {
+        this.closeRequested = true;
+        return this.closing.promise;
+      }
+    }
+
+    async function startRecoveryInSetup(setupOutcome) {
+      const model = new FakeModelClosingOnDemand(1);
+      const setupStarted = deferred();
+      const client = await recovery.connectWithRecoveryPromise(() => Promise.resolve(model), {
+        waitForConnect: false,
+        setup() {
+          setupStarted.resolve();
+          return setupOutcome;
+        },
+      });
+      await setupStarted.promise;
+      return { client, model };
+    }
+
+    async function settled(promise) {
+      let isSettled = false;
+      promise.then(
+        () => {
+          isSettled = true;
+        },
+        () => {
+          isSettled = true;
+        },
+      );
+      await new Promise((resolve) => setImmediate(resolve));
+      return isSettled;
+    }
+
+    it('closes the connection even though setup never settles', async () => {
+      const { client, model } = await startRecoveryInSetup(new Promise(() => {}));
+
+      const closed = client.close();
+      await new Promise((resolve) => setImmediate(resolve));
+
+      assert.equal(true, model.closeRequested);
+      model.closing.resolve();
+      await closed;
+    });
+
+    it('resolves close only once the connection has closed', async () => {
+      const { client, model } = await startRecoveryInSetup(new Promise(() => {}));
+
+      const closed = client.close();
+
+      assert.equal(false, await settled(closed));
+      model.closing.resolve();
+      await closed;
+    });
+
+    it('does not wait for a connection that is still opening', async () => {
+      const opening = deferred();
+      const model = new FakeModelClosingOnDemand(1);
+      const client = await recovery.connectWithRecoveryPromise(() => opening.promise, { waitForConnect: false });
+      await new Promise((resolve) => setImmediate(resolve));
+
+      await client.close();
+      opening.resolve(model);
+      await new Promise((resolve) => setImmediate(resolve));
+
+      assert.equal(true, model.closeRequested);
+    });
+  });
+
+  it('schedules a zero delay rather than NaN when initialDelay is zero and the backoff overflows', async () => {
+    const delays = [];
+    const client = await recovery.connectWithRecoveryPromise(() => Promise.reject(new Error('ECONNREFUSED')), {
+      initialDelay: 0,
+      factor: 1e200,
+      maxRetries: 3,
+      waitForConnect: false,
+    });
+    client.on('reconnect-scheduled', ({ delay }) => delays.push(delay));
+
+    await assert.rejects(client.waitForConnect(), /ECONNREFUSED/);
+
+    assert.deepEqual([0, 0, 0], delays);
   });
 });
