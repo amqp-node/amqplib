@@ -495,54 +495,239 @@ describe('recovery', () => {
   });
 
   describe('connection lost while setup runs', () => {
-    // The broker drops the first connection in the middle of setup, from a
-    // socket event rather than from inside setup itself.
-    function openDroppingModel(models) {
-      return () => {
-        const model = new FakePromiseModel(models.length + 1);
+    class FakeModelEmittingCloseWhenClosed extends FakePromiseModel {
+      close() {
+        this.emit('close');
+        return Promise.resolve();
+      }
+    }
+
+    function deferred() {
+      const controls = {};
+      controls.promise = new Promise((resolve, reject) => {
+        controls.resolve = resolve;
+        controls.reject = reject;
+      });
+      return controls;
+    }
+
+    function startRecovery({ Model = FakePromiseModel, settleFirstSetupSynchronously } = {}) {
+      const models = [];
+      const failures = [];
+      const firstSetupStarted = deferred();
+      const firstSetupOutcome = deferred();
+
+      function openModel() {
+        const model = new Model(models.length + 1);
         models.push(model);
         return Promise.resolve(model);
-      };
-    }
+      }
 
-    function setupThatOutlivesTheDrop(models, emitError) {
-      return async (model) => {
-        if (model === models[0]) {
-          setTimeout(() => {
-            const err = new Error('Unexpected close');
-            if (emitError) model.emit('error', err);
-            model.emit('close', err);
-          }, 1);
-        }
-        await new Promise((resolve) => setTimeout(resolve, 10));
-      };
-    }
+      function promiseSetup(model) {
+        if (model !== models[0]) return Promise.resolve();
+        firstSetupStarted.resolve(model);
+        return firstSetupOutcome.promise;
+      }
 
-    for (const emitError of [false, true]) {
-      it(`reconnects instead of keeping the dead connection${emitError ? ' (with an error event)' : ''}`, async () => {
-        const models = [];
-        const failures = [];
+      function callbackSetup(model, done) {
+        if (model === models[0]) settleFirstSetupSynchronously(model, done);
+        else done();
+      }
 
-        const client = await recovery.connectWithRecoveryPromise(openDroppingModel(models), {
+      const connected = recovery
+        .connectWithRecoveryPromise(openModel, {
           initialDelay: 1,
           maxDelay: 1,
           jitter: 0,
           maxRetries: 3,
           waitForConnect: false,
-          setup: setupThatOutlivesTheDrop(models, emitError),
+          setup: settleFirstSetupSynchronously ? callbackSetup : promiseSetup,
+        })
+        .then((client) => {
+          client.on('connect-failed', (err) => failures.push(err.message));
+          return client.waitForConnect();
         });
-        client.on('connect-failed', (err) => failures.push(err.message));
 
-        await client.waitForConnect();
-
-        assert.equal(2, models.length);
-        assert.deepEqual(['Unexpected close'], failures);
-        const channel = await client.createChannel();
-        assert.equal(2, channel.id);
-
-        await client.close();
-      });
+      return { models, failures, firstSetupStarted: firstSetupStarted.promise, firstSetupOutcome, connected };
     }
+
+    async function assertReconnected({ models, connected }) {
+      const client = await connected;
+      assert.equal(2, models.length);
+      const channel = await client.createChannel();
+      assert.equal(2, channel.id);
+      return client;
+    }
+
+    it('reconnects when the socket drops and setup never settles', async () => {
+      const attempt = startRecovery();
+      const model = await attempt.firstSetupStarted;
+      const err = new Error('Unexpected close');
+
+      model.emit('error', err);
+      model.emit('close', err);
+
+      const client = await assertReconnected(attempt);
+      assert.deepEqual(['Unexpected close'], attempt.failures);
+      await client.close();
+    });
+
+    it('reconnects when the connection closes without an error', async () => {
+      const attempt = startRecovery();
+      const model = await attempt.firstSetupStarted;
+
+      model.emit('close');
+
+      const client = await assertReconnected(attempt);
+      assert.deepEqual(['Connection closed'], attempt.failures);
+      await client.close();
+    });
+
+    it('reconnects when the connection errors and has not closed yet', async () => {
+      const attempt = startRecovery();
+      const model = await attempt.firstSetupStarted;
+
+      model.emit('error', new Error('Frame error'));
+
+      const client = await assertReconnected(attempt);
+      assert.deepEqual(['Frame error'], attempt.failures);
+      await client.close();
+    });
+
+    it('reports the connection error when the loss makes setup fail first', async () => {
+      const attempt = startRecovery({
+        settleFirstSetupSynchronously(model, done) {
+          done(new Error('Channel ended, no reply will be forthcoming'));
+          model.emit('close', new Error('CONNECTION_FORCED'));
+        },
+      });
+
+      const client = await assertReconnected(attempt);
+      assert.deepEqual(['CONNECTION_FORCED'], attempt.failures);
+      await client.close();
+    });
+
+    it('reconnects when the connection closes straight after setup completes', async () => {
+      const attempt = startRecovery({
+        settleFirstSetupSynchronously(model, done) {
+          done();
+          model.emit('close', new Error('CONNECTION_FORCED'));
+        },
+      });
+
+      const client = await assertReconnected(attempt);
+      assert.deepEqual(['CONNECTION_FORCED'], attempt.failures);
+      await client.close();
+    });
+
+    it('tolerates the connection closing after recovery was stopped while it opened', async () => {
+      const opening = deferred();
+      const client = await recovery.connectWithRecoveryPromise(() => opening.promise, { waitForConnect: false });
+      await new Promise((resolve) => setImmediate(resolve));
+
+      await client.close();
+      opening.resolve(new FakeModelEmittingCloseWhenClosed(1));
+      await new Promise((resolve) => setImmediate(resolve));
+    });
+
+    it('tolerates setup rejecting and the discarded connection erroring after the reconnect', async () => {
+      const attempt = startRecovery();
+      const model = await attempt.firstSetupStarted;
+      model.emit('close', new Error('Unexpected close'));
+      const client = await assertReconnected(attempt);
+
+      attempt.firstSetupOutcome.reject(new Error('Channel ended, no reply will be forthcoming'));
+      model.emit('error', new Error('Late socket error'));
+      await new Promise((resolve) => setImmediate(resolve));
+
+      assert.deepEqual(['Unexpected close'], attempt.failures);
+      await client.close();
+    });
+
+    it('does not report a failed connect when the connection is lost after recovery was closed', async () => {
+      const models = [];
+      const failures = [];
+      const setupStarted = deferred();
+
+      const client = await recovery.connectWithRecoveryPromise(
+        () => {
+          const model = new FakePromiseModel(models.length + 1);
+          models.push(model);
+          return Promise.resolve(model);
+        },
+        {
+          waitForConnect: false,
+          setup(model) {
+            setupStarted.resolve(model);
+            return new Promise(() => {});
+          },
+        },
+      );
+      client.on('connect-failed', (err) => failures.push(err.message));
+      const model = await setupStarted.promise;
+
+      await client.close();
+      model.emit('close', new Error('Unexpected close'));
+      await new Promise((resolve) => setImmediate(resolve));
+
+      assert.deepEqual([], failures);
+      assert.equal(1, models.length);
+    });
+
+    it('reports the setup error when setup fails on a healthy connection', async () => {
+      const attempt = startRecovery({ Model: FakeModelEmittingCloseWhenClosed });
+      await attempt.firstSetupStarted;
+
+      attempt.firstSetupOutcome.reject(new Error('Queue does not exist'));
+
+      const client = await assertReconnected(attempt);
+      assert.deepEqual(['Queue does not exist'], attempt.failures);
+      await client.close();
+    });
+
+    it('reconnects a callback model whose setup never calls back', async () => {
+      const models = [];
+      const failures = [];
+      const firstSetupStarted = deferred();
+
+      function openModel() {
+        const model = new FakeCallbackModel(models.length + 1);
+        models.push(model);
+        return Promise.resolve(model);
+      }
+
+      function setup(model, done) {
+        if (model === models[0]) firstSetupStarted.resolve(model);
+        else done();
+      }
+
+      const client = recovery.connectWithRecoveryCallback(openModel, {
+        initialDelay: 1,
+        maxDelay: 1,
+        jitter: 0,
+        maxRetries: 3,
+        waitForConnect: false,
+        setup,
+      });
+      client.on('connect-failed', (err) => failures.push(err.message));
+      const connected = new Promise((resolve, reject) => {
+        client.waitForConnect((err) => (err ? reject(err) : resolve()));
+      });
+
+      const model = await firstSetupStarted.promise;
+      const err = new Error('Unexpected close');
+      model.emit('error', err);
+      model.emit('close', err);
+      await connected;
+
+      assert.equal(2, models.length);
+      assert.deepEqual(['Unexpected close'], failures);
+      const channel = await new Promise((resolve, reject) => {
+        client.createChannel((channelErr, ch) => (channelErr ? reject(channelErr) : resolve(ch)));
+      });
+      assert.equal(2, channel.id);
+      await new Promise((resolve) => client.close(resolve));
+    });
   });
 
   it('promise recovery fails after max retries', async () => {
