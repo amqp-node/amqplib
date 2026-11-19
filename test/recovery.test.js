@@ -1288,6 +1288,18 @@ describe('recovery', () => {
       await closed;
     });
 
+    it('resolves a second close only once the connection has closed', async () => {
+      const model = new FakeModelClosingOnDemand(1);
+      const client = await recovery.connectWithRecoveryPromise(() => Promise.resolve(model), {});
+
+      const firstClose = client.close();
+      const secondClose = client.close();
+
+      assert.equal(false, await settled(secondClose));
+      model.closing.resolve();
+      await Promise.all([firstClose, secondClose]);
+    });
+
     it('does not wait for a connection that is still opening', async () => {
       const opening = deferred();
       const model = new FakeModelClosingOnDemand(1);
@@ -1300,6 +1312,29 @@ describe('recovery', () => {
 
       assert.equal(true, model.closeRequested);
     });
+  });
+
+  it('uses the default delay options when they are given as null', async (t) => {
+    t.mock.method(Math, 'random', () => 1);
+    const delays = [];
+    const client = await recovery.connectWithRecoveryPromise(() => Promise.reject(new Error('ECONNREFUSED')), {
+      initialDelay: null,
+      maxDelay: null,
+      factor: null,
+      jitter: null,
+      waitForConnect: false,
+    });
+    const secondReconnectScheduled = new Promise((resolve) => {
+      client.on('reconnect-scheduled', ({ delay }) => {
+        delays.push(delay);
+        if (delays.length === 2) resolve();
+      });
+    });
+
+    await secondReconnectScheduled;
+    await client.close();
+
+    assert.deepEqual([120, 240], delays);
   });
 
   it('schedules a zero delay rather than NaN when initialDelay is zero and the backoff overflows', async () => {
