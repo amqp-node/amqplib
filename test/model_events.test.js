@@ -109,4 +109,21 @@ describe('recovering connection over a ChannelModel', () => {
     assert.deepEqual([{ err: listenerBug, event: 'blocked' }], handlerErrors);
     await client.close();
   });
+
+  it('reports a throwing close listener on the underlying model to its handler-error listener', async () => {
+    const listenerBug = new Error('listener bug');
+    const connection = new FakeConnection();
+    const model = new ChannelModel(connection);
+    const client = await recovery.connectWithRecoveryPromise(() => Promise.resolve(model), { maxRetries: 0 });
+    const handlerErrors = [];
+    client.on('handler-error', (err, event) => handlerErrors.push({ err, event }));
+    model.on('close', () => {
+      throw listenerBug;
+    });
+
+    safeEmit(connection, 'close', new Error('socket closed'));
+    await nextTurnOfTheEventLoop();
+
+    assert.deepEqual([{ err: listenerBug, event: 'close' }], handlerErrors);
+  });
 });
