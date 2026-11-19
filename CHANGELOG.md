@@ -3,6 +3,19 @@
 ## Unreleased
 - Fix connection recovery when the connection is lost while the `setup` function is running. The new connection was only watched once setup had finished, so a socket error during setup crashed the process with an unhandled `error` event, and a close during setup left recovery holding the dead connection, never reconnecting, with every later `createChannel` failing. Such an attempt now counts as a failed connect: `connect-failed` is emitted and a reconnect is scheduled.
 
+## v2.4.0
+- Decode a table that contains a key named `!`, and is the value of a header, argument or array element, as `{ '!': 'table', value: <the table> }`. Previously it was decoded as the bare table, which the encoder reads as an explicit type such as `{ '!': 'timestamp', value: 1 }`. Publishing headers that had been received with such a table therefore threw `Unknown type to encode`, or sent a different value without an error when the key held a valid type name. A received table can now also be told apart from a received timestamp or decimal. **Upgrade note:** a consumer that reads a table containing a `!` key must now read it from `value`. Tables without a `!` key, and a `!` key at the top level of the headers, are decoded as before
+- Add `table` as an explicit type. `{ '!': 'table', value: { ... } }` is encoded as a table whose keys are taken literally, so it can contain a key named `!`
+
+## v2.3.3
+- Encode numbers below -2^63, `NaN`, `-Infinity` and fractions of 2^50 or more as doubles in headers and `arguments` tables. Previously `publish` threw a `RangeError` for these, including when the table had been received from the broker and was being published again. Numbers that could be encoded before are encoded as before
+- Encode an explicit `timestamp` of 2^64, or an explicit `long` of 2^63, in a headers or `arguments` table as the largest value of that type, as versions before 2.0.1 did. The largest timestamp is decoded as 2^64, because 2^64 - 1 cannot be represented as a number, so since 2.0.1 a received table containing it could not be published again. Larger numbers still throw a `RangeError`
+- Encode a message `timestamp` property of 2^64, or any other unsigned 64-bit method field of 2^64, as the largest value in the same way, so a message received with a timestamp of 2^64 - 1 can be published again (also a regression in 2.0.1)
+
+## v2.3.2
+- Encode and decode nested field tables and arrays without recursion. Previously a table nested a few thousand levels deep, which RabbitMQ accepts and delivers, overflowed the call stack while a consumer decoded the message headers. The connection closed with `Maximum call stack size exceeded`, the message was requeued, and each reconnecting consumer failed the same way. There is no depth limit, and everything that encoded or decoded before produces the same result (GHSA-gfjv-mq5g-xjfw, reported by Dickson Wu ([@DicksonWu654](https://github.com/DicksonWu654)))
+- Decode a field table key named `__proto__` as an ordinary property. Previously it replaced the decoded table's prototype: a table value was inherited from, a null value removed the prototype, and any other value was dropped. With a byte array value followed by a numeric key, decoding threw a `TypeError` and closed the connection in the same way. **Upgrade note:** headers received with a `__proto__` key now have it as an own property (GHSA-gfjv-mq5g-xjfw)
+
 ## v2.3.1
 - Throw a clear `RangeError` from `publish` when an encoded headers or `arguments` table exceeds the 64 KiB encoding buffer. Previously the outcome depended on where the boundary fell: a string or Buffer value crossing the end of the buffer was silently truncated, producing a frame whose table length prefix did not match its contents, which RabbitMQ rejected by closing the connection with a 541 `INTERNAL_ERROR` after `publish` had returned; at other positions a bare `offset is out of range` error escaped from `publish` instead (fixes #867)
 
