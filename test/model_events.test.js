@@ -45,15 +45,34 @@ for (const Model of [ChannelModel, CallbackModel]) {
       assert.throws(() => safeEmit(connection, 'blocked', 'low memory'), listenerBug);
     });
 
-    it('still raise an error event that nothing listens for', () => {
+    it('do not receive an error event that nothing listens for through handler-error', async () => {
       const connection = new FakeConnection();
-      new Model(connection);
+      const model = new Model(connection);
+      const handlerErrors = [];
+      model.on('handler-error', (err, event) => handlerErrors.push({ err, event }));
       const socketError = new Error('socket error');
 
       assert.throws(() => safeEmit(connection, 'error', socketError), socketError);
+      await nextTurnOfTheEventLoop();
+
+      assert.deepEqual([], handlerErrors);
     });
   });
 }
+
+describe('safeEmit', () => {
+  it('raises an error event that nothing listens for even when there is a handler-error listener', async () => {
+    const emitter = new EventEmitter();
+    const handlerErrors = [];
+    emitter.on('handler-error', (err, event) => handlerErrors.push({ err, event }));
+    const protocolError = new Error('protocol error');
+
+    assert.throws(() => safeEmit(emitter, 'error', protocolError), protocolError);
+    await nextTurnOfTheEventLoop();
+
+    assert.deepEqual([], handlerErrors);
+  });
+});
 
 describe('recovering connection over a ChannelModel', () => {
   it('reports a throwing listener to its handler-error listener', async () => {

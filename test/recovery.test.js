@@ -1142,20 +1142,7 @@ describe('recovery', () => {
       assert.deepEqual([{ err: listenerBug, event: 'reconnect-failed' }], handlerErrors);
     });
 
-    it('reports a connection error that nothing listens for to the handler-error listener', async () => {
-      const models = [];
-      const { client, handlerErrors } = await startRecovery(openingFakeModels(models));
-      await client.waitForConnect();
-      const socketError = new Error('socket error');
-
-      models[0].emit('error', socketError);
-      await nextTurnOfTheEventLoop();
-
-      assert.deepEqual([{ err: socketError, event: 'error' }], handlerErrors);
-      await client.close();
-    });
-
-    describe('without a handler-error listener', () => {
+    describe('throws that become uncaught exceptions', () => {
       let previousUncaughtExceptionListeners;
 
       beforeEach(() => {
@@ -1198,6 +1185,21 @@ describe('recovery', () => {
         models[0].emit('error', socketError);
 
         assert.strictEqual(socketError, (await uncaught)[0]);
+        await client.close();
+      });
+
+      it('does not report a connection error that nothing listens for to a handler-error listener', async () => {
+        const models = [];
+        const { client, handlerErrors } = await startRecovery(openingFakeModels(models));
+        await client.waitForConnect();
+        const uncaught = once(process, 'uncaughtException');
+        const socketError = new Error('socket error');
+
+        models[0].emit('error', socketError);
+
+        assert.strictEqual(socketError, (await uncaught)[0]);
+        await nextTurnOfTheEventLoop();
+        assert.deepEqual([], handlerErrors);
         await client.close();
       });
 
