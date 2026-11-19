@@ -148,7 +148,17 @@ connection.on('connect', () => {
 connection.on('disconnect', (err) => {
   console.warn('disconnected', err.message);
 });
+
+connection.on('error', (err) => {
+  console.warn('connection error', err.message);
+});
 ```
+
+An `error` listener is required. When a connection is lost because of a socket
+or protocol error, the recovering connection emits `error` before `disconnect`,
+as a connection without recovery does. Without an `error` listener Node.js
+raises it as an uncaught exception and the process exits, even though recovery
+would have reconnected.
 
 Callback API supports the same option:
 
@@ -172,6 +182,7 @@ amqplib.connect(
   (err, conn) => {
     if (err) throw err;
     conn.on('connect', () => console.log('connected'));
+    conn.on('error', (err) => console.warn('connection error', err.message));
   },
 );
 ```
@@ -199,6 +210,10 @@ connection.on('connect-failed', (err) => {
 
 connection.on('reconnect-scheduled', ({ attempt, delay }) => {
   console.log(`retrying (attempt ${attempt}) in ${delay}ms`);
+});
+
+connection.on('error', (err) => {
+  console.warn('connection error', err.message);
 });
 
 await connection.waitForConnect();
