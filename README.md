@@ -118,6 +118,14 @@ const amqplib = require('amqplib');
 
 ```
 
+## Listening for errors
+
+Register an `error` listener on every connection and every channel, as the
+examples above do. amqplib emits `error` when a connection or channel is
+closed by a socket, protocol or server error. As with any Node.js event
+emitter, an `error` event that has no listener is raised as an uncaught
+exception and the process exits.
+
 ## Opt-in recovery
 
 Automatic recovery is available as an opt-in feature through `connect` options:
@@ -154,11 +162,9 @@ connection.on('error', (err) => {
 });
 ```
 
-An `error` listener is required. When a connection is lost because of a socket
-or protocol error, the recovering connection emits `error` before `disconnect`,
-as a connection without recovery does. Without an `error` listener Node.js
-raises it as an uncaught exception and the process exits, even though recovery
-would have reconnected.
+An `error` listener is [still required](#listening-for-errors) with recovery.
+The recovering connection emits `error` before `disconnect`, and without a
+listener the process exits even though recovery would have reconnected.
 
 Callback API supports the same option:
 
