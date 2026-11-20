@@ -1,6 +1,6 @@
 # Change log for amqplib
 
-## Unreleased
+## v2.4.1
 - Fix connection recovery when the connection is lost while the `setup` function is running. The new connection was only watched once setup had finished, so a socket error during setup crashed the process with an unhandled `error` event, and a close during setup left recovery holding the dead connection, never reconnecting, with every later `createChannel` failing. Such an attempt now counts as a failed connect: `connect-failed` is emitted and a reconnect is scheduled.
 - Keep connection recovery working when a listener for one of its events throws. Previously a throwing `connect` listener closed the new connection and reconnected in an endless loop, a throwing `connect-failed` listener caused an unhandled rejection and ended recovery, and a throwing `disconnect` or `reconnect-scheduled` listener ended recovery without a reconnect. The throw is now delivered to a `handler-error` listener on the recovering connection, or raised as an uncaught exception when there is none, and recovery carries on either way
 - Deliver a throw from a connection event listener to a `handler-error` listener registered on the connection, as documented. Previously the listener was only consulted for channels: on a connection returned by `connect` it was never called and the throw propagated into amqplib internals
