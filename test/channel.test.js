@@ -4,6 +4,8 @@ const promisify = require('node:util').promisify;
 const Channel = require('../lib/channel').Channel;
 const CallbackConfirmChannel = require('../lib/callback_model').ConfirmChannel;
 const PromiseConfirmChannel = require('../lib/channel_model').ConfirmChannel;
+const PromiseChannel = require('../lib/channel_model').Channel;
+const CallbackChannel = require('../lib/callback_model').Channel;
 const Connection = require('../lib/connection').Connection;
 const util = require('./lib/util');
 const latch = util.latch;
@@ -747,6 +749,72 @@ describe('Channel', () => {
           ch.publish('', '', Buffer.from('foo'), {});
         }, cb);
       }, serverClosesAfterPublish({ ack: true })));
+    }
+  });
+
+  describe('channel.get closes mid-delivery', () => {
+    // Once BasicGetOk has arrived, the RPC reply has fired and the get()
+    // is parked in the content-frame state machine. If the channel closes
+    // before the content frames arrive, the get must fail instead of
+    // hanging forever.
+    const getApis = [
+      {
+        name: 'promise API',
+        create: (c) => new PromiseChannel(c),
+        open: (ch) => ch.open(),
+        get: (ch) => ch.get('q', { noAck: true }),
+      },
+      {
+        name: 'callback API',
+        create: (c) => new CallbackChannel(c),
+        open: (ch) => promisify(ch.open.bind(ch))(),
+        get: (ch) =>
+          new Promise((resolve, reject) => {
+            ch.get('q', { noAck: true }, (err, m) => (err ? reject(err) : resolve(m)));
+          }),
+      },
+    ];
+
+    function serverClosesAfterGetOk(send, wait, cb) {
+      channel_handshake(send, wait)
+        .then((ch) =>
+          wait(defs.BasicGet)().then(() => {
+            send(
+              defs.BasicGetOk,
+              { deliveryTag: 1, redelivered: false, exchange: '', routingKey: 'q', messageCount: 1 },
+              ch,
+            );
+            // No content frames follow: the server closes the channel instead.
+            send(
+              defs.ChannelClose,
+              {
+                replyText: 'NOT_FOUND - no queue',
+                replyCode: defs.constants.NOT_FOUND,
+                classId: 60,
+                methodId: 70,
+              },
+              ch,
+            );
+            return wait(defs.ChannelCloseOk)();
+          }),
+        )
+        .then(() => cb(), cb);
+    }
+
+    for (const api of getApis) {
+      it(`${api.name} get rejects when the channel closes after BasicGetOk`, baseChannelTest(
+        (c, cb) => {
+          const ch = api.create(c);
+          ch.on('error', () => {});
+          api.open(ch).then(() => {
+            assert.rejects(api.get(ch), (err) => {
+              assert.strictEqual(err?.message, 'channel closed');
+              return true;
+            }).then(() => cb(), cb);
+          }, cb);
+        },
+        serverClosesAfterGetOk,
+      ));
     }
   });
 
