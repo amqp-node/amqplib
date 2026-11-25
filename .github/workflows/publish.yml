@@ -1,9 +1,10 @@
 # Runs when a GitHub release is published (draft releases do not trigger it).
 #
-# Tests the tagged commit on every supported Node.js version, then stages the
-# package on npm with `npm stage publish` using OIDC trusted publishing, so no
-# npm token is stored in this repository. Nothing goes live until a maintainer
-# reviews the staged version and approves it with 2FA:
+# Tests and soak tests (soak.yml) the tagged commit on every supported Node.js
+# version, then stages the package on npm with `npm stage publish` using OIDC
+# trusted publishing, so no npm token is stored in this repository. Nothing
+# goes live until a maintainer reviews the staged version and approves it with
+# 2FA:
 #
 #   npm stage list amqplib
 #   npm stage approve <stage-id>
@@ -61,8 +62,11 @@ jobs:
 
       - run: make test
 
+  soak:
+    uses: ./.github/workflows/soak.yml
+
   stage:
-    needs: build
+    needs: [build, soak]
     runs-on: ubuntu-latest
     permissions:
       contents: read
