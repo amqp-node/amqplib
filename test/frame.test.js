@@ -5,6 +5,7 @@ const Frames = connection.Connection;
 const HEARTBEAT = require('../lib/frame').HEARTBEAT;
 const parseFrame = require('../lib/frame').parseFrame;
 const makeBodyFrame = require('../lib/frame').makeBodyFrame;
+const { UnparsedBytes, storageBytesFor } = require('../lib/frame');
 const Stream = require('node:stream');
 const PassThrough = Stream.PassThrough;
 const { choice, forAll, repeat, label, sequence, transform, sized } = require('claire');
@@ -124,6 +125,143 @@ describe('Frame', () => {
       const f = frames.recvFrame();
       assert.ok(f, 'frame should be accepted');
       assert.strictEqual(f.content.length, 100 * 1024);
+    });
+  });
+
+  describe('Frames that arrive in pieces', () => {
+    function body(channel, content) {
+      return makeBodyFrame(channel, content);
+    }
+
+    function patterned(length, seed) {
+      const content = Buffer.alloc(length);
+      for (let i = 0; i < length; i++) content[i] = (i * 7 + seed) % 251;
+      return content;
+    }
+
+    function cut(bytes, size) {
+      const pieces = [];
+      for (let offset = 0; offset < bytes.length; offset += size) pieces.push(bytes.subarray(offset, offset + size));
+      return pieces;
+    }
+
+    function receiver() {
+      const input = inputs();
+      const connection = new Frames(input);
+      return (pieces) => {
+        const received = [];
+        for (const piece of pieces) {
+          input.write(piece);
+          for (let frame = connection.recvFrame(); frame; frame = connection.recvFrame()) received.push(frame);
+        }
+        return received;
+      };
+    }
+
+    function countingBytesCopied(task) {
+      const concat = Buffer.concat;
+      const copy = Buffer.prototype.copy;
+      let copied = 0;
+      Buffer.concat = (list, length) => {
+        const joined = concat(list, length);
+        copied += joined.length;
+        return joined;
+      };
+      Buffer.prototype.copy = function (...args) {
+        const count = copy.apply(this, args);
+        copied += count;
+        return count;
+      };
+      try {
+        return { result: task(), copied };
+      } finally {
+        Buffer.concat = concat;
+        Buffer.prototype.copy = copy;
+      }
+    }
+
+    it('copies a frame that arrives in many reads a bounded number of times', () => {
+      const content = patterned(1024 * 1024, 1);
+      const frame = body(1, content);
+      const receive = receiver();
+      let received;
+      const copied = countingBytesCopied(() => {
+        received = receive(cut(frame, 1024));
+      }).copied;
+      assert.strictEqual(received.length, 1);
+      assert.ok(received[0].content.equals(content));
+      assert.ok(copied < 3 * frame.length, `copied ${copied} bytes to receive a frame of ${frame.length}`);
+    });
+
+    it('copies a frame that arrives one byte at a time a bounded number of times', () => {
+      const content = patterned(64 * 1024, 2);
+      const frame = body(1, content);
+      const receive = receiver();
+      let received;
+      const copied = countingBytesCopied(() => {
+        received = receive(cut(frame, 1));
+      }).copied;
+      assert.strictEqual(received.length, 1);
+      assert.ok(received[0].content.equals(content));
+      assert.ok(copied < 3 * frame.length, `copied ${copied} bytes to receive a frame of ${frame.length}`);
+    });
+
+    it('reads the same frames wherever the bytes are cut', () => {
+      const small = patterned(5, 3);
+      const large = patterned(10000, 4);
+      const stream = Buffer.concat([HB, body(1, small), body(2, large), HB, body(3, Buffer.alloc(0)), body(4, large)]);
+      for (const size of [1, 2, 6, 7, 8, 9, 13, 100, 4096, stream.length - 1, stream.length]) {
+        const received = receiver()(cut(stream, size));
+        const at = `cut every ${size}`;
+        assert.strictEqual(received.length, 6, at);
+        assert.strictEqual(received[0], HEARTBEAT, at);
+        assert.deepStrictEqual([received[1].channel, received[1].content], [1, small], at);
+        assert.deepStrictEqual([received[2].channel, received[2].content], [2, large], at);
+        assert.strictEqual(received[3], HEARTBEAT, at);
+        assert.deepStrictEqual([received[4].channel, received[4].content], [3, Buffer.alloc(0)], at);
+        assert.deepStrictEqual([received[5].channel, received[5].content], [4, large], at);
+      }
+    });
+
+    it('leaves a received body unchanged by the frames that follow it', () => {
+      const first = patterned(20000, 5);
+      const receive = receiver();
+      const [delivered] = receive(cut(body(1, first), 300));
+      for (let seed = 6; seed < 40; seed++) receive(cut(body(1, patterned(20000, seed)), 300));
+      assert.ok(delivered.content.equals(first));
+    });
+
+    it('lets go of its storage once nothing is left unparsed', () => {
+      const unparsed = new UnparsedBytes();
+      unparsed.append(Buffer.alloc(100));
+      unparsed.append(Buffer.alloc(100));
+      unparsed.keepOnly(unparsed.bytes.subarray(200));
+      assert.strictEqual(unparsed.storage.length, 0);
+    });
+
+    it('keeps its storage while bytes are left unparsed', () => {
+      const unparsed = new UnparsedBytes();
+      unparsed.append(patterned(100, 1));
+      unparsed.append(patterned(100, 2));
+      unparsed.keepOnly(unparsed.bytes.subarray(150));
+      assert.ok(unparsed.bytes.equals(patterned(100, 2).subarray(50)));
+      assert.ok(unparsed.storage.length >= 200);
+    });
+
+    describe('storage size', () => {
+      const LARGEST = 4096;
+
+      it('is twice the bytes it has to hold', () => {
+        assert.strictEqual(storageBytesFor(1000, LARGEST), 2000);
+      });
+
+      it('is no more than the largest buffer', () => {
+        assert.strictEqual(storageBytesFor(3000, LARGEST), LARGEST);
+      });
+
+      it('is the bytes it has to hold when they exceed the largest buffer, so that allocating it fails', () => {
+        assert.strictEqual(storageBytesFor(5000, LARGEST), 5000);
+      });
     });
   });
 
