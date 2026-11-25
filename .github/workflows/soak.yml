@@ -1,0 +1,88 @@
+# Runs the soak test (https://github.com/cressie176/amqplib-soak) against the
+# code in this repository on every supported Node.js version. It publishes
+# messages of random size over plain, TLS and deliberately fragmented
+# connections and checks every delivery for the bytes that were sent.
+#
+# It does not run on pushes or pull requests. Start it by hand before a
+# release, from the Actions tab or with:
+#
+#   gh workflow run soak.yml --ref <branch or tag>
+#
+# It can also be called from another workflow as a job.
+
+name: Soak
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: How long each run publishes for, e.g. 60s or 5m
+        type: string
+        default: 60s
+  workflow_call:
+    inputs:
+      duration:
+        description: How long each run publishes for, e.g. 60s or 5m
+        type: string
+        default: 60s
+
+permissions:
+  contents: read
+
+jobs:
+  soak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18.x, 20.x, 22.x, 24.x]
+
+    env:
+      DURATION: ${{ inputs.duration }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: amqplib
+
+      - uses: actions/checkout@v4
+        with:
+          repository: cressie176/amqplib-soak
+          ref: 08348d902924635cb87012d20f60a01ce44a74a8
+          path: soak
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install this checkout of amqplib into the soak test
+        working-directory: soak
+        run: npm install --omit=dev --no-audit --no-fund ../amqplib
+
+      - name: Start RabbitMQ with a TLS listener
+        working-directory: soak
+        run: npm run broker:up
+
+      - name: Soak with the default settings
+        working-directory: soak
+        run: npm run soak -- --duration "$DURATION" --json reports/defaults.json
+
+      - name: Soak with small frames and frequent heartbeats
+        working-directory: soak
+        run: npm run soak -- --duration "$DURATION" --frame-max 8192 --heartbeat 1 --json reports/small-frames.json
+
+      - name: Show the broker log if anything failed
+        if: failure()
+        working-directory: soak
+        run: docker compose logs --tail 200
+
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-reports-node-${{ matrix.node-version }}
+          path: soak/reports/
+          if-no-files-found: ignore
