@@ -1,5 +1,8 @@
 # Change log for amqplib
 
+## Unreleased
+- Fail a `close` that is waiting for the server's CloseOk when the connection ends first. Previously the promise returned by `channel.close()` or `connection.close()` never settled, and the callback of the callback API was never called, if the socket closed, the heartbeat timed out or the server closed the connection before the close was acknowledged. A `close` on a recovering connection waited forever for the same reason. `channel.close()` now fails with the error given to the other operations awaiting a reply, and `connection.close()` with the error that ended the connection. **Upgrade note:** a `close` that used to wait forever now fails, so handle its rejection (or the error passed to its callback) as you would for a `close` called on a channel or connection that has already closed.
+
 ## v2.4.2
 - Stop copying everything received of an incomplete frame each time more of it arrives. A frame that took many reads from the socket to arrive was copied in full on every one of them, so the work grew with the square of its size. The bytes waiting to be parsed are now kept in a buffer that doubles when it runs out of room, and each byte is copied fewer than three times however the frame arrives (GHSA-87x3-r7m4-7rm7, reported by Remi Testa ([@funkyremi](https://github.com/funkyremi)))
 

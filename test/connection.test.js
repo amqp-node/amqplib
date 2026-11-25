@@ -434,6 +434,25 @@ describe('Connection', () => {
         // deliberately do NOT send ConnectionCloseOk — client must close anyway
         .then(cb, cb);
     }));
+
+    it('close fails when the socket closes before the CloseOk', connectionTest((c, cb) => {
+      const decrementLatch = latch(2, cb);
+      c.on('error', () => {});
+      c.on('close', () => decrementLatch());
+      c.open(OPEN_OPTS, (err) => {
+        assert.ifError(err);
+        c.close((err) => {
+          assert.match(err.message, /Unexpected close/);
+          decrementLatch();
+        });
+      });
+    }, (send, wait, cb, socket) => {
+      handshake(send, wait)
+        .then(wait(defs.ConnectionClose))
+        // no ConnectionCloseOk: the connection is lost first
+        .then(() => socket.end())
+        .then(cb, cb);
+    }));
   });
 
   describe('Event handler errors - without handler-event listener', () => {
@@ -831,6 +850,24 @@ describe('Connection', () => {
       handshake(send, wait)
         .then(cb, cb);
       // conspicuously not sending anything ...
+    }));
+
+    it('close fails when heartbeats stop before the CloseOk', connectionTest((c, cb) => {
+      const opts = Object.create(OPEN_OPTS);
+      opts.heartbeat = 1;
+      c.on('error', () => {});
+      c.open(opts, (err) => {
+        assert.ifError(err);
+        c.close((err) => {
+          assert.match(err.message, /Heartbeat timeout/);
+          cb();
+        });
+      });
+    }, (send, wait, cb) => {
+      handshake(send, wait)
+        .then(wait(defs.ConnectionClose))
+        .then(cb, cb);
+      // no ConnectionCloseOk, and nothing else either
     }));
 
     it('without a heartbeat option, server suggested value is used', connectionTest((c, cb) => {

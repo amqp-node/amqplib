@@ -2,7 +2,9 @@ const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const promisify = require('node:util').promisify;
 const Channel = require('../lib/channel').Channel;
+const CallbackChannel = require('../lib/callback_model').Channel;
 const CallbackConfirmChannel = require('../lib/callback_model').ConfirmChannel;
+const PromiseChannel = require('../lib/channel_model').Channel;
 const PromiseConfirmChannel = require('../lib/channel_model').ConfirmChannel;
 const Connection = require('../lib/connection').Connection;
 const util = require('./lib/util');
@@ -30,7 +32,7 @@ function baseChannelTest(client, server) {
     pair.server.read(8); // discard the protocol header
     util.runServer(pair.server, (send, wait) => {
       handshake(send, wait).then(() => {
-        server(send, wait, decrementLatch);
+        server(send, wait, decrementLatch, pair.server);
       }, decrementLatch);
     });
   };
@@ -181,6 +183,64 @@ describe('Channel', () => {
       .then(() => send(defs.ChannelCloseOk, {}, ch))
       .then(cb);
     }));
+
+    // The CloseOk cannot arrive once the connection has gone, so the close
+    // must fail instead of leaving its caller waiting forever.
+    const closeApis = [
+      {
+        name: 'promise API',
+        Channel: PromiseChannel,
+        open: (ch) => ch.open(),
+        close: (ch) => ch.close(),
+      },
+      {
+        name: 'callback API',
+        Channel: CallbackChannel,
+        open: (ch) => promisify(ch.open.bind(ch))(),
+        close: (ch) => promisify(ch.close.bind(ch))(),
+      },
+    ];
+
+    closeApis.forEach(({ name, Channel, open, close }) => {
+      it(`${name} close fails when the connection is lost before the CloseOk`, baseChannelTest((c, cb) => {
+        c.on('error', () => {});
+        const ch = new Channel(c);
+        open(ch)
+          .then(() => close(ch))
+          .then(
+            () => cb(new Error('close succeeded without a CloseOk')),
+            (err) => completes(() => assert.match(err.message, /no reply will be forthcoming/), cb),
+          );
+      }, (send, wait, cb, socket) => {
+        channel_handshake(send, wait)
+          .then(wait(defs.ChannelClose))
+          // no ChannelCloseOk: the connection is lost first
+          .then(() => socket.end())
+          .then(() => cb(), cb);
+      }));
+
+      it(`${name} close fails when the server closes the connection before the CloseOk`, baseChannelTest((c, cb) => {
+        c.on('error', () => {});
+        const ch = new Channel(c);
+        open(ch)
+          .then(() => close(ch))
+          .then(
+            () => cb(new Error('close succeeded without a CloseOk')),
+            (err) => completes(() => assert.match(err.message, /no reply will be forthcoming/), cb),
+          );
+      }, (send, wait, cb) => {
+        channel_handshake(send, wait)
+          .then(wait(defs.ChannelClose))
+          .then(() => send(defs.ConnectionClose, {
+            replyText: 'Got there first',
+            replyCode: defs.constants.CONNECTION_FORCED,
+            classId: 0,
+            methodId: 0,
+          }, 0))
+          .then(wait(defs.ConnectionCloseOk))
+          .then(() => cb(), cb);
+      }));
+    });
   });
 
   describe('channel machinery', () => {
